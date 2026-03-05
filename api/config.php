@@ -1,6 +1,7 @@
 <?php
 /**
  * DGD Portal - Database Configuration & Helpers
+ * Version: 1.1.0 (Auto-Deploy Active)
  *
  * SQLite PDO connection with WAL mode.
  * JSON response helpers and UUID generation.
