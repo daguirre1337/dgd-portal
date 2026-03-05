@@ -452,9 +452,9 @@
             }
 
             const place = result.results[0];
-            wizardState.lat = place.lat;
-            wizardState.lng = place.lng;
-            wizardState.locationName = place.name;
+            wizardState.lat = parseFloat(place.lat);
+            wizardState.lng = parseFloat(place.lon || place.lng);
+            wizardState.locationName = place.display_name || place.name || query;
 
             errorEl.classList.add('dgd-hidden');
             await searchPartners();
