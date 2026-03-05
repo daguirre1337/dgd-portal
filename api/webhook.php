@@ -254,10 +254,9 @@ if (empty($REPO_PATH) || !is_dir($REPO_PATH)) {
     webhook_error("Repository path not found: {$REPO_PATH}", 500);
 }
 
-$git_dir = $REPO_PATH . DIRECTORY_SEPARATOR . '.git';
-if (!is_dir($git_dir) && !is_file($git_dir)) {
-    webhook_error("Not a git repository: {$REPO_PATH} (.git not found)", 500);
-}
+// Hinweis: Auf Plesk Shared Hosting liegt .git NICHT in httpdocs.
+// Plesk kopiert Dateien aus einem internen Repo nach httpdocs.
+// Daher kein .git Check - execute_deploy() hat Fallback-Methoden.
 
 // --- Deployment ausfuehren ---
 $deploy_result = execute_deploy($REPO_PATH, $DEPLOY_BRANCH);
@@ -311,39 +310,104 @@ function execute_deploy($repo_path, $branch)
 {
     global $DEPLOY_TRIGGER_FILE;
 
-    // --- Methode 1: Direkter git pull ---
+    // --- Methode 1: Plesk Git-Repo Pfade durchsuchen ---
+    // Auf Plesk liegt das echte Git-Repo woanders als httpdocs
+    $plesk_git_paths = array();
+
+    // Versuche domain-spezifische Pfade zu finden
+    $vhost_path = realpath($repo_path . '/..');
+    if ($vhost_path) {
+        $plesk_git_paths[] = $vhost_path . '/git/dgd-portal.git';
+        $plesk_git_paths[] = $vhost_path . '/repositories/dgd-portal';
+        $plesk_git_paths[] = $vhost_path . '/.git-hosting/dgd-portal';
+    }
+
     $git_binary = find_git_binary();
 
+    // Versuche git pull in bekannten Plesk-Repo-Pfaden
     if ($git_binary !== null) {
-        // Sicherstellen, dass git Zugriff auf das Repo hat
-        $cmd = sprintf(
-            'cd %s && %s pull origin %s 2>&1',
-            escapeshellarg($repo_path),
-            escapeshellarg($git_binary),
-            escapeshellarg($branch)
-        );
-
-        $output = '';
-        $return_code = -1;
-        exec($cmd, $output_lines, $return_code);
-        $output = implode("\n", $output_lines);
-
-        if ($return_code === 0) {
-            return array(
-                'success' => true,
-                'output'  => $output,
-                'method'  => 'git_pull',
-                'hint'    => '',
-            );
+        // Zuerst: httpdocs selbst (falls es doch ein git repo ist)
+        $git_dir = $repo_path . DIRECTORY_SEPARATOR . '.git';
+        if (is_dir($git_dir) || is_file($git_dir)) {
+            array_unshift($plesk_git_paths, $repo_path);
         }
 
-        // git pull hat fehlgeschlagen - Fallback versuchen
-        webhook_log("git pull failed (exit {$return_code}): {$output}", 'WARN');
+        foreach ($plesk_git_paths as $try_path) {
+            if (!is_dir($try_path)) {
+                continue;
+            }
+            $cmd = sprintf(
+                'cd %s && %s pull origin %s 2>&1',
+                escapeshellarg($try_path),
+                escapeshellarg($git_binary),
+                escapeshellarg($branch)
+            );
+
+            $output_lines = array();
+            $return_code = -1;
+            @exec($cmd, $output_lines, $return_code);
+            $output = implode("\n", $output_lines);
+
+            if ($return_code === 0) {
+                return array(
+                    'success' => true,
+                    'output'  => "Pulled from {$try_path}: {$output}",
+                    'method'  => 'git_pull',
+                    'hint'    => '',
+                );
+            }
+            webhook_log("git pull in {$try_path} failed (exit {$return_code}): {$output}", 'WARN');
+        }
+
+        // Fallback: git pull in httpdocs selbst versuchen
+        if (!in_array($repo_path, $plesk_git_paths)) {
+            $cmd = sprintf(
+                'cd %s && %s pull origin %s 2>&1',
+                escapeshellarg($repo_path),
+                escapeshellarg($git_binary),
+                escapeshellarg($branch)
+            );
+            $output_lines = array();
+            $return_code = -1;
+            @exec($cmd, $output_lines, $return_code);
+            $output = implode("\n", $output_lines);
+
+            if ($return_code === 0) {
+                return array(
+                    'success' => true,
+                    'output'  => $output,
+                    'method'  => 'git_pull',
+                    'hint'    => '',
+                );
+            }
+            webhook_log("git pull in httpdocs failed (exit {$return_code}): {$output}", 'WARN');
+        }
     } else {
         webhook_log("git binary not found on server.", 'WARN');
     }
 
-    // --- Methode 2: Fallback - Touch-Datei fuer Cron-Job ---
+    // --- Methode 2: Plesk CLI (falls verfuegbar) ---
+    $plesk_cmds = array(
+        'plesk bin site --update-git-repo dgd.digital 2>&1',
+        '/usr/sbin/plesk bin site --update-git-repo dgd.digital 2>&1',
+    );
+
+    foreach ($plesk_cmds as $pcmd) {
+        $output_lines = array();
+        $return_code = -1;
+        @exec($pcmd, $output_lines, $return_code);
+        if ($return_code === 0) {
+            $output = implode("\n", $output_lines);
+            return array(
+                'success' => true,
+                'output'  => "Plesk CLI deploy: {$output}",
+                'method'  => 'plesk_cli',
+                'hint'    => '',
+            );
+        }
+    }
+
+    // --- Methode 3: Fallback - Touch-Datei fuer Cron-Job ---
     $trigger_dir = dirname($DEPLOY_TRIGGER_FILE);
     if (!is_dir($trigger_dir)) {
         mkdir($trigger_dir, 0755, true);
