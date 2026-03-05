@@ -12,17 +12,18 @@
  *   GET  /api/dgd/geocode           - Nominatim geocoding proxy
  */
 
-// Error reporting for debugging (remove in production)
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-
 require_once __DIR__ . '/config.php';
 
-// ---- Auto-initialize database if missing ----
-if (!file_exists(DB_PATH)) {
-    require_once __DIR__ . '/init_db.php';
+// ---- Auto-initialize database if tables are missing ----
+require_once __DIR__ . '/init_db.php';
+$_db_check = get_db();
+$_table_count = (int)$_db_check->query(
+    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='dgd_partners'"
+)->fetchColumn();
+if ($_table_count === 0) {
     init_database();
 }
+unset($_db_check, $_table_count);
 
 // ---- Headers ----
 set_api_headers();
