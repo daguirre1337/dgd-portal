@@ -537,7 +537,7 @@
 
         // Update header info
         document.getElementById('wizard-location-label').textContent = wizardState.locationName;
-        document.getElementById('wizard-results-count').textContent = `${partners.length} Gutachter gefunden`;
+        document.getElementById('wizard-results-count').textContent = `${partners.length} Kfz-Gutachter gefunden`;
     }
 
     function renderPartnerCards() {
