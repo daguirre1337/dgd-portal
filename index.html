@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DGD Kundenportal - Schadenfall melden und Status pruefen. Deutscher Gutachter Dienst - Schnelle Hilfe deutschlandweit.">
+    <title>DGD Kundenportal - Deutscher Gutachter Dienst</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="css/portal.css">
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- Header / Navigation                                               -->
+    <!-- ================================================================= -->
+    <header class="dgd-header">
+        <div class="dgd-header__inner">
+            <a href="#start" class="dgd-header__logo"><img src="img/dgd-logo.png" alt="DGD - Deutscher Gutachter Dienst" class="dgd-header__logo-img"></a>
+            <button class="dgd-header__menu-toggle" aria-label="Menue oeffnen" aria-expanded="false">
+                &#9776;
+            </button>
+            <nav>
+                <ul class="dgd-header__nav">
+                    <li><a href="#start" class="active">Startseite</a></li>
+                    <li><a href="#gutachter">Gutachter finden</a></li>
+                    <li><a href="#melden">Schadenfall melden</a></li>
+                    <li><a href="#status">Status pruefen</a></li>
+                    <li><a href="#partner">Partner werden</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ================================================================= -->
+    <!-- View: Landing Page                                                -->
+    <!-- ================================================================= -->
+    <div id="view-landing" class="dgd-view dgd-view--active">
+
+        <!-- Hero -->
+        <section class="dgd-hero">
+            <div class="dgd-container">
+                <h1>Gerechtigkeit ist Nahe.</h1>
+                <p>
+                    Deutschlandweit im Kampf fuer Betroffene von Kfz-Schaeden.
+                    Kostenfreie juristische Erstberatung, 500 Partner, 24/7 erreichbar.
+                </p>
+                <div>
+                    <a href="#gutachter" class="dgd-btn dgd-btn--primary dgd-btn--lg">
+                        Gutachter finden
+                    </a>
+                    <a href="#status" class="dgd-btn dgd-btn--outline dgd-btn--lg" style="margin-left: 1rem;">
+                        Status pruefen
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3-Schritte Prozess -->
+        <section class="dgd-steps">
+            <div class="dgd-container">
+                <h2 class="dgd-steps__title">So einfach geht's</h2>
+                <div class="dgd-steps__grid">
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">1</div>
+                        <h3>Schaden melden</h3>
+                        <p>
+                            Beschreiben Sie Ihren Schadenfall online in wenigen Minuten.
+                            Wir benoetigen nur die wichtigsten Angaben.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">2</div>
+                        <h3>Gutachter kommt</h3>
+                        <p>
+                            Ein zertifizierter Kfz-Sachverstaendiger kommt zu Ihnen
+                            und erstellt ein unabhaengiges Gutachten.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">3</div>
+                        <h3>Regulierung</h3>
+                        <p>
+                            Wir unterstuetzen Sie bei der Schadensregulierung
+                            mit der gegnerischen Versicherung.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Info / Vorteile -->
+        <section class="dgd-info">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center dgd-mb-lg">Warum DGD?</h2>
+                <div class="dgd-info__grid">
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#9989;</div>
+                        <h4>Kostenfreie Erstberatung</h4>
+                        <p class="dgd-text-muted">
+                            Unabhaengige Gutachten und kostenlose juristische
+                            Beratung fuer Ihre Ansprueche.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128101;</div>
+                        <h4>500 Partner</h4>
+                        <p class="dgd-text-muted">
+                            Deutschlandweites Netzwerk qualifizierter
+                            Kfz-Sachverstaendiger in Ihrer Naehe.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128663;</div>
+                        <h4>Keine Fahrtkosten</h4>
+                        <p class="dgd-text-muted">
+                            Wir kommen zu Ihnen - ohne zusaetzliche Fahrtkosten,
+                            24/7 erreichbar.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Gutachter finden (Wizard Step 1)                            -->
+    <!-- ================================================================= -->
+    <div id="view-wizard" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-wizard">
+                <div class="dgd-wizard__steps">
+                    <div class="dgd-wizard__step dgd-wizard__step--active">
+                        <span class="dgd-wizard__step-num">1</span>
+                        <span>Standort</span>
+                    </div>
+                    <div class="dgd-wizard__step">
+                        <span class="dgd-wizard__step-num">2</span>
+                        <span>Gutachter</span>
+                    </div>
+                    <div class="dgd-wizard__step">
+                        <span class="dgd-wizard__step-num">3</span>
+                        <span>Melden</span>
+                    </div>
+                </div>
+
+                <h2 class="dgd-text-center">Gutachter in Ihrer Naehe finden</h2>
+                <p class="dgd-text-muted dgd-text-center dgd-mb-lg">
+                    Geben Sie Ihre Postleitzahl oder Ihren Ort ein, um qualifizierte
+                    Gutachter in Ihrer Naehe zu finden.
+                </p>
+
+                <div class="dgd-location-bar">
+                    <div class="dgd-location-bar__input-wrap">
+                        <input type="text" id="wizard-location" class="dgd-form__input"
+                               placeholder="PLZ oder Ort eingeben (z.B. 10115 oder Berlin)">
+                        <button type="button" id="wizard-gps-btn" class="dgd-location-bar__gps"
+                                title="Meinen Standort verwenden">
+                            &#128205;
+                        </button>
+                    </div>
+                    <button type="button" id="wizard-search-btn" class="dgd-btn dgd-btn--primary">
+                        Suchen
+                    </button>
+                </div>
+
+                <div class="dgd-pill-filter dgd-mt-lg">
+                    <button class="dgd-pill dgd-pill--active" data-specialty="kfz">Kfz</button>
+                    <button class="dgd-pill dgd-pill--disabled" data-specialty="gebaeude">Gebaeude</button>
+                    <button class="dgd-pill dgd-pill--disabled" data-specialty="hausrat">Hausrat</button>
+                </div>
+
+                <div id="wizard-location-error" class="dgd-alert dgd-alert--error dgd-hidden dgd-mt-lg">
+                    Standort konnte nicht gefunden werden. Bitte versuchen Sie eine andere Eingabe.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Gutachter Ergebnisse (Wizard Step 2)                        -->
+    <!-- ================================================================= -->
+    <div id="view-wizard-results" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-wizard">
+                <div class="dgd-wizard__steps">
+                    <div class="dgd-wizard__step dgd-wizard__step--done">
+                        <span class="dgd-wizard__step-num">&#10003;</span>
+                        <span>Standort</span>
+                    </div>
+                    <div class="dgd-wizard__step dgd-wizard__step--active">
+                        <span class="dgd-wizard__step-num">2</span>
+                        <span>Gutachter</span>
+                    </div>
+                    <div class="dgd-wizard__step">
+                        <span class="dgd-wizard__step-num">3</span>
+                        <span>Melden</span>
+                    </div>
+                </div>
+
+                <div class="dgd-results-header">
+                    <button id="wizard-back-btn" class="dgd-btn dgd-btn--outline-dark dgd-btn--sm">
+                        &larr; Zurueck
+                    </button>
+                    <div id="wizard-results-info" class="dgd-results-header__info">
+                        <span id="wizard-location-label"></span>
+                        <span id="wizard-results-count"></span>
+                    </div>
+                </div>
+
+                <div id="wizard-map" class="dgd-map"></div>
+
+                <div id="wizard-no-results" class="dgd-alert dgd-alert--info dgd-hidden dgd-mt-lg">
+                    Keine Gutachter in dieser Region gefunden. Versuchen Sie einen groesseren Suchradius.
+                </div>
+
+                <div id="wizard-partner-grid" class="dgd-partner-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Schadenfall melden                                          -->
+    <!-- ================================================================= -->
+    <div id="view-report-form" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-page-title">
+                <h2>Schadenfall melden</h2>
+            </div>
+
+            <p class="dgd-text-muted dgd-mb-lg">
+                Bitte fuellen Sie das folgende Formular aus. Alle mit * markierten
+                Felder sind Pflichtfelder. Wir melden uns schnellstmoeglich bei Ihnen.
+            </p>
+
+            <div id="selected-partner-badge" class="dgd-partner-badge dgd-hidden">
+                <span class="dgd-partner-badge__icon">&#128100;</span>
+                <div class="dgd-partner-badge__info">
+                    <strong id="partner-badge-name"></strong>
+                    <span id="partner-badge-detail"></span>
+                </div>
+                <button type="button" id="partner-badge-remove" class="dgd-partner-badge__remove">&times;</button>
+            </div>
+
+            <form id="report-form" class="dgd-form" novalidate>
+
+                <div class="dgd-form__row">
+                    <div class="dgd-form__group">
+                        <label class="dgd-form__label dgd-form__label--required" for="field-name">
+                            Vollstaendiger Name
+                        </label>
+                        <input type="text" id="field-name" class="dgd-form__input"
+                               placeholder="Max Mustermann" required>
+                        <div class="dgd-form__error">Bitte geben Sie Ihren Namen ein.</div>
+                    </div>
+                    <div class="dgd-form__group">
+                        <label class="dgd-form__label dgd-form__label--required" for="field-email">
+                            E-Mail-Adresse
+                        </label>
+                        <input type="email" id="field-email" class="dgd-form__input"
+                               placeholder="max@beispiel.de" required>
+                        <div class="dgd-form__error">Bitte geben Sie eine gueltige E-Mail-Adresse ein.</div>
+                    </div>
+                </div>
+
+                <div class="dgd-form__row">
+                    <div class="dgd-form__group">
+                        <label class="dgd-form__label dgd-form__label--required" for="field-phone">
+                            Telefonnummer
+                        </label>
+                        <input type="tel" id="field-phone" class="dgd-form__input"
+                               placeholder="+49 170 1234567" required>
+                        <div class="dgd-form__error">Bitte geben Sie Ihre Telefonnummer ein.</div>
+                    </div>
+                    <div class="dgd-form__group">
+                        <label class="dgd-form__label dgd-form__label--required" for="field-damage-type">
+                            Schadensart
+                        </label>
+                        <select id="field-damage-type" class="dgd-form__select" required>
+                            <option value="kfz_haftpflicht" selected>Kfz-Haftpflichtschaden</option>
+                            <option value="kfz_kasko">Kfz-Kaskoschaden</option>
+                            <option value="gebaeude" disabled>Gebaeudesachschaden (demnächst verfügbar)</option>
+                            <option value="hausrat" disabled>Hausratschaden (demnächst verfügbar)</option>
+                            <option value="sonstige" disabled>Sonstiger Schaden (demnächst verfügbar)</option>
+                        </select>
+                        <div class="dgd-form__error">Bitte waehlen Sie eine Schadensart.</div>
+                    </div>
+                </div>
+
+                <div class="dgd-form__group">
+                    <label class="dgd-form__label dgd-form__label--required" for="field-location">
+                        Ort des Schadens
+                    </label>
+                    <input type="text" id="field-location" class="dgd-form__input"
+                           placeholder="z.B. Berlin, Hauptstrasse 12" required>
+                    <div class="dgd-form__error">Bitte geben Sie den Ort des Schadens ein.</div>
+                </div>
+
+                <div class="dgd-form__group">
+                    <label class="dgd-form__label dgd-form__label--required" for="field-description">
+                        Beschreibung des Schadens
+                    </label>
+                    <textarea id="field-description" class="dgd-form__textarea"
+                              placeholder="Bitte beschreiben Sie den Schadenfall so genau wie moeglich..."
+                              required></textarea>
+                    <div class="dgd-form__error">Bitte beschreiben Sie den Schaden.</div>
+                </div>
+
+                <div class="dgd-text-center dgd-mt-lg">
+                    <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg">
+                        Schadenfall absenden
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Status pruefen                                              -->
+    <!-- ================================================================= -->
+    <div id="view-status-check" class="dgd-view">
+        <div class="dgd-container">
+            <section class="dgd-status-check">
+                <h2>Status Ihres Schadenfalls</h2>
+                <p class="dgd-text-muted">
+                    Geben Sie Ihre Fallnummer ein, um den aktuellen Stand Ihres
+                    Schadenfalls abzurufen.
+                </p>
+
+                <form id="status-form" class="dgd-status-check__form">
+                    <input type="text" id="field-case-id" class="dgd-form__input"
+                           placeholder="Fallnummer eingeben (z.B. DGD-20260305-ABC1)" required>
+                    <button type="submit" class="dgd-btn dgd-btn--secondary">
+                        Status abrufen
+                    </button>
+                </form>
+
+                <div id="status-result"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Partner werden (Warteliste)                                 -->
+    <!-- ================================================================= -->
+    <div id="view-partner" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-section">
+                <h2>Partner werden beim Deutschen Gutachter Dienst</h2>
+                <p class="dgd-text-muted">
+                    Sie sind Sachverstaendiger und moechten Teil unseres Netzwerks werden?
+                    Registrieren Sie sich auf unserer Warteliste - wir pruefen Ihre Qualifikationen
+                    und melden uns bei Ihnen. Aktuell suchen wir vor allem Kfz-Gutachter,
+                    aber auch andere Fachrichtungen sind willkommen.
+                </p>
+
+                <form id="partner-form" class="dgd-form dgd-mt-lg">
+                    <!-- Persoenliche Daten -->
+                    <h3>Persoenliche Daten</h3>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>Vollstaendiger Name *</label>
+                            <input type="text" id="partner-name" class="dgd-form__input" required placeholder="Max Mustermann">
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Unternehmen</label>
+                            <input type="text" id="partner-company" class="dgd-form__input" placeholder="Mustermann Gutachten GmbH">
+                        </div>
+                    </div>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>E-Mail-Adresse *</label>
+                            <input type="email" id="partner-email" class="dgd-form__input" required placeholder="max@beispiel.de">
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Telefonnummer *</label>
+                            <input type="tel" id="partner-phone" class="dgd-form__input" required placeholder="+49 170 1234567">
+                        </div>
+                    </div>
+
+                    <!-- Fachgebiet -->
+                    <h3 class="dgd-mt-lg">Fachgebiet</h3>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>Spezialisierung *</label>
+                            <select id="partner-specialty" class="dgd-form__input" required>
+                                <option value="">-- Bitte waehlen --</option>
+                                <option value="kfz">Kfz-Sachverstaendiger</option>
+                                <option value="gebaeude">Gebaeude-Sachverstaendiger</option>
+                                <option value="hausrat">Hausrat-Sachverstaendiger</option>
+                                <option value="allgemein">Allgemeiner Gutachter</option>
+                                <option value="sonstiges">Sonstiges</option>
+                            </select>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Berufserfahrung (Jahre)</label>
+                            <input type="number" id="partner-experience" class="dgd-form__input" min="0" max="50" placeholder="z.B. 10">
+                        </div>
+                    </div>
+                    <div class="dgd-form__group" id="partner-other-wrap" style="display:none">
+                        <label>Sonstiges Fachgebiet</label>
+                        <input type="text" id="partner-other-specialty" class="dgd-form__input" placeholder="Beschreiben Sie Ihr Fachgebiet">
+                    </div>
+                    <div class="dgd-form__group">
+                        <label>Zertifizierungen / Qualifikationen</label>
+                        <input type="text" id="partner-certifications" class="dgd-form__input" placeholder="z.B. DEKRA, TUeV, IHK, BDSF">
+                    </div>
+
+                    <!-- Standort -->
+                    <h3 class="dgd-mt-lg">Standort</h3>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>Postleitzahl *</label>
+                            <input type="text" id="partner-plz" class="dgd-form__input" required placeholder="z.B. 10115" pattern="[0-9]{5}">
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Stadt *</label>
+                            <input type="text" id="partner-city" class="dgd-form__input" required placeholder="z.B. Berlin">
+                        </div>
+                    </div>
+
+                    <!-- Nachricht -->
+                    <div class="dgd-form__group">
+                        <label>Nachricht (optional)</label>
+                        <textarea id="partner-message" class="dgd-form__input dgd-form__textarea" rows="4"
+                            placeholder="Erzaehlen Sie uns etwas ueber sich und warum Sie Partner werden moechten..."></textarea>
+                    </div>
+
+                    <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg dgd-mt-lg">
+                        Auf die Warteliste setzen
+                    </button>
+                </form>
+
+                <div id="partner-success" class="dgd-alert dgd-alert--success dgd-hidden dgd-mt-lg">
+                    <strong>Vielen Dank fuer Ihre Registrierung!</strong><br>
+                    Wir pruefen Ihre Anfrage und melden uns innerhalb von 48 Stunden bei Ihnen.
+                </div>
+                <div id="partner-error" class="dgd-alert dgd-alert--error dgd-hidden dgd-mt-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- Footer                                                            -->
+    <!-- ================================================================= -->
+    <footer class="dgd-footer">
+        <div class="dgd-footer__inner">
+            <div class="dgd-footer__brand">
+                <h3>Deutscher Gutachter Dienst</h3>
+                <p>
+                    Deutschlandweit im Kampf fuer Betroffene von Kfz-Schaeden.
+                    Unabhaengige Gutachten, kostenlose juristische Beratung, 500 Partner.
+                </p>
+            </div>
+            <div class="dgd-footer__links">
+                <h4>Kontakt</h4>
+                <ul>
+                    <li>E-Mail: info@dgd.digital</li>
+                    <li>Tel: +49 XXX XXXXXXX</li>
+                    <li>Web: dgd.digital</li>
+                </ul>
+            </div>
+            <div class="dgd-footer__links">
+                <h4>Rechtliches</h4>
+                <ul>
+                    <li><a href="#">Impressum</a></li>
+                    <li><a href="#">Datenschutz</a></li>
+                    <li><a href="#">AGB</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="dgd-footer__bottom">
+            <p>&copy; 2026 Deutscher Gutachter Dienst. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="lib/leaflet/leaflet.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>
