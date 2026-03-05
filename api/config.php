@@ -1,7 +1,7 @@
 <?php
 /**
  * DGD Portal - Database Configuration & Helpers
- * Version: 1.2.0 (Webhook Deploy Test)
+ * Version: 2.0.0 (Plesk Auto-Deploy)
  *
  * SQLite PDO connection with WAL mode.
  * JSON response helpers and UUID generation.
