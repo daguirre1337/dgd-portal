@@ -52,7 +52,7 @@ function get_db(): PDO
 }
 
 // ---------- JSON responses ----------
-function json_response(mixed $data, int $status = 200): void
+function json_response($data, int $status = 200): void
 {
     http_response_code($status);
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);

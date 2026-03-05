@@ -217,7 +217,7 @@ function handle_partners_nearby(): void
     }
 
     // Sort by distance
-    usort($results, fn($a, $b) => $a['distance_km'] <=> $b['distance_km']);
+    usort($results, function($a, $b) { return $a['distance_km'] <=> $b['distance_km']; });
 
     // Apply limit
     $results = array_slice($results, 0, $limit);
