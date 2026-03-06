@@ -90,10 +90,7 @@
                 <h2 class="dgd-landing-map__title">Unsere Gutachter in ganz Deutschland</h2>
                 <p class="dgd-landing-map__subtitle">Klicken Sie auf einen Standort oder nutzen Sie die Suche oben.</p>
                 <div class="dgd-landing-map__legend">
-                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#1a3a5c"></span> Kfz</span>
-                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#e67e22"></span> Gebäude</span>
-                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#8e44ad"></span> Hausrat</span>
-                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#27ae60"></span> Allgemein</span>
+                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#1a3a5c"></span> Kfz-Sachverständige</span>
                     <span id="landing-partner-count" class="dgd-landing-map__count"></span>
                 </div>
                 <div id="landing-map" class="dgd-map dgd-map--landing"></div>
@@ -169,99 +166,10 @@
     </div>
 
     <!-- ================================================================= -->
-    <!-- View: Gutachter finden (Wizard Step 1)                            -->
+    <!-- View: Gutachter finden (DGDWizard Fullscreen)                     -->
     <!-- ================================================================= -->
     <div id="view-wizard" class="dgd-view">
-        <div class="dgd-container">
-            <div class="dgd-wizard">
-                <div class="dgd-wizard__steps">
-                    <div class="dgd-wizard__step dgd-wizard__step--active">
-                        <span class="dgd-wizard__step-num">1</span>
-                        <span>Standort</span>
-                    </div>
-                    <div class="dgd-wizard__step">
-                        <span class="dgd-wizard__step-num">2</span>
-                        <span>Gutachter</span>
-                    </div>
-                    <div class="dgd-wizard__step">
-                        <span class="dgd-wizard__step-num">3</span>
-                        <span>Melden</span>
-                    </div>
-                </div>
-
-                <h2 class="dgd-text-center">Kfz-Gutachter in Ihrer Nähe finden</h2>
-                <p class="dgd-text-muted dgd-text-center dgd-mb-lg">
-                    Geben Sie Ihre Postleitzahl oder Ihren Ort ein, um zertifizierte
-                    Kfz-Sachverständige in Ihrer Nähe zu finden.
-                </p>
-
-                <div class="dgd-location-bar">
-                    <div class="dgd-location-bar__input-wrap">
-                        <input type="text" id="wizard-location" class="dgd-form__input"
-                               placeholder="PLZ oder Ort eingeben (z.B. 10115 oder Berlin)">
-                        <button type="button" id="wizard-gps-btn" class="dgd-location-bar__gps"
-                                title="Meinen Standort verwenden">
-                            &#128205;
-                        </button>
-                    </div>
-                    <button type="button" id="wizard-search-btn" class="dgd-btn dgd-btn--primary">
-                        Suchen
-                    </button>
-                </div>
-
-                <div class="dgd-pill-filter dgd-mt-lg">
-                    <button class="dgd-pill dgd-pill--active" data-specialty="kfz">Kfz</button>
-                    <button class="dgd-pill dgd-pill--disabled" data-specialty="gebaeude">Gebäude</button>
-                    <button class="dgd-pill dgd-pill--disabled" data-specialty="hausrat">Hausrat</button>
-                </div>
-
-                <div id="wizard-location-error" class="dgd-alert dgd-alert--error dgd-hidden dgd-mt-lg">
-                    Standort konnte nicht gefunden werden. Bitte versuchen Sie eine andere Eingabe.
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================================================================= -->
-    <!-- View: Gutachter Ergebnisse (Wizard Step 2)                        -->
-    <!-- ================================================================= -->
-    <div id="view-wizard-results" class="dgd-view">
-        <div class="dgd-container">
-            <div class="dgd-wizard">
-                <div class="dgd-wizard__steps">
-                    <div class="dgd-wizard__step dgd-wizard__step--done">
-                        <span class="dgd-wizard__step-num">&#10003;</span>
-                        <span>Standort</span>
-                    </div>
-                    <div class="dgd-wizard__step dgd-wizard__step--active">
-                        <span class="dgd-wizard__step-num">2</span>
-                        <span>Gutachter</span>
-                    </div>
-                    <div class="dgd-wizard__step">
-                        <span class="dgd-wizard__step-num">3</span>
-                        <span>Melden</span>
-                    </div>
-                </div>
-
-                <div class="dgd-results-header">
-                    <button id="wizard-back-btn" class="dgd-btn dgd-btn--outline-dark dgd-btn--sm">
-                        &larr; Zurück
-                    </button>
-                    <div id="wizard-results-info" class="dgd-results-header__info">
-                        <span id="wizard-location-label"></span>
-                        <span id="wizard-results-count"></span>
-                    </div>
-                </div>
-
-                <div id="wizard-map" class="dgd-map"></div>
-
-                <div id="wizard-no-results" class="dgd-alert dgd-alert--info dgd-hidden dgd-mt-lg">
-                    Keine Kfz-Gutachter in dieser Region gefunden. Versuchen Sie einen größeren Suchradius.
-                </div>
-
-                <div id="wizard-partner-grid" class="dgd-partner-grid"></div>
-            </div>
-        </div>
+        <div id="gutachter-wizard-mount"></div>
     </div>
 
     <!-- ================================================================= -->
@@ -269,15 +177,25 @@
     <!-- ================================================================= -->
     <div id="view-report-form" class="dgd-view">
         <div class="dgd-container">
-            <div class="dgd-page-title">
-                <h2>Schadenfall melden</h2>
+
+            <!-- Page Header -->
+            <div class="dgd-report-header">
+                <div class="dgd-report-header__icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                        <rect x="9" y="3" width="6" height="4" rx="1"/>
+                        <path d="M9 14l2 2 4-4"/>
+                    </svg>
+                </div>
+                <h2 class="dgd-report-header__title">Schadenfall melden</h2>
+                <p class="dgd-report-header__subtitle">
+                    Füllen Sie das Formular aus und wir kümmern uns um alles Weitere.
+                    Kostenlos für Geschädigte.
+                </p>
             </div>
 
-            <p class="dgd-text-muted dgd-mb-lg">
-                Bitte füllen Sie das folgende Formular aus. Alle mit * markierten
-                Felder sind Pflichtfelder. Wir melden uns schnellstmöglich bei Ihnen.
-            </p>
-
+            <!-- Partner Badge -->
             <div id="selected-partner-badge" class="dgd-partner-badge dgd-hidden">
                 <span class="dgd-partner-badge__icon">&#128100;</span>
                 <div class="dgd-partner-badge__info">
@@ -287,74 +205,129 @@
                 <button type="button" id="partner-badge-remove" class="dgd-partner-badge__remove">&times;</button>
             </div>
 
-            <form id="report-form" class="dgd-form" novalidate>
+            <form id="report-form" class="dgd-form dgd-report-form" novalidate>
 
-                <div class="dgd-form__row">
-                    <div class="dgd-form__group">
-                        <label class="dgd-form__label dgd-form__label--required" for="field-name">
-                            Vollständiger Name
-                        </label>
-                        <input type="text" id="field-name" class="dgd-form__input"
-                               placeholder="Max Mustermann" required>
-                        <div class="dgd-form__error">Bitte geben Sie Ihren Namen ein.</div>
-                    </div>
-                    <div class="dgd-form__group">
-                        <label class="dgd-form__label dgd-form__label--required" for="field-email">
-                            E-Mail-Adresse
-                        </label>
-                        <input type="email" id="field-email" class="dgd-form__input"
-                               placeholder="max@beispiel.de" required>
-                        <div class="dgd-form__error">Bitte geben Sie eine gültige E-Mail-Adresse ein.</div>
-                    </div>
-                </div>
+                <!-- Section 1: Kontaktdaten -->
+                <fieldset class="dgd-report-section">
+                    <legend class="dgd-report-section__legend">
+                        <span class="dgd-report-section__number">1</span>
+                        <span>Ihre Kontaktdaten</span>
+                    </legend>
 
-                <div class="dgd-form__row">
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-name">
+                                Vollständiger Name
+                            </label>
+                            <input type="text" id="field-name" class="dgd-form__input dgd-form__input--lg"
+                                   placeholder="Max Mustermann" required>
+                            <div class="dgd-form__error">Bitte geben Sie Ihren Namen ein.</div>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-email">
+                                E-Mail-Adresse
+                            </label>
+                            <input type="email" id="field-email" class="dgd-form__input dgd-form__input--lg"
+                                   placeholder="max@beispiel.de" required>
+                            <div class="dgd-form__error">Bitte geben Sie eine gültige E-Mail-Adresse ein.</div>
+                        </div>
+                    </div>
+
                     <div class="dgd-form__group">
                         <label class="dgd-form__label dgd-form__label--required" for="field-phone">
                             Telefonnummer
                         </label>
-                        <input type="tel" id="field-phone" class="dgd-form__input"
+                        <input type="tel" id="field-phone" class="dgd-form__input dgd-form__input--lg"
                                placeholder="+49 170 1234567" required>
                         <div class="dgd-form__error">Bitte geben Sie Ihre Telefonnummer ein.</div>
                     </div>
-                    <div class="dgd-form__group">
-                        <label class="dgd-form__label dgd-form__label--required" for="field-damage-type">
-                            Schadensart
-                        </label>
-                        <select id="field-damage-type" class="dgd-form__select" required>
-                            <option value="kfz_haftpflicht" selected>Kfz-Haftpflichtschaden</option>
-                            <option value="kfz_kasko">Kfz-Kaskoschaden</option>
-                            <option value="gebaeude" disabled>Gebäudesachschaden (demnächst verfügbar)</option>
-                            <option value="hausrat" disabled>Hausratschaden (demnächst verfügbar)</option>
-                            <option value="sonstige" disabled>Sonstiger Schaden (demnächst verfügbar)</option>
-                        </select>
-                        <div class="dgd-form__error">Bitte wählen Sie eine Schadensart.</div>
+                </fieldset>
+
+                <!-- Section 2: Schadendetails -->
+                <fieldset class="dgd-report-section">
+                    <legend class="dgd-report-section__legend">
+                        <span class="dgd-report-section__number">2</span>
+                        <span>Angaben zum Schaden</span>
+                    </legend>
+
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-damage-type">
+                                Schadensart
+                            </label>
+                            <select id="field-damage-type" class="dgd-form__select dgd-form__select--lg" required>
+                                <option value="kfz_haftpflicht" selected>Kfz-Haftpflichtschaden</option>
+                                <option value="kfz_kasko">Kfz-Kaskoschaden</option>
+                            </select>
+                            <div class="dgd-form__error">Bitte wählen Sie eine Schadensart.</div>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-location">
+                                Ort des Schadens
+                            </label>
+                            <input type="text" id="field-location" class="dgd-form__input dgd-form__input--lg"
+                                   placeholder="z.B. Berlin, Hauptstraße 12" required>
+                            <div class="dgd-form__error">Bitte geben Sie den Ort des Schadens ein.</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="dgd-form__group">
-                    <label class="dgd-form__label dgd-form__label--required" for="field-location">
-                        Ort des Schadens
-                    </label>
-                    <input type="text" id="field-location" class="dgd-form__input"
-                           placeholder="z.B. Berlin, Hauptstrasse 12" required>
-                    <div class="dgd-form__error">Bitte geben Sie den Ort des Schadens ein.</div>
-                </div>
+                    <div class="dgd-form__group">
+                        <label class="dgd-form__label dgd-form__label--required" for="field-description">
+                            Beschreibung des Schadens
+                        </label>
+                        <textarea id="field-description" class="dgd-form__textarea dgd-form__textarea--lg"
+                                  placeholder="Beschreiben Sie den Unfallhergang und die Schäden..."
+                                  required></textarea>
+                        <div class="dgd-form__hint" id="description-hint">Mindestens 20 Zeichen empfohlen</div>
+                        <div class="dgd-form__error">Bitte beschreiben Sie den Schaden.</div>
+                    </div>
+                </fieldset>
 
-                <div class="dgd-form__group">
-                    <label class="dgd-form__label dgd-form__label--required" for="field-description">
-                        Beschreibung des Schadens
-                    </label>
-                    <textarea id="field-description" class="dgd-form__textarea"
-                              placeholder="Bitte beschreiben Sie den Schadenfall so genau wie möglich..."
-                              required></textarea>
-                    <div class="dgd-form__error">Bitte beschreiben Sie den Schaden.</div>
-                </div>
+                <!-- Section 3: Fotos -->
+                <fieldset class="dgd-report-section">
+                    <legend class="dgd-report-section__legend">
+                        <span class="dgd-report-section__number">3</span>
+                        <span>Fotos hochladen</span>
+                        <span class="dgd-report-section__optional">(optional)</span>
+                    </legend>
 
-                <div class="dgd-text-center dgd-mt-lg">
-                    <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg">
+                    <div class="dgd-upload-zone" id="photo-upload-zone">
+                        <div class="dgd-upload-zone__icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="1.5"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <p class="dgd-upload-zone__text">
+                            Fotos hierher ziehen oder
+                            <button type="button" class="dgd-upload-zone__browse">Dateien auswählen</button>
+                        </p>
+                        <p class="dgd-upload-zone__hint">JPG, PNG oder PDF. Max. 10 MB pro Datei.</p>
+                        <input type="file" id="photo-upload-input" class="dgd-hidden"
+                               multiple accept="image/*,.pdf">
+                        <div class="dgd-upload-zone__preview" id="photo-preview"></div>
+                    </div>
+                </fieldset>
+
+                <!-- Submit -->
+                <div class="dgd-report-submit">
+                    <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg dgd-btn--full">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
                         Schadenfall absenden
                     </button>
+                    <div class="dgd-report-submit__trust">
+                        <span>&#128274; SSL-verschlüsselt</span>
+                        <span>&#128337; Antwort innerhalb 24h</span>
+                        <span>&#9989; Kostenlos für Geschädigte</span>
+                    </div>
                 </div>
 
             </form>
@@ -431,10 +404,6 @@
                             <select id="partner-specialty" class="dgd-form__input" required>
                                 <option value="">-- Bitte wählen --</option>
                                 <option value="kfz">Kfz-Sachverständiger</option>
-                                <option value="gebaeude">Gebäude-Sachverständiger</option>
-                                <option value="hausrat">Hausrat-Sachverständiger</option>
-                                <option value="allgemein">Allgemeiner Gutachter</option>
-                                <option value="sonstiges">Sonstiges</option>
                             </select>
                         </div>
                         <div class="dgd-form__group">

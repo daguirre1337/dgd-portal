@@ -288,7 +288,7 @@ class DGDWizard {
         }
 
         // Encouragement
-        if (step.encouragement && index > 0) {
+        if (step.encouragement) {
             this.setEncouragement(step.encouragement);
         } else {
             this._encouragementEl.textContent = '';
@@ -304,9 +304,10 @@ class DGDWizard {
         // Back button visibility
         this._btnBack.style.visibility = (this._allowBack && index > 0) ? 'visible' : 'hidden';
 
-        // Next button label
+        // Next button label + visibility
         const isLast = index >= this._steps.length - 1;
         this._btnNext.textContent = step.nextLabel || (isLast ? 'Abschliessen' : 'Weiter');
+        this._btnNext.style.display = step.hideNext ? 'none' : '';
         if (step.backLabel && this._btnBack) {
             this._btnBack.innerHTML = step.backLabel;
         } else {
@@ -650,6 +651,15 @@ class DGDWizard {
         this._btnNext.classList.remove('dgd-wizard-actions__next--shake');
         void this._btnNext.offsetWidth;
         this._btnNext.classList.add('dgd-wizard-actions__next--shake');
+    }
+
+    /**
+     * Trigger confetti celebration animation externally.
+     */
+    triggerConfetti() {
+        if (!this._contentInner) return;
+        const container = this._contentInner.querySelector('.dgd-wizard-step__content') || this._contentInner;
+        this._launchConfetti(container);
     }
 
     /**
