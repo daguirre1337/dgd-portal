@@ -17,7 +17,7 @@
  */
 
 if (php_sapi_name() !== 'cli') {
-    die('Nur CLI-Ausfuehrung erlaubt.');
+    die('Nur CLI-Ausführung erlaubt.');
 }
 
 require_once __DIR__ . '/config.php';
@@ -32,7 +32,7 @@ define('GEOCODE_DELAY_US', 1100000); // 1.1 Sekunden in Mikrosekunden
 
 /**
  * Spalten-Mapping: Quellname (lowercase) => Zielname in dgd_partners.
- * Unterstuetzt gaengige Firebase-, SQL- und deutsche Varianten.
+ * Unterstützt gängige Firebase-, SQL- und deutsche Varianten.
  */
 function get_field_mappings()
 {
@@ -228,7 +228,7 @@ function map_row(array $row)
 }
 
 /**
- * Geocoding ueber Nominatim (OpenStreetMap).
+ * Geocoding über Nominatim (OpenStreetMap).
  * Rate-Limit: max 1 Request/Sekunde.
  *
  * @param string $plz
@@ -287,7 +287,7 @@ function geocode($plz, $city, $address = '')
 }
 
 /**
- * Prueft ob ein Partner bereits in der DB existiert.
+ * Prüft ob ein Partner bereits in der DB existiert.
  *
  * @param PDO    $db
  * @param string $email
@@ -297,7 +297,7 @@ function geocode($plz, $city, $address = '')
  */
 function find_existing_partner(PDO $db, $email, $name, $plz)
 {
-    // Pruefen nach Email (primaer)
+    // Prüfen nach Email (primär)
     if (!empty($email)) {
         $stmt = $db->prepare('SELECT * FROM dgd_partners WHERE LOWER(email) = LOWER(:email) LIMIT 1');
         $stmt->execute(array(':email' => $email));
@@ -307,7 +307,7 @@ function find_existing_partner(PDO $db, $email, $name, $plz)
         }
     }
 
-    // Pruefen nach Name + PLZ (sekundaer)
+    // Prüfen nach Name + PLZ (sekundär)
     if (!empty($name) && !empty($plz)) {
         $stmt = $db->prepare('SELECT * FROM dgd_partners WHERE LOWER(name) = LOWER(:name) AND plz = :plz LIMIT 1');
         $stmt->execute(array(':name' => $name, ':plz' => $plz));
@@ -321,7 +321,7 @@ function find_existing_partner(PDO $db, $email, $name, $plz)
 }
 
 /**
- * Fuegt einen Partner in die DB ein.
+ * Fügt einen Partner in die DB ein.
  *
  * @param PDO   $db
  * @param array $data  Gemappte Partner-Daten
@@ -444,7 +444,7 @@ function read_csv($filepath)
 
     $handle = fopen($filepath, 'r');
     if ($handle === false) {
-        cli_log("Kann Datei nicht oeffnen: $filepath", 'error');
+        cli_log("Kann Datei nicht öffnen: $filepath", 'error');
         exit(1);
     }
 
@@ -462,7 +462,7 @@ function read_csv($filepath)
         exit(1);
     }
     rewind($handle);
-    // BOM erneut ueberspringen
+    // BOM erneut überspringen
     $bom = fread($handle, 3);
     if ($bom !== "\xEF\xBB\xBF") {
         rewind($handle);
@@ -502,12 +502,12 @@ function read_csv($filepath)
     while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
         $line_num++;
 
-        // Leere Zeilen ueberspringen
+        // Leere Zeilen überspringen
         if (count($row) === 1 && empty(trim($row[0]))) {
             continue;
         }
 
-        // Spaltenanzahl anpassen (mehr Daten als Header -> abschneiden, weniger -> auffuellen)
+        // Spaltenanzahl anpassen (mehr Daten als Header -> abschneiden, weniger -> auffüllen)
         if (count($row) < count($header)) {
             $row = array_pad($row, count($header), '');
         } elseif (count($row) > count($header)) {
@@ -516,7 +516,7 @@ function read_csv($filepath)
 
         $assoc = array_combine($header, $row);
         if ($assoc === false) {
-            cli_log("Zeile $line_num: Spaltenanzahl stimmt nicht ueberein, uebersprungen.", 'warn');
+            cli_log("Zeile $line_num: Spaltenanzahl stimmt nicht überein, übersprungen.", 'warn');
             continue;
         }
 
@@ -530,7 +530,7 @@ function read_csv($filepath)
 
 /**
  * Liest Partner-Daten aus einer JSON-Datei.
- * Unterstuetzt flaches Array und Firebase-Objekt-Format.
+ * Unterstützt flaches Array und Firebase-Objekt-Format.
  *
  * @param string $filepath
  * @return array  Liste von assoziativen Arrays
@@ -566,7 +566,7 @@ function read_json($filepath)
                 $rows[] = $item;
             }
         }
-        cli_log("JSON-Format: Array mit " . count($rows) . " Eintraegen.");
+        cli_log("JSON-Format: Array mit " . count($rows) . " Einträgen.");
         return $rows;
     }
 
@@ -584,7 +584,7 @@ function read_json($filepath)
                 $rows[] = $item;
             }
         }
-        cli_log("JSON-Format: Firebase-Objekt mit " . count($rows) . " Eintraegen.");
+        cli_log("JSON-Format: Firebase-Objekt mit " . count($rows) . " Einträgen.");
         return $rows;
     }
 
@@ -610,7 +610,7 @@ function read_sql($filepath)
     $line_num = 0;
 
     // INSERT INTO ... (...spalten...) VALUES (...werte...) finden
-    // Unterstuetzt sowohl einzelne als auch Multi-Row INSERTs
+    // Unterstützt sowohl einzelne als auch Multi-Row INSERTs
     $pattern = '/INSERT\s+INTO\s+[`"\']?\w+[`"\']?\s*\(([^)]+)\)\s*VALUES\s*/i';
 
     if (!preg_match_all($pattern, $content, $matches, PREG_OFFSET_CAPTURE)) {
@@ -627,7 +627,7 @@ function read_sql($filepath)
             return trim($c, " \t\n\r\0\x0B`\"'");
         }, explode(',', $columns_str));
 
-        // VALUES-Bereich finden: alles bis zum naechsten Semikolon
+        // VALUES-Bereich finden: alles bis zum nächsten Semikolon
         $remaining = substr($content, $insert_end);
         $semi_pos = strpos($remaining, ';');
         if ($semi_pos !== false) {
@@ -646,7 +646,7 @@ function read_sql($filepath)
             $values = parse_sql_values($values_str);
 
             if (count($values) !== count($columns)) {
-                cli_log("SQL Zeile $line_num: Spaltenanzahl (" . count($columns) . ") != Werteanzahl (" . count($values) . "), uebersprungen.", 'warn');
+                cli_log("SQL Zeile $line_num: Spaltenanzahl (" . count($columns) . ") != Werteanzahl (" . count($values) . "), übersprungen.", 'warn');
                 continue;
             }
 
@@ -656,13 +656,13 @@ function read_sql($filepath)
         }
     }
 
-    cli_log("SQL-Dump: " . count($rows) . " Datensaetze aus INSERT-Statements extrahiert.");
+    cli_log("SQL-Dump: " . count($rows) . " Datensätze aus INSERT-Statements extrahiert.");
     return $rows;
 }
 
 /**
  * Parst einen SQL VALUES-String in einzelne Werte.
- * Beruecksichtigt Strings mit Kommas und Escape-Sequenzen.
+ * Berücksichtigt Strings mit Kommas und Escape-Sequenzen.
  *
  * @param string $str
  * @return array
@@ -693,10 +693,10 @@ function parse_sql_values($str)
 
         if ($in_string) {
             if ($char === $string_char) {
-                // Doppeltes Quote pruefen (SQL-Escape)
+                // Doppeltes Quote prüfen (SQL-Escape)
                 if ($i + 1 < $len && $str[$i + 1] === $string_char) {
                     $current .= $char;
-                    $i++; // Ueberspringe das naechste Quote
+                    $i++; // Überspringe das nächste Quote
                 } else {
                     $in_string = false;
                 }
@@ -721,7 +721,7 @@ function parse_sql_values($str)
         $current .= $char;
     }
 
-    // Letzten Wert hinzufuegen
+    // Letzten Wert hinzufügen
     $last = trim($current);
     if ($last !== '') {
         $values[] = clean_sql_value($last);
@@ -748,7 +748,7 @@ function clean_sql_value($val)
         $last = $val[strlen($val) - 1];
         if (($first === "'" && $last === "'") || ($first === '"' && $last === '"')) {
             $val = substr($val, 1, -1);
-            // Escaped Quotes zurueckwandeln
+            // Escaped Quotes zurückwandeln
             $val = str_replace("''", "'", $val);
             $val = str_replace('\\"', '"', $val);
             $val = str_replace("\\'", "'", $val);
@@ -764,11 +764,11 @@ function clean_sql_value($val)
 // ============================================================
 
 /**
- * Verarbeitet eine Liste von Roh-Datensaetzen und importiert sie.
+ * Verarbeitet eine Liste von Roh-Datensätzen und importiert sie.
  *
- * @param array $raw_rows   Rohe Datensaetze
- * @param bool  $do_update  Bei Duplikaten aktualisieren statt ueberspringen
- * @param bool  $dry_run    Nur simulieren, keine DB-Aenderungen
+ * @param array $raw_rows   Rohe Datensätze
+ * @param bool  $do_update  Bei Duplikaten aktualisieren statt überspringen
+ * @param bool  $dry_run    Nur simulieren, keine DB-Änderungen
  * @return array  Statistiken: imported, updated, skipped, errors, geocoded
  */
 function process_import(array $raw_rows, $do_update, $dry_run)
@@ -783,15 +783,15 @@ function process_import(array $raw_rows, $do_update, $dry_run)
     );
 
     if (count($raw_rows) === 0) {
-        cli_log("Keine Datensaetze zum Importieren gefunden.", 'warn');
+        cli_log("Keine Datensätze zum Importieren gefunden.", 'warn');
         return $stats;
     }
 
-    // DB initialisieren (Tabellen anlegen falls noetig)
+    // DB initialisieren (Tabellen anlegen falls nötig)
     init_database();
     $db = get_db();
 
-    // Mapping-Vorschau fuer den ersten Datensatz
+    // Mapping-Vorschau für den ersten Datensatz
     $first_mapped = map_row($raw_rows[0]);
     $unmapped = array();
     foreach ($raw_rows[0] as $key => $val) {
@@ -805,14 +805,14 @@ function process_import(array $raw_rows, $do_update, $dry_run)
 
     if (!empty($unmapped)) {
         cli_log("Nicht zugeordnete Quell-Spalten: " . implode(', ', $unmapped), 'warn');
-        cli_log("Diese Spalten werden ignoriert. Pruefen Sie die Feldnamen.");
+        cli_log("Diese Spalten werden ignoriert. Prüfen Sie die Feldnamen.");
     }
 
     $mapped_fields = array_keys($first_mapped);
     cli_log("Zugeordnete Ziel-Felder: " . implode(', ', $mapped_fields));
 
     if ($dry_run) {
-        cli_log("=== DRY-RUN MODUS - Keine Aenderungen an der Datenbank ===", 'warn');
+        cli_log("=== DRY-RUN MODUS - Keine Änderungen an der Datenbank ===", 'warn');
     }
 
     // Verarbeitung
@@ -847,7 +847,7 @@ function process_import(array $raw_rows, $do_update, $dry_run)
                 $addr_val = isset($data['address']) ? $data['address'] : '';
 
                 if (!empty($plz_val) || !empty($city_val)) {
-                    cli_log("Zeile $line_num: Geocoding fuer PLZ=$plz_val, Stadt=$city_val ...");
+                    cli_log("Zeile $line_num: Geocoding für PLZ=$plz_val, Stadt=$city_val ...");
 
                     if (!$dry_run) {
                         $coords = geocode($plz_val, $city_val, $addr_val);
@@ -864,12 +864,12 @@ function process_import(array $raw_rows, $do_update, $dry_run)
                         // Rate-Limit einhalten
                         usleep(GEOCODE_DELAY_US);
                     } else {
-                        cli_log("  -> [DRY-RUN] Geocoding wuerde ausgefuehrt werden.");
+                        cli_log("  -> [DRY-RUN] Geocoding würde ausgeführt werden.");
                         $data['lat'] = 0.0;
                         $data['lng'] = 0.0;
                     }
                 } else {
-                    cli_log("Zeile $line_num: Keine Koordinaten und keine PLZ/Stadt fuer Geocoding.", 'warn');
+                    cli_log("Zeile $line_num: Keine Koordinaten und keine PLZ/Stadt für Geocoding.", 'warn');
                     $data['lat'] = 0.0;
                     $data['lng'] = 0.0;
                 }
@@ -894,7 +894,7 @@ function process_import(array $raw_rows, $do_update, $dry_run)
                     $match_reason = (!empty($email_val) && strtolower($existing['email']) === strtolower($email_val))
                         ? "Email=$email_val"
                         : "Name+PLZ=$name_val/$plz_val";
-                    cli_log("Zeile $line_num: Duplikat uebersprungen ($match_reason). Nutze --update zum Aktualisieren.", 'warn');
+                    cli_log("Zeile $line_num: Duplikat übersprungen ($match_reason). Nutze --update zum Aktualisieren.", 'warn');
                 }
             } else {
                 if (!$dry_run) {
@@ -913,7 +913,7 @@ function process_import(array $raw_rows, $do_update, $dry_run)
             $db->rollBack();
         }
         cli_log("Datenbank-Fehler: " . $e->getMessage(), 'error');
-        cli_log("Alle Aenderungen wurden zurueckgerollt.", 'error');
+        cli_log("Alle Änderungen wurden zurückgerollt.", 'error');
         $stats['errors']++;
     }
 
@@ -937,13 +937,13 @@ function print_stats(array $stats, $dry_run)
         cli_log("=== ERGEBNIS ===");
     }
     cli_log("----------------------------------------");
-    cli_log("Gesamt Datensaetze:   " . $stats['total']);
+    cli_log("Gesamt Datensätze:   " . $stats['total']);
     cli_log("Importiert:           " . $stats['imported'], 'ok');
     if ($stats['updated'] > 0) {
         cli_log("Aktualisiert:         " . $stats['updated'], 'ok');
     }
     if ($stats['skipped'] > 0) {
-        cli_log("Uebersprungen (Dup.): " . $stats['skipped'], 'warn');
+        cli_log("Übersprungen (Dup.): " . $stats['skipped'], 'warn');
     }
     if ($stats['geocoded'] > 0) {
         cli_log("Geocodiert:           " . $stats['geocoded'], 'ok');
@@ -977,11 +977,11 @@ Verwendung:
   php import_partners.php --sql <datei>      Import aus SQL-Dump
 
 Optionen:
-  --update      Bei Duplikaten aktualisieren statt ueberspringen
-  --dry-run     Nur simulieren, keine DB-Aenderungen
+  --update      Bei Duplikaten aktualisieren statt überspringen
+  --dry-run     Nur simulieren, keine DB-Änderungen
   --help, -h    Diese Hilfe anzeigen
 
-Unterstuetzte Formate:
+Unterstützte Formate:
   CSV   Automatische Erkennung von Trennzeichen (, ; TAB)
         Erste Zeile = Header mit Spaltennamen
   JSON  Array von Objekten oder Firebase-Objekt
@@ -1096,11 +1096,11 @@ if ($sql_mode) {
         cli_log("Modus: JSON-Import");
         $raw_rows = read_json($filepath);
     } else {
-        // Inhalt pruefen: JSON beginnt mit { oder [
+        // Inhalt prüfen: JSON beginnt mit { oder [
         $first_char = '';
         $fh = fopen($filepath, 'r');
         if ($fh !== false) {
-            // BOM ueberspringen
+            // BOM überspringen
             $start = fread($fh, 3);
             if ($start === "\xEF\xBB\xBF") {
                 $first_char = trim(fread($fh, 1));
@@ -1123,10 +1123,10 @@ if ($sql_mode) {
     }
 }
 
-cli_log("Datensaetze eingelesen: " . count($raw_rows));
+cli_log("Datensätze eingelesen: " . count($raw_rows));
 
 if (count($raw_rows) === 0) {
-    cli_log("Keine Datensaetze gefunden. Import abgebrochen.", 'error');
+    cli_log("Keine Datensätze gefunden. Import abgebrochen.", 'error');
     exit(1);
 }
 
@@ -1140,7 +1140,7 @@ if ($dry_run) {
 
 fwrite(STDERR, "\n");
 
-// Import ausfuehren
+// Import ausführen
 $stats = process_import($raw_rows, $do_update, $dry_run);
 
 // Statistiken ausgeben

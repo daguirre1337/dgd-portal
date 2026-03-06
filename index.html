@@ -3,21 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Kfz-Gutachter in Ihrer Naehe finden - kostenlos und unabhaengig. Deutscher Gutachter Dienst: Unfallgutachten, Schadensregulierung, 500+ Partner deutschlandweit.">
-    <title>DGD - Ihr unabhaengiger Kfz-Gutachter | Deutscher Gutachter Dienst</title>
+    <meta name="description" content="Kfz-Gutachter in Ihrer Nähe finden - kostenlos und unabhängig. Deutscher Gutachter Dienst: Unfallgutachten, Schadensregulierung, 500+ Partner deutschlandweit.">
+    <title>DGD - Ihr unabhängiger Kfz-Gutachter | Deutscher Gutachter Dienst</title>
     <link rel="stylesheet" href="css/theme.css">
     <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
     <link rel="stylesheet" href="css/portal.css">
+    <link rel="stylesheet" href="css/wizard.css">
 </head>
 <body>
+
+    <!-- Banner: Im Aufbau -->
+    <div class="dgd-construction-banner" id="constructionBanner">
+        <p>
+            Diese Webseite befindet sich gerade im Aufbau. Bitte besuche
+            <a href="https://deutscher-gutachter-dienst.de" target="_blank" rel="noopener">deutscher-gutachter-dienst.de</a>
+        </p>
+        <button class="dgd-construction-banner__close" aria-label="Hinweis schließen">&times;</button>
+    </div>
 
     <!-- ================================================================= -->
     <!-- Header / Navigation                                               -->
     <!-- ================================================================= -->
     <header class="dgd-header">
         <div class="dgd-header__inner">
-            <a href="#start" class="dgd-header__logo"><img src="img/dgd-logo.png" alt="DGD - Deutscher Gutachter Dienst" class="dgd-header__logo-img"></a>
-            <button class="dgd-header__menu-toggle" aria-label="Menue oeffnen" aria-expanded="false">
+            <a href="#start" class="dgd-header__logo">
+                <img src="img/dgd-falcon.png" alt="DGD Wanderfalke" class="dgd-header__falcon" width="32" height="32">
+                <img src="img/dgd-logo.png" alt="DGD - Deutscher Gutachter Dienst" class="dgd-header__logo-img">
+            </a>
+            <button class="dgd-header__menu-toggle" aria-label="Menü öffnen" aria-expanded="false">
                 &#9776;
             </button>
             <nav>
@@ -25,7 +38,7 @@
                     <li><a href="#start" class="active">Startseite</a></li>
                     <li><a href="#gutachter">Gutachter finden</a></li>
                     <li><a href="#melden">Schadenfall melden</a></li>
-                    <li><a href="#status">Status pruefen</a></li>
+                    <li><a href="#status">Status prüfen</a></li>
                     <li><a href="#partner">Partner werden</a></li>
                 </ul>
             </nav>
@@ -41,10 +54,10 @@
         <section class="dgd-hero">
             <div class="dgd-container">
                 <p class="dgd-hero__eyebrow">Deutscher Gutachter Dienst</p>
-                <h1>Unfall gehabt?<br>Ihr Kfz-Gutachter in der Naehe.</h1>
+                <h1>Unfall gehabt?<br>Ihr Kfz-Gutachter in der Nähe.</h1>
                 <p class="dgd-hero__subtitle">
-                    Kostenlos fuer Geschaedigte. Unabhaengig. Deutschlandweit.<br>
-                    Wir kaempfen fuer Ihr Recht auf faire Schadensregulierung.
+                    Kostenlos für Geschädigte. Unabhängig. Deutschlandweit.<br>
+                    Wir kämpfen für Ihr Recht auf faire Schadensregulierung.
                 </p>
                 <div class="dgd-hero__actions">
                     <a href="#gutachter" class="dgd-btn dgd-btn--primary dgd-btn--lg">
@@ -61,13 +74,29 @@
                     </div>
                     <div class="dgd-trust-badge">
                         <span class="dgd-trust-badge__icon">&#9989;</span>
-                        <span>Kostenlos fuer Geschaedigte</span>
+                        <span>Kostenlos für Geschädigte</span>
                     </div>
                     <div class="dgd-trust-badge">
                         <span class="dgd-trust-badge__icon">&#128203;</span>
-                        <span>Zertifizierte Sachverstaendige</span>
+                        <span>Zertifizierte Sachverständige</span>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Landing Map -->
+        <section class="dgd-landing-map">
+            <div class="dgd-container">
+                <h2 class="dgd-landing-map__title">Unsere Gutachter in ganz Deutschland</h2>
+                <p class="dgd-landing-map__subtitle">Klicken Sie auf einen Standort oder nutzen Sie die Suche oben.</p>
+                <div class="dgd-landing-map__legend">
+                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#1a3a5c"></span> Kfz</span>
+                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#e67e22"></span> Gebäude</span>
+                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#8e44ad"></span> Hausrat</span>
+                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#27ae60"></span> Allgemein</span>
+                    <span id="landing-partner-count" class="dgd-landing-map__count"></span>
+                </div>
+                <div id="landing-map" class="dgd-map dgd-map--landing"></div>
             </div>
         </section>
 
@@ -81,23 +110,23 @@
                         <h3>Kfz-Schaden melden</h3>
                         <p>
                             Beschreiben Sie Ihren Unfallschaden online in wenigen Minuten.
-                            Wir benoetigen nur die wichtigsten Angaben zu Ihrem Fahrzeug.
+                            Wir benötigen nur die wichtigsten Angaben zu Ihrem Fahrzeug.
                         </p>
                     </div>
                     <div class="dgd-step">
                         <div class="dgd-step__number">2</div>
                         <h3>Gutachter kommt zu Ihnen</h3>
                         <p>
-                            Ein zertifizierter Kfz-Sachverstaendiger kommt direkt zu Ihnen
-                            und erstellt ein unabhaengiges Gutachten vor Ort.
+                            Ein zertifizierter Kfz-Sachverständiger kommt direkt zu Ihnen
+                            und erstellt ein unabhängiges Gutachten vor Ort.
                         </p>
                     </div>
                     <div class="dgd-step">
                         <div class="dgd-step__number">3</div>
                         <h3>Faire Regulierung</h3>
                         <p>
-                            Wir setzen Ihre Ansprueche gegenueber der Versicherung durch.
-                            Kostenlos fuer Sie als Geschaedigter.
+                            Wir setzen Ihre Ansprüche gegenüber der Versicherung durch.
+                            Kostenlos für Sie als Geschädigter.
                         </p>
                     </div>
                 </div>
@@ -107,29 +136,29 @@
         <!-- Info / Vorteile -->
         <section class="dgd-info">
             <div class="dgd-container">
-                <h2 class="dgd-text-center dgd-mb-lg">Warum DGD fuer Ihr Kfz-Gutachten?</h2>
+                <h2 class="dgd-text-center dgd-mb-lg">Warum DGD für Ihr Kfz-Gutachten?</h2>
                 <div class="dgd-info__grid">
                     <div class="dgd-info__item">
                         <div class="dgd-info__icon">&#9989;</div>
-                        <h4>Kostenlos fuer Geschaedigte</h4>
+                        <h4>Kostenlos für Geschädigte</h4>
                         <p class="dgd-text-muted">
-                            Die gegnerische Versicherung traegt die Kosten fuer Ihr
-                            unabhaengiges Kfz-Gutachten. Null Euro fuer Sie.
+                            Die gegnerische Versicherung trägt die Kosten für Ihr
+                            unabhängiges Kfz-Gutachten. Null Euro für Sie.
                         </p>
                     </div>
                     <div class="dgd-info__item">
                         <div class="dgd-info__icon">&#128101;</div>
-                        <h4>500+ Kfz-Sachverstaendige</h4>
+                        <h4>500+ Kfz-Sachverständige</h4>
                         <p class="dgd-text-muted">
                             Deutschlandweites Netzwerk zertifizierter
-                            Kfz-Gutachter direkt in Ihrer Naehe.
+                            Kfz-Gutachter direkt in Ihrer Nähe.
                         </p>
                     </div>
                     <div class="dgd-info__item">
                         <div class="dgd-info__icon">&#128663;</div>
                         <h4>Gutachter kommt zu Ihnen</h4>
                         <p class="dgd-text-muted">
-                            Kein Werkstattbesuch noetig. Unser Sachverstaendiger kommt
+                            Kein Werkstattbesuch nötig. Unser Sachverständiger kommt
                             direkt zu Ihrem Fahrzeug - ohne Fahrtkosten.
                         </p>
                     </div>
@@ -160,10 +189,10 @@
                     </div>
                 </div>
 
-                <h2 class="dgd-text-center">Kfz-Gutachter in Ihrer Naehe finden</h2>
+                <h2 class="dgd-text-center">Kfz-Gutachter in Ihrer Nähe finden</h2>
                 <p class="dgd-text-muted dgd-text-center dgd-mb-lg">
                     Geben Sie Ihre Postleitzahl oder Ihren Ort ein, um zertifizierte
-                    Kfz-Sachverstaendige in Ihrer Naehe zu finden.
+                    Kfz-Sachverständige in Ihrer Nähe zu finden.
                 </p>
 
                 <div class="dgd-location-bar">
@@ -182,7 +211,7 @@
 
                 <div class="dgd-pill-filter dgd-mt-lg">
                     <button class="dgd-pill dgd-pill--active" data-specialty="kfz">Kfz</button>
-                    <button class="dgd-pill dgd-pill--disabled" data-specialty="gebaeude">Gebaeude</button>
+                    <button class="dgd-pill dgd-pill--disabled" data-specialty="gebaeude">Gebäude</button>
                     <button class="dgd-pill dgd-pill--disabled" data-specialty="hausrat">Hausrat</button>
                 </div>
 
@@ -216,7 +245,7 @@
 
                 <div class="dgd-results-header">
                     <button id="wizard-back-btn" class="dgd-btn dgd-btn--outline-dark dgd-btn--sm">
-                        &larr; Zurueck
+                        &larr; Zurück
                     </button>
                     <div id="wizard-results-info" class="dgd-results-header__info">
                         <span id="wizard-location-label"></span>
@@ -227,7 +256,7 @@
                 <div id="wizard-map" class="dgd-map"></div>
 
                 <div id="wizard-no-results" class="dgd-alert dgd-alert--info dgd-hidden dgd-mt-lg">
-                    Keine Kfz-Gutachter in dieser Region gefunden. Versuchen Sie einen groesseren Suchradius.
+                    Keine Kfz-Gutachter in dieser Region gefunden. Versuchen Sie einen größeren Suchradius.
                 </div>
 
                 <div id="wizard-partner-grid" class="dgd-partner-grid"></div>
@@ -245,8 +274,8 @@
             </div>
 
             <p class="dgd-text-muted dgd-mb-lg">
-                Bitte fuellen Sie das folgende Formular aus. Alle mit * markierten
-                Felder sind Pflichtfelder. Wir melden uns schnellstmoeglich bei Ihnen.
+                Bitte füllen Sie das folgende Formular aus. Alle mit * markierten
+                Felder sind Pflichtfelder. Wir melden uns schnellstmöglich bei Ihnen.
             </p>
 
             <div id="selected-partner-badge" class="dgd-partner-badge dgd-hidden">
@@ -263,7 +292,7 @@
                 <div class="dgd-form__row">
                     <div class="dgd-form__group">
                         <label class="dgd-form__label dgd-form__label--required" for="field-name">
-                            Vollstaendiger Name
+                            Vollständiger Name
                         </label>
                         <input type="text" id="field-name" class="dgd-form__input"
                                placeholder="Max Mustermann" required>
@@ -275,7 +304,7 @@
                         </label>
                         <input type="email" id="field-email" class="dgd-form__input"
                                placeholder="max@beispiel.de" required>
-                        <div class="dgd-form__error">Bitte geben Sie eine gueltige E-Mail-Adresse ein.</div>
+                        <div class="dgd-form__error">Bitte geben Sie eine gültige E-Mail-Adresse ein.</div>
                     </div>
                 </div>
 
@@ -295,11 +324,11 @@
                         <select id="field-damage-type" class="dgd-form__select" required>
                             <option value="kfz_haftpflicht" selected>Kfz-Haftpflichtschaden</option>
                             <option value="kfz_kasko">Kfz-Kaskoschaden</option>
-                            <option value="gebaeude" disabled>Gebaeudesachschaden (demnächst verfügbar)</option>
+                            <option value="gebaeude" disabled>Gebäudesachschaden (demnächst verfügbar)</option>
                             <option value="hausrat" disabled>Hausratschaden (demnächst verfügbar)</option>
                             <option value="sonstige" disabled>Sonstiger Schaden (demnächst verfügbar)</option>
                         </select>
-                        <div class="dgd-form__error">Bitte waehlen Sie eine Schadensart.</div>
+                        <div class="dgd-form__error">Bitte wählen Sie eine Schadensart.</div>
                     </div>
                 </div>
 
@@ -317,7 +346,7 @@
                         Beschreibung des Schadens
                     </label>
                     <textarea id="field-description" class="dgd-form__textarea"
-                              placeholder="Bitte beschreiben Sie den Schadenfall so genau wie moeglich..."
+                              placeholder="Bitte beschreiben Sie den Schadenfall so genau wie möglich..."
                               required></textarea>
                     <div class="dgd-form__error">Bitte beschreiben Sie den Schaden.</div>
                 </div>
@@ -333,7 +362,7 @@
     </div>
 
     <!-- ================================================================= -->
-    <!-- View: Status pruefen                                              -->
+    <!-- View: Status prüfen                                              -->
     <!-- ================================================================= -->
     <div id="view-status-check" class="dgd-view">
         <div class="dgd-container">
@@ -365,17 +394,17 @@
             <div class="dgd-section">
                 <h2>Als Kfz-Gutachter Partner werden</h2>
                 <p class="dgd-text-muted">
-                    Sie sind Kfz-Sachverstaendiger und moechten Teil unseres deutschlandweiten
+                    Sie sind Kfz-Sachverständiger und möchten Teil unseres deutschlandweiten
                     Netzwerks werden? Registrieren Sie sich auf unserer Warteliste.
-                    Wir pruefen Ihre Qualifikationen und melden uns innerhalb von 48 Stunden.
+                    Wir prüfen Ihre Qualifikationen und melden uns innerhalb von 48 Stunden.
                 </p>
 
                 <form id="partner-form" class="dgd-form dgd-mt-lg">
-                    <!-- Persoenliche Daten -->
-                    <h3>Persoenliche Daten</h3>
+                    <!-- Persönliche Daten -->
+                    <h3>Persönliche Daten</h3>
                     <div class="dgd-form__row">
                         <div class="dgd-form__group">
-                            <label>Vollstaendiger Name *</label>
+                            <label>Vollständiger Name *</label>
                             <input type="text" id="partner-name" class="dgd-form__input" required placeholder="Max Mustermann">
                         </div>
                         <div class="dgd-form__group">
@@ -400,10 +429,10 @@
                         <div class="dgd-form__group">
                             <label>Spezialisierung *</label>
                             <select id="partner-specialty" class="dgd-form__input" required>
-                                <option value="">-- Bitte waehlen --</option>
-                                <option value="kfz">Kfz-Sachverstaendiger</option>
-                                <option value="gebaeude">Gebaeude-Sachverstaendiger</option>
-                                <option value="hausrat">Hausrat-Sachverstaendiger</option>
+                                <option value="">-- Bitte wählen --</option>
+                                <option value="kfz">Kfz-Sachverständiger</option>
+                                <option value="gebaeude">Gebäude-Sachverständiger</option>
+                                <option value="hausrat">Hausrat-Sachverständiger</option>
                                 <option value="allgemein">Allgemeiner Gutachter</option>
                                 <option value="sonstiges">Sonstiges</option>
                             </select>
@@ -419,7 +448,7 @@
                     </div>
                     <div class="dgd-form__group">
                         <label>Zertifizierungen / Qualifikationen</label>
-                        <input type="text" id="partner-certifications" class="dgd-form__input" placeholder="z.B. DEKRA, TUeV, IHK, BDSF">
+                        <input type="text" id="partner-certifications" class="dgd-form__input" placeholder="z.B. DEKRA, TÜV, IHK, BDSF">
                     </div>
 
                     <!-- Standort -->
@@ -439,7 +468,7 @@
                     <div class="dgd-form__group">
                         <label>Nachricht (optional)</label>
                         <textarea id="partner-message" class="dgd-form__input dgd-form__textarea" rows="4"
-                            placeholder="Erzaehlen Sie uns etwas ueber sich und warum Sie Partner werden moechten..."></textarea>
+                            placeholder="Erzählen Sie uns etwas über sich und warum Sie Partner werden möchten..."></textarea>
                     </div>
 
                     <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg dgd-mt-lg">
@@ -448,10 +477,141 @@
                 </form>
 
                 <div id="partner-success" class="dgd-alert dgd-alert--success dgd-hidden dgd-mt-lg">
-                    <strong>Vielen Dank fuer Ihre Registrierung!</strong><br>
-                    Wir pruefen Ihre Anfrage und melden uns innerhalb von 48 Stunden bei Ihnen.
+                    <strong>Vielen Dank für Ihre Registrierung!</strong><br>
+                    Wir prüfen Ihre Anfrage und melden uns innerhalb von 48 Stunden bei Ihnen.
                 </div>
                 <div id="partner-error" class="dgd-alert dgd-alert--error dgd-hidden dgd-mt-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Impressum                                                   -->
+    <!-- ================================================================= -->
+    <div id="view-impressum" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-legal">
+                <h1>Impressum</h1>
+                <h2>Angaben gemäß § 5 TMG</h2>
+                <p><strong>DGD Deutscher Gutachter Dienst GmbH</strong><br>
+                Kerkrader Straße 9<br>
+                35394 Gießen</p>
+                <h2>Vertreten durch</h2>
+                <p>Geschäftsführer: Daniel L. Aguirre</p>
+                <h2>Kontakt</h2>
+                <p>Telefon: +49 (0) 800 009 5000<br>
+                E-Mail: service@deutscher-gutachter-dienst.de</p>
+                <h2>Registereintrag</h2>
+                <p>Eintragung im Handelsregister.<br>
+                Registergericht: Amtsgericht Gießen<br>
+                Registernummer: HRB 10465</p>
+                <h2>Umsatzsteuer-ID</h2>
+                <p>Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:<br>
+                DE341455251</p>
+                <h2>Berufsbezeichnung und berufsrechtliche Regelungen</h2>
+                <p>Berufsbezeichnung: Sachverständige / Gutachter<br>
+                Zuständige Kammer: IHK Gießen-Friedberg<br>
+                Verliehen in: Deutschland</p>
+                <h2>Streitschlichtung</h2>
+                <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
+                <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr</a>.</p>
+                <p>Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+                <h2>Haftung für Inhalte</h2>
+                <p>Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen.</p>
+                <h2>Haftung für Links</h2>
+                <p>Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.</p>
+                <h2>Urheberrecht</h2>
+                <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Datenschutz                                                 -->
+    <!-- ================================================================= -->
+    <div id="view-datenschutz" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-legal">
+                <h1>Datenschutzerklärung</h1>
+                <h2>1. Datenschutz auf einen Blick</h2>
+                <h3>Allgemeine Hinweise</h3>
+                <p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p>
+                <h3>Datenerfassung auf dieser Website</h3>
+                <p><strong>Wer ist verantwortlich für die Datenerfassung auf dieser Website?</strong><br>
+                DGD Deutscher Gutachter Dienst GmbH<br>
+                Kerkrader Straße 9, 35394 Gießen<br>
+                E-Mail: service@deutscher-gutachter-dienst.de<br>
+                Telefon: +49 (0) 800 009 5000</p>
+                <h2>2. Hosting</h2>
+                <p>Diese Website wird bei einem externen Dienstleister gehostet. Die personenbezogenen Daten werden auf den Servern des Hosters gespeichert. Der Einsatz erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.</p>
+                <h2>3. Allgemeine Hinweise und Pflichtinformationen</h2>
+                <h3>Hinweis zur verantwortlichen Stelle</h3>
+                <p>DGD Deutscher Gutachter Dienst GmbH<br>
+                Kerkrader Straße 9, 35394 Gießen<br>
+                Geschäftsführer: Daniel L. Aguirre<br>
+                Telefon: +49 (0) 800 009 5000<br>
+                E-Mail: service@deutscher-gutachter-dienst.de</p>
+                <h3>Speicherdauer</h3>
+                <p>Ihre personenbezogenen Daten verbleiben bei uns, bis der Zweck für die Datenverarbeitung entfällt.</p>
+                <h3>Hinweis zur Datenweitergabe</h3>
+                <p>Im Rahmen der Gutachter-Vermittlung werden Ihre Kontaktdaten und Schadensinformationen an den ausgewählten Sachverständigen weitergegeben (Art. 6 Abs. 1 lit. b DSGVO).</p>
+                <h2>4. Datenerfassung auf dieser Website</h2>
+                <h3>Kontaktformular / Schadenmeldung</h3>
+                <p>Ihre Angaben aus dem Formular werden zwecks Bearbeitung der Anfrage bei uns gespeichert (Art. 6 Abs. 1 lit. b DSGVO).</p>
+                <h3>Server-Log-Dateien</h3>
+                <p>Der Provider erhebt automatisch Informationen in Server-Log-Dateien: Browsertyp, Betriebssystem, Referrer URL, Hostname, Uhrzeit, IP-Adresse (Art. 6 Abs. 1 lit. f DSGVO).</p>
+                <h3>Cookies</h3>
+                <p>Diese Website verwendet keine Tracking-Cookies. Es werden lediglich technisch notwendige Cookies eingesetzt.</p>
+                <h2>5. Ihre Rechte</h2>
+                <ul>
+                    <li><strong>Auskunftsrecht (Art. 15 DSGVO)</strong></li>
+                    <li><strong>Recht auf Berichtigung (Art. 16 DSGVO)</strong></li>
+                    <li><strong>Recht auf Löschung (Art. 17 DSGVO)</strong></li>
+                    <li><strong>Recht auf Einschränkung (Art. 18 DSGVO)</strong></li>
+                    <li><strong>Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</strong></li>
+                    <li><strong>Widerspruchsrecht (Art. 21 DSGVO)</strong></li>
+                    <li><strong>Beschwerderecht (Art. 77 DSGVO)</strong> — Zuständig: Der Hessische Beauftragte für Datenschutz und Informationsfreiheit</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: AGB                                                         -->
+    <!-- ================================================================= -->
+    <div id="view-agb" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-legal">
+                <h1>Allgemeine Geschäftsbedingungen (AGB)</h1>
+                <p><strong>DGD Deutscher Gutachter Dienst GmbH</strong> — Stand: März 2026</p>
+                <h2>§ 1 Geltungsbereich</h2>
+                <p>Diese AGB gelten für alle Geschäftsbeziehungen zwischen der DGD Deutscher Gutachter Dienst GmbH (nachfolgend „DGD") und ihren Kunden sowie Partnern.</p>
+                <h2>§ 2 Leistungsbeschreibung</h2>
+                <p>DGD vermittelt über die Plattform dgd.digital qualifizierte Sachverständige und Gutachter an Geschädigte:</p>
+                <ul>
+                    <li>Vermittlung von Kfz-Sachverständigen bei Haftpflicht- und Kaskoschäden</li>
+                    <li>Standort-basierte Gutachtersuche</li>
+                    <li>Digitale Schadenmeldung und Fallverwaltung</li>
+                    <li>Aufnahme von Sachverständigen in das DGD-Netzwerk</li>
+                </ul>
+                <p>Die Vermittlung ist für Geschädigte kostenfrei. Die Kosten des Gutachtens werden in der Regel von der gegnerischen Versicherung getragen.</p>
+                <h2>§ 3 Vertragsschluss</h2>
+                <p>Die Darstellung der Dienstleistungen auf der Website stellt kein bindendes Angebot dar. Erst durch die Kontaktaufnahme des Kunden und die Bestätigung durch DGD kommt ein Vermittlungsvertrag zustande.</p>
+                <h2>§ 4 Pflichten der Partner</h2>
+                <ul>
+                    <li>Nur qualifizierte und wahrheitsgemäße Gutachten erstellen</li>
+                    <li>Aufträge zeitnah bearbeiten</li>
+                    <li>Geltende Datenschutzbestimmungen einhalten</li>
+                    <li>Über gültige Berufszulassungen und Versicherungen verfügen</li>
+                </ul>
+                <h2>§ 5 Haftung</h2>
+                <p>DGD haftet nicht für die Qualität der durch vermittelte Sachverständige erstellten Gutachten. Die Haftung beschränkt sich auf Vorsatz und grobe Fahrlässigkeit.</p>
+                <h2>§ 6 Datenschutz</h2>
+                <p>Die Erhebung und Verarbeitung personenbezogener Daten erfolgt gemäß unserer <a href="#datenschutz">Datenschutzerklärung</a> und der DSGVO.</p>
+                <h2>§ 7 Geistiges Eigentum</h2>
+                <p>Alle Inhalte der Website dgd.digital sind urheberrechtlich geschützt und Eigentum der DGD Deutscher Gutachter Dienst GmbH.</p>
+                <h2>§ 8 Schlussbestimmungen</h2>
+                <p>Es gilt das Recht der Bundesrepublik Deutschland. Gerichtsstand ist Gießen, sofern der Kunde Kaufmann ist oder keinen allgemeinen Gerichtsstand in Deutschland hat.</p>
             </div>
         </div>
     </div>
@@ -464,8 +624,8 @@
             <div class="dgd-footer__brand">
                 <h3>Deutscher Gutachter Dienst</h3>
                 <p>
-                    Ihr unabhaengiger Partner fuer Kfz-Gutachten nach Unfall.
-                    500+ zertifizierte Sachverstaendige deutschlandweit. Kostenlos fuer Geschaedigte.
+                    Ihr unabhängiger Partner für Kfz-Gutachten nach Unfall.
+                    500+ zertifizierte Sachverständige deutschlandweit. Kostenlos für Geschädigte.
                 </p>
             </div>
             <div class="dgd-footer__links">
@@ -474,34 +634,38 @@
                     <li><a href="#gutachter">Kfz-Gutachter finden</a></li>
                     <li><a href="#melden">Unfallschaden melden</a></li>
                     <li><a href="#partner">Partner werden</a></li>
-                    <li><a href="#status">Status pruefen</a></li>
+                    <li><a href="#status">Status prüfen</a></li>
                 </ul>
             </div>
             <div class="dgd-footer__links">
                 <h4>Kontakt</h4>
                 <ul>
-                    <li>E-Mail: info@dgd.digital</li>
-                    <li>Tel: +49 XXX XXXXXXX</li>
+                    <li>E-Mail: service@deutscher-gutachter-dienst.de</li>
+                    <li>Tel: +49 (0) 800 009 5000</li>
                     <li>Web: dgd.digital</li>
                 </ul>
             </div>
             <div class="dgd-footer__links">
                 <h4>Rechtliches</h4>
                 <ul>
-                    <li><a href="#">Impressum</a></li>
-                    <li><a href="#">Datenschutz</a></li>
-                    <li><a href="#">AGB</a></li>
+                    <li><a href="#impressum">Impressum</a></li>
+                    <li><a href="#datenschutz">Datenschutz</a></li>
+                    <li><a href="#agb">AGB</a></li>
                 </ul>
             </div>
         </div>
         <div class="dgd-footer__bottom">
-            <p>&copy; 2026 Deutscher Gutachter Dienst (DGD). Alle Rechte vorbehalten.</p>
+            <div class="dgd-footer__eu-label">
+            <img src="img/eu-funded.png" alt="Finanziert von der Europäischen Union" class="dgd-footer__eu-funded">
+        </div>
+        <p>&copy; 2026 Deutscher Gutachter Dienst (DGD). Alle Rechte vorbehalten.</p>
         </div>
     </footer>
 
     <!-- Scripts -->
     <script src="lib/leaflet/leaflet.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/wizard.js"></script>
     <script src="js/app.js"></script>
 
 </body>

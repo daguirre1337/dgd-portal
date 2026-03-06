@@ -42,6 +42,9 @@
         '#melden': 'report-form',
         '#status': 'status-check',
         '#partner': 'partner',
+        '#impressum': 'impressum',
+        '#datenschutz': 'datenschutz',
+        '#agb': 'agb',
     };
 
     function navigateTo(hash) {
@@ -79,6 +82,11 @@
 
         // Scroll nach oben
         window.scrollTo(0, 0);
+
+        // Init landing map when landing view is shown
+        if (viewName === 'landing') {
+            setTimeout(initLandingMap, 150);
+        }
     }
 
     // =========================================================================
@@ -119,7 +127,7 @@
                 showSuccess(
                     `Ihr Schadenfall wurde erfolgreich gemeldet. ` +
                     `Ihre Fallnummer: <strong>${result.case_id || result.id}</strong>. ` +
-                    `Wir melden uns in Kuerze bei Ihnen.`
+                    `Wir melden uns in Kürze bei Ihnen.`
                 );
                 form.reset();
             } catch (err) {
@@ -135,7 +143,7 @@
         let valid = true;
         const required = form.querySelectorAll('[required]');
 
-        // Vorherige Fehler zuruecksetzen
+        // Vorherige Fehler zurücksetzen
         form.querySelectorAll('.dgd-form__group--error').forEach(group => {
             group.classList.remove('dgd-form__group--error');
         });
@@ -158,7 +166,7 @@
                 if (group) {
                     group.classList.add('dgd-form__group--error');
                     const errorEl = group.querySelector('.dgd-form__error');
-                    if (errorEl) errorEl.textContent = 'Bitte geben Sie eine gueltige E-Mail-Adresse ein.';
+                    if (errorEl) errorEl.textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
                 }
             }
         }
@@ -264,12 +272,12 @@
         alertDiv.className = `dgd-alert dgd-alert--${type} dgd-alert--dynamic`;
         alertDiv.innerHTML = message;
 
-        // Vor dem Formular einfuegen
+        // Vor dem Formular einfügen
         const form = document.getElementById('report-form');
         if (form) {
             form.parentNode.insertBefore(alertDiv, form);
         } else {
-            // Fallback: In den aktiven View einfuegen
+            // Fallback: In den aktiven View einfügen
             const activeView = document.querySelector('.dgd-view--active');
             if (activeView) {
                 activeView.insertBefore(alertDiv, activeView.firstChild);
@@ -327,7 +335,7 @@
             toggle.setAttribute('aria-expanded', isOpen);
         });
 
-        // Menue schliessen bei Klick auf Link
+        // Menü schliessen bei Klick auf Link
         nav.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
                 nav.classList.remove('dgd-header__nav--open');
@@ -374,7 +382,7 @@
         if (gpsBtn) {
             gpsBtn.addEventListener('click', () => {
                 if (!navigator.geolocation) {
-                    errorEl.textContent = 'Geolocation wird von Ihrem Browser nicht unterstuetzt.';
+                    errorEl.textContent = 'Geolocation wird von Ihrem Browser nicht unterstützt.';
                     errorEl.classList.remove('dgd-hidden');
                     return;
                 }
@@ -572,7 +580,7 @@
                 <div class="dgd-partner-card__footer">
                     <span class="dgd-partner-card__location">${escapeHtml(p.plz)} ${escapeHtml(p.city)}</span>
                     <button class="dgd-btn dgd-btn--primary dgd-btn--sm" onclick="window._selectPartner('${p.id}')">
-                        Waehlen
+                        Wählen
                     </button>
                 </div>
             </div>
@@ -661,14 +669,14 @@
 
                 // Client-side validation
                 if (!data.name || !data.email || !data.phone || !data.specialty || !data.plz || !data.city) {
-                    errorEl.textContent = 'Bitte fuellen Sie alle Pflichtfelder (*) aus.';
+                    errorEl.textContent = 'Bitte füllen Sie alle Pflichtfelder (*) aus.';
                     errorEl.classList.remove('dgd-hidden');
                     return;
                 }
 
                 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailPattern.test(data.email)) {
-                    errorEl.textContent = 'Bitte geben Sie eine gueltige E-Mail-Adresse ein.';
+                    errorEl.textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
                     errorEl.classList.remove('dgd-hidden');
                     return;
                 }
@@ -680,7 +688,7 @@
                 successEl.classList.remove('dgd-hidden');
 
             } catch (err) {
-                errorEl.textContent = err.message || 'Fehler beim Senden. Bitte versuchen Sie es spaeter erneut.';
+                errorEl.textContent = err.message || 'Fehler beim Senden. Bitte versuchen Sie es später erneut.';
                 errorEl.classList.remove('dgd-hidden');
             } finally {
                 submitBtn.disabled = false;
@@ -690,10 +698,141 @@
     }
 
     // =========================================================================
+    // Landing Map (GeoDirectory - Deutschland-Übersicht)
+    // =========================================================================
+
+    let landingMap = null;
+
+    // Fallback partner data for when the API is unavailable
+    const DEMO_PARTNERS = [
+        { name: 'Hans Müller', company: 'Müller Kfz-Gutachten', city: 'Berlin', plz: '10115', specialty: 'kfz', lat: 52.5200, lng: 13.4050, rating: 4.8, review_count: 127, description: 'Erfahrener Kfz-Sachverständiger mit über 15 Jahren Erfahrung. TÜV-zertifiziert.' },
+        { name: 'Peter Schmidt', company: 'Schmidt Gutachten Hamburg', city: 'Hamburg', plz: '20095', specialty: 'kfz', lat: 53.5511, lng: 9.9937, rating: 4.6, review_count: 89, description: 'Spezialist für Kfz-Schaden und Wertgutachten.' },
+        { name: 'Anna Weber', company: 'Weber Sachverständigenbüro', city: 'München', plz: '80331', specialty: 'kfz', lat: 48.1351, lng: 11.5820, rating: 4.9, review_count: 203, description: 'Top-bewertete Sachverständige in München.' },
+        { name: 'Klaus Fischer', company: 'Fischer Baugutachten', city: 'Köln', plz: '50667', specialty: 'gebaeude', lat: 50.9375, lng: 6.9603, rating: 4.7, review_count: 64, description: 'Gebäude-Sachverständiger. IHK-zertifiziert.' },
+        { name: 'Sabine Braun', company: 'Braun Kfz-Sachverständige', city: 'Frankfurt', plz: '60311', specialty: 'kfz', lat: 50.1109, lng: 8.6821, rating: 4.5, review_count: 56, description: 'Unabhängige Kfz-Sachverständige im Rhein-Main-Gebiet.' },
+        { name: 'Thomas Wagner', company: 'Wagner Gutachten Stuttgart', city: 'Stuttgart', plz: '70173', specialty: 'hausrat', lat: 48.7758, lng: 9.1829, rating: 4.4, review_count: 38, description: 'Sachverständiger für Hausrat und Inventarbewertung.' },
+        { name: 'Maria Hofmann', company: 'Hofmann Automotive Experts', city: 'Düsseldorf', plz: '40213', specialty: 'kfz', lat: 51.2277, lng: 6.7735, rating: 4.8, review_count: 112, description: 'Kfz-Sachverständige, Schwerpunkt Oldtimer-Bewertung.' },
+        { name: 'Stefan Becker', company: 'Becker Bau-Sachverständige', city: 'Leipzig', plz: '04109', specialty: 'gebaeude', lat: 51.3397, lng: 12.3731, rating: 4.3, review_count: 41, description: 'Gebäude-Sachverständiger in Sachsen.' },
+        { name: 'Julia Richter', company: 'Richter Allgemeine Gutachten', city: 'Dresden', plz: '01067', specialty: 'allgemein', lat: 51.0504, lng: 13.7373, rating: 4.6, review_count: 73, description: 'Allgemeine Sachverständige für verschiedene Fachgebiete.' },
+        { name: 'Michael Koch', company: 'Koch Kfz-Gutachten Hannover', city: 'Hannover', plz: '30159', specialty: 'kfz', lat: 52.3759, lng: 9.7320, rating: 4.2, review_count: 35, description: 'Kfz-Sachverständiger in Niedersachsen.' },
+        { name: 'Laura Schäfer', company: 'Schäfer Sachverständigenbüro', city: 'Nürnberg', plz: '90402', specialty: 'kfz', lat: 49.4521, lng: 11.0767, rating: 4.7, review_count: 91, description: 'Kfz-Sachverständige in Franken.' },
+        { name: 'Frank Zimmermann', company: 'Zimmermann Gebäudegutachten', city: 'Dortmund', plz: '44135', specialty: 'gebaeude', lat: 51.5136, lng: 7.4653, rating: 4.5, review_count: 58, description: 'Gebäude-Sachverständiger im Ruhrgebiet.' },
+    ];
+
+    const SPECIALTY_LABELS = {
+        kfz: 'Kfz-Sachverständiger',
+        gebaeude: 'Gebäude-Sachverständiger',
+        hausrat: 'Hausrat-Sachverständiger',
+        allgemein: 'Allgemeiner Gutachter',
+    };
+
+    const SPECIALTY_COLORS = {
+        kfz: '#1a3a5c',
+        gebaeude: '#e67e22',
+        hausrat: '#8e44ad',
+        allgemein: '#27ae60',
+    };
+
+    function createPartnerPopup(p) {
+        var spec = SPECIALTY_LABELS[p.specialty] || p.specialty || 'Gutachter';
+        var color = SPECIALTY_COLORS[p.specialty] || '#1a3a5c';
+        var stars = '★'.repeat(Math.round(p.rating || 5)) + '☆'.repeat(5 - Math.round(p.rating || 5));
+        return '<div class="dgd-map-popup">' +
+            '<div class="dgd-map-popup__header">' +
+                '<strong>' + escapeHtml(p.name) + '</strong>' +
+                '<span class="dgd-map-popup__badge" style="background:' + color + '">' + escapeHtml(spec) + '</span>' +
+            '</div>' +
+            '<div class="dgd-map-popup__company">' + escapeHtml(p.company || '') + '</div>' +
+            '<div class="dgd-map-popup__meta">' +
+                '<span class="dgd-map-popup__stars">' + stars + '</span> ' +
+                '<span>' + (p.rating || '5.0') + ' (' + (p.review_count || 0) + ' Bewertungen)</span>' +
+            '</div>' +
+            '<div class="dgd-map-popup__location">📍 ' + escapeHtml(p.plz + ' ' + p.city) + '</div>' +
+            (p.description ? '<div class="dgd-map-popup__desc">' + escapeHtml(p.description) + '</div>' : '') +
+            '<button class="dgd-btn dgd-btn--primary dgd-btn--sm dgd-map-popup__btn" onclick="window.location.hash=\'#melden\'">Schaden melden</button>' +
+        '</div>';
+    }
+
+    function createSpecialtyIcon(specialty) {
+        var color = SPECIALTY_COLORS[specialty] || '#1a3a5c';
+        return L.divIcon({
+            className: 'dgd-map-marker',
+            html: '<div class="dgd-map-marker__pin" style="background:' + color + '"></div>',
+            iconSize: [24, 32],
+            iconAnchor: [12, 32],
+            popupAnchor: [0, -28],
+        });
+    }
+
+    function addPartnersToMap(map, partners) {
+        var partnerCount = document.getElementById('landing-partner-count');
+        if (partnerCount) {
+            partnerCount.textContent = partners.length + ' Gutachter deutschlandweit';
+        }
+
+        partners.forEach(function(p) {
+            if (!p.lat) return;
+            var lng = p.lng || p.lon;
+            if (!lng) return;
+
+            L.marker([p.lat, lng], { icon: createSpecialtyIcon(p.specialty) })
+                .addTo(map)
+                .bindPopup(createPartnerPopup(p), { maxWidth: 300, minWidth: 220 });
+        });
+    }
+
+    function initLandingMap() {
+        var mapEl = document.getElementById('landing-map');
+        if (!mapEl || landingMap) return;
+
+        // Only init when visible
+        if (mapEl.offsetParent === null) return;
+
+        landingMap = L.map('landing-map', {
+            scrollWheelZoom: false,
+        }).setView([51.16, 10.45], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 18,
+        }).addTo(landingMap);
+
+        // Enable scroll zoom only after click on map
+        landingMap.once('click', function() {
+            landingMap.scrollWheelZoom.enable();
+        });
+
+        // Try API first, fallback to demo data
+        fetch('api/dgd/partners')
+            .then(function(r) {
+                if (!r.ok) throw new Error('API error');
+                return r.json();
+            })
+            .then(function(data) {
+                var partners = data.partners || data || [];
+                if (partners.length === 0) throw new Error('empty');
+                addPartnersToMap(landingMap, partners);
+            })
+            .catch(function() {
+                // API not available - use demo data
+                addPartnersToMap(landingMap, DEMO_PARTNERS);
+            });
+    }
+
+    // =========================================================================
     // Initialisierung
     // =========================================================================
 
+    function initConstructionBanner() {
+        const banner = document.getElementById('constructionBanner');
+        const closeBtn = banner?.querySelector('.dgd-construction-banner__close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => banner.classList.add('hidden'));
+        }
+    }
+
     function init() {
+        initConstructionBanner();
         initReportForm();
         initStatusCheck();
         initMobileMenu();

@@ -14,6 +14,44 @@
     padding: 0 var(--dgd-space-md);
 }
 
+/* Construction Banner */
+.dgd-construction-banner {
+    background: var(--dgd-accent);
+    color: #fff;
+    text-align: center;
+    padding: 0.625rem 2.5rem 0.625rem 1rem;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.dgd-construction-banner a {
+    color: #fff;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.dgd-construction-banner p {
+    margin: 0;
+}
+
+.dgd-construction-banner__close {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.25rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+}
+
+.dgd-construction-banner.hidden {
+    display: none;
+}
+
 /* Header / Navigation */
 .dgd-header {
     position: sticky;
@@ -1215,4 +1253,247 @@
 
 .dgd-section h2 {
     margin-bottom: var(--dgd-space-md);
+}
+
+/* ==========================================================================
+   Logo Styles
+   ========================================================================== */
+
+.dgd-header__falcon {
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.dgd-footer__eu-label {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.dgd-footer__eu-funded {
+    max-width: 240px;
+    height: auto;
+    opacity: 0.9;
+}
+
+/* ==========================================================================
+   Landing Map
+   ========================================================================== */
+
+.dgd-landing-map {
+    padding: 3rem 0;
+    background: var(--dgd-gray-50);
+}
+
+.dgd-landing-map__title {
+    text-align: center;
+    font-size: 1.75rem;
+    color: var(--dgd-primary);
+    margin-bottom: 0.5rem;
+}
+
+.dgd-landing-map__subtitle {
+    text-align: center;
+    color: var(--dgd-gray-600);
+    margin-bottom: 1.5rem;
+}
+
+.dgd-landing-map__legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    font-size: var(--dgd-font-size-sm);
+    color: var(--dgd-gray-700);
+}
+
+.dgd-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.dgd-legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dgd-landing-map__count {
+    font-weight: var(--dgd-font-weight-semibold);
+    color: var(--dgd-primary);
+}
+
+.dgd-map--landing {
+    height: 450px;
+    border-radius: var(--dgd-radius-lg);
+    box-shadow: var(--dgd-shadow-md);
+    overflow: hidden;
+}
+
+/* Map Markers */
+.dgd-map-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.dgd-map-marker__pin {
+    width: 20px;
+    height: 20px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+}
+
+.dgd-map-marker:hover .dgd-map-marker__pin {
+    transform: rotate(-45deg) scale(1.2);
+}
+
+/* Map Popup */
+.dgd-map-popup {
+    font-family: var(--dgd-font-family);
+    line-height: 1.5;
+}
+
+.dgd-map-popup__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.dgd-map-popup__header strong {
+    font-size: 0.95rem;
+    color: var(--dgd-primary, #1a3a5c);
+}
+
+.dgd-map-popup__badge {
+    font-size: 0.65rem;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 9px;
+    white-space: nowrap;
+}
+
+.dgd-map-popup__company {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 0.35rem;
+}
+
+.dgd-map-popup__meta {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.dgd-map-popup__stars {
+    color: #f39c12;
+    letter-spacing: 1px;
+}
+
+.dgd-map-popup__location {
+    font-size: 0.8rem;
+    color: #555;
+    margin-bottom: 0.35rem;
+}
+
+.dgd-map-popup__desc {
+    font-size: 0.75rem;
+    color: #777;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.dgd-map-popup__btn {
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   Legal Pages
+   ========================================================================== */
+
+.dgd-legal {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    line-height: 1.8;
+    color: var(--dgd-gray-900);
+}
+
+.dgd-legal h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: var(--dgd-primary);
+    border-bottom: 3px solid var(--dgd-accent);
+    padding-bottom: 0.75rem;
+}
+
+.dgd-legal h2 {
+    font-size: 1.35rem;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    color: var(--dgd-primary);
+}
+
+.dgd-legal h3 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--dgd-gray-900);
+}
+
+.dgd-legal p {
+    margin-bottom: 1rem;
+}
+
+.dgd-legal ul {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.dgd-legal li {
+    margin-bottom: 0.5rem;
+}
+
+.dgd-legal a {
+    color: var(--dgd-accent);
+    text-decoration: underline;
+}
+
+.dgd-legal a:hover {
+    color: var(--dgd-primary);
+}
+
+@media (max-width: 767px) {
+    .dgd-landing-map {
+        padding: 2rem 0;
+    }
+
+    .dgd-landing-map__title {
+        font-size: 1.35rem;
+    }
+
+    .dgd-map--landing {
+        height: 300px;
+    }
+
+    .dgd-legal {
+        margin: 1rem auto;
+        padding: 0 1rem;
+    }
+
+    .dgd-legal h1 {
+        font-size: 1.5rem;
+    }
+
+    .dgd-legal h2 {
+        font-size: 1.2rem;
+    }
 }
