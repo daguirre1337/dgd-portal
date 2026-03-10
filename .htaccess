@@ -1,0 +1,22 @@
+# DGD Portal - Root Redirect
+# Redirect root to dashboard (LiteSpeed/Apache compatible)
+
+DirectoryIndex index.html
+
+# Redirect bare domain to /dashboard/
+RewriteEngine On
+RewriteBase /
+
+# If request is exactly root, redirect to dashboard
+RewriteRule ^$ /dashboard/ [R=301,L]
+
+# Block sensitive directories
+RewriteRule ^data/ - [F,L]
+RewriteRule ^lib/ - [F,L]
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
