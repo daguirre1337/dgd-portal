@@ -3,8 +3,8 @@
  * One-time migration: Create admin account if not exists.
  * DELETE THIS FILE after use!
  */
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/init_db.php';
+require_once __DIR__ . '/api/config.php';
+require_once __DIR__ . '/api/init_db.php';
 
 $db = get_db();
 
