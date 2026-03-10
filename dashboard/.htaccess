@@ -1,3 +1,6 @@
+# Force index.php as default (NOT index.html) - auth gate
+DirectoryIndex index.php
+
 RewriteEngine On
 RewriteBase /dashboard/
 
@@ -10,14 +13,14 @@ RewriteRule ^data/ - [F,L]
 # Block direct access to index.html (must go through index.php gate)
 RewriteRule ^index\.html$ index.php [L]
 
-# Allow login page assets without auth (images for login, fonts)
+# Allow login page and its assets without auth
 RewriteRule ^login\.html$ - [L]
 RewriteRule ^img/(dgd-falcon\.png|dgd-logo\.png)$ - [L]
 
 # Protect ALL JS/CSS files behind PHP auth gate
 RewriteRule ^(js|css)/(.+)\.(js|css)$ auth_asset.php?file=$1/$2.$3 [L]
 
-# Default: route to index.php (auth gate)
+# Route root to index.php (auth gate)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^$ index.php [L]
