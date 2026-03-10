@@ -27,7 +27,7 @@ if (empty($_SESSION['user_id'])) {
 $file = $_GET['file'] ?? '';
 
 // Sanitize: only allow js/ and css/ subdirectories, only .js and .css extensions
-if (!preg_match('#^(js|css)/[a-zA-Z0-9_\-]+\.(js|css)$#', $file)) {
+if (!preg_match('#^(js|css)(/[a-zA-Z0-9_\-]+)+\.(js|css)$#', $file)) {
     http_response_code(400);
     echo 'Invalid file request';
     exit;

@@ -127,19 +127,35 @@ function handle_list_goals(): void
     $stmt->execute($params);
     $goals = $stmt->fetchAll();
 
-    // Attach key results
-    $krStmt = $db->prepare("SELECT * FROM key_results WHERE goal_id = :gid ORDER BY created_at ASC");
+    // Fetch ALL key results in one query (N+1 fix)
+    $goalIds = array_column($goals, 'id');
+    $krByGoal = [];
+
+    if (!empty($goalIds)) {
+        $placeholders = implode(',', array_fill(0, count($goalIds), '?'));
+        $krStmt = $db->prepare("
+            SELECT * FROM key_results
+            WHERE goal_id IN ({$placeholders})
+            ORDER BY created_at ASC
+        ");
+        $krStmt->execute($goalIds);
+        $allKrs = $krStmt->fetchAll();
+
+        foreach ($allKrs as &$kr) {
+            $kr['current_value'] = (float) $kr['current_value'];
+            $kr['target_value']  = (float) $kr['target_value'];
+        }
+
+        foreach ($allKrs as $kr) {
+            $krByGoal[$kr['goal_id']][] = $kr;
+        }
+    }
+
     foreach ($goals as &$goal) {
         $goal['progress'] = (float) $goal['progress'];
         $goal['quarter']  = $goal['quarter'] !== null ? (int) $goal['quarter'] : null;
         $goal['year']     = $goal['year'] !== null ? (int) $goal['year'] : null;
-        $krStmt->execute([':gid' => $goal['id']]);
-        $krs = $krStmt->fetchAll();
-        foreach ($krs as &$kr) {
-            $kr['current_value'] = (float) $kr['current_value'];
-            $kr['target_value']  = (float) $kr['target_value'];
-        }
-        $goal['key_results'] = $krs;
+        $goal['key_results'] = $krByGoal[$goal['id']] ?? [];
     }
 
     json_response([

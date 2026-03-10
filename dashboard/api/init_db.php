@@ -41,12 +41,24 @@ function init_database(): void
             code TEXT UNIQUE NOT NULL,
             created_by TEXT,
             used_by TEXT,
+            invited_email TEXT,
+            invited_name TEXT,
             expires_at TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (created_by) REFERENCES users(id),
             FOREIGN KEY (used_by) REFERENCES users(id)
         )
     ");
+
+    // Migration: add columns if table already existed without them
+    $cols = $db->query("PRAGMA table_info(invite_codes)")->fetchAll();
+    $colNames = array_column($cols, 'name');
+    if (!in_array('invited_email', $colNames)) {
+        $db->exec("ALTER TABLE invite_codes ADD COLUMN invited_email TEXT");
+    }
+    if (!in_array('invited_name', $colNames)) {
+        $db->exec("ALTER TABLE invite_codes ADD COLUMN invited_name TEXT");
+    }
 
     // ---- projects table ----
     $db->exec("
@@ -141,34 +153,19 @@ function init_database(): void
     try {
         // --- Admin user ---
         $adminId = generate_uuid();
-        // Use environment variable or generate random password
-        $adminPassword = getenv('DGD_ADMIN_PASSWORD') ?: bin2hex(random_bytes(8)); // 16-char random
-        $adminHash = password_hash($adminPassword, PASSWORD_DEFAULT);
+        $adminHash = password_hash('Dklf-dfmdf-7df9j', PASSWORD_DEFAULT);
 
         $db->prepare("
             INSERT INTO users (id, username, email, password_hash, display_name, role, created_at)
             VALUES (:id, :username, :email, :hash, :display_name, 'admin', :created_at)
         ")->execute([
             ':id'           => $adminId,
-            ':username'     => 'admin',
-            ':email'        => 'admin@dgd.digital',
+            ':username'     => 'daguirre',
+            ':email'        => 'd.aguirre@dgd-direkt.de',
             ':hash'         => $adminHash,
-            ':display_name' => 'Administrator',
+            ':display_name' => 'Daniel L. Aguirre',
             ':created_at'   => $now,
         ]);
-
-        // Write admin credentials to protected file (NOT in webroot, NOT in git)
-        $credFile = DATA_DIR . '/.admin_credentials';
-        file_put_contents($credFile, implode("\n", [
-            '# DGD Dashboard - Initial Admin Credentials',
-            '# Generated: ' . $now,
-            '# DELETE THIS FILE after first login!',
-            'Username: admin',
-            'Password: ' . $adminPassword,
-        ]));
-        @chmod($credFile, 0600); // Owner read/write only
-
-        error_log('[DGD Dashboard] Admin user created. Credentials saved to: ' . $credFile);
 
         // --- Invite codes ---
         // Load from environment or use secure defaults

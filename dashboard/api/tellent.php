@@ -123,10 +123,26 @@ if (!in_array($action, $validActions)) {
     json_error('Invalid action. Valid: ' . implode(', ', $validActions), 400);
 }
 
+// ---------- Input Validation for Dynamic Queries ----------
+
+function validate_date(string $val, string $default): string {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $val)) {
+        return $default;
+    }
+    return $val;
+}
+
+function validate_id(string $val): string {
+    if (!preg_match('/^[a-zA-Z0-9_-]+$/', $val)) {
+        json_error('Invalid ID format', 400);
+    }
+    return $val;
+}
+
 // Build dynamic queries
 if ($action === 'attendance') {
-    $dateFrom = $_GET['from'] ?? date('Y-m-01'); // Default: start of current month
-    $dateTo = $_GET['to'] ?? date('Y-m-d');       // Default: today
+    $dateFrom = validate_date($_GET['from'] ?? '', date('Y-m-01'));
+    $dateTo   = validate_date($_GET['to'] ?? '', date('Y-m-d'));
     $queries['attendance'] = '{
         attendanceStatements(filter: {
             date: { operator: BETWEEN, value: { min: "' . $dateFrom . '", max: "' . $dateTo . '" } }
@@ -140,8 +156,8 @@ if ($action === 'attendance') {
         }
     }';
 } elseif ($action === 'timesheet') {
-    $userId = $_GET['userId'] ?? '';
-    $date = $_GET['date'] ?? date('Y-m-d');
+    $userId = validate_id($_GET['userId'] ?? '');
+    $date   = validate_date($_GET['date'] ?? '', date('Y-m-d'));
     if (!$userId) {
         json_error('userId parameter required for timesheet action', 400);
     }
@@ -155,11 +171,17 @@ if ($action === 'attendance') {
         }
     }';
 } elseif ($action === 'timeoff_usage') {
-    $dateFrom = $_GET['from'] ?? date('Y-01-01');
-    $dateTo = $_GET['to'] ?? date('Y-12-31');
-    // Get time off type IDs from absences cache or use known defaults
-    $typeIds = $_GET['typeIds'] ?? '124726,124727,124728,124729';
-    $typeIdArr = array_map(function($id) { return '"' . trim($id) . '"'; }, explode(',', $typeIds));
+    $dateFrom = validate_date($_GET['from'] ?? '', date('Y-01-01'));
+    $dateTo   = validate_date($_GET['to'] ?? '', date('Y-12-31'));
+    $typeIds  = $_GET['typeIds'] ?? '124726,124727,124728,124729';
+    // Validate each ID is numeric
+    $typeIdArr = array_map(function($id) {
+        $id = trim($id);
+        if (!preg_match('/^\d+$/', $id)) {
+            json_error('Invalid typeId: must be numeric', 400);
+        }
+        return '"' . $id . '"';
+    }, explode(',', $typeIds));
     $queries['timeoff_usage'] = '{
         timeOffRequestUsageStatements(
             dateFrom: "' . $dateFrom . '"
