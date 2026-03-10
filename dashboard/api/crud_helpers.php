@@ -46,12 +46,12 @@ function build_update(array $body, array $allowed, array $casts, string $id): ?a
             $sets[]              = "{$field} = :{$field}";
             $val = $body[$field];
             if (isset($casts[$field])) {
-                $val = match ($casts[$field]) {
-                    'int'   => (int) $val,
-                    'float' => (float) $val,
-                    'bool'  => (bool) $val ? 1 : 0,
-                    default => trim((string) $val),
-                };
+                switch ($casts[$field]) {
+                    case 'int':   $val = (int) $val; break;
+                    case 'float': $val = (float) $val; break;
+                    case 'bool':  $val = (bool) $val ? 1 : 0; break;
+                    default:      $val = trim((string) $val); break;
+                }
             } else {
                 $val = is_string($val) ? trim($val) : $val;
             }
@@ -79,13 +79,12 @@ function cast_rows(array $rows, array $casts): array
     foreach ($rows as &$row) {
         foreach ($casts as $field => $type) {
             if (!array_key_exists($field, $row)) continue;
-            $row[$field] = match ($type) {
-                'int'        => (int) $row[$field],
-                'float'      => (float) $row[$field],
-                'float_null' => $row[$field] !== null ? (float) $row[$field] : null,
-                'bool'       => (bool) $row[$field],
-                default      => $row[$field],
-            };
+            switch ($type) {
+                case 'int':        $row[$field] = (int) $row[$field]; break;
+                case 'float':      $row[$field] = (float) $row[$field]; break;
+                case 'float_null': $row[$field] = $row[$field] !== null ? (float) $row[$field] : null; break;
+                case 'bool':       $row[$field] = (bool) $row[$field]; break;
+            }
         }
     }
     return $rows;

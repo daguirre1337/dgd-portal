@@ -122,8 +122,8 @@
 
         <form id="login-form">
             <div class="form-group">
-                <label for="auth-username">Benutzername</label>
-                <input type="text" id="auth-username" placeholder="Benutzername" required autocomplete="username">
+                <label for="auth-username">E-Mail / Benutzername</label>
+                <input type="text" id="auth-username" placeholder="d.aguirre@dgd-direkt.de" required autocomplete="username">
             </div>
             <div class="form-group hidden" id="auth-email-group">
                 <label for="auth-email">E-Mail</label>
@@ -149,7 +149,7 @@
 
     <script>
     (function() {
-        const API = 'api/index.php';
+        const API_BASE = 'api/auth/';
         let isRegister = false;
         const form = document.getElementById('login-form');
         const toggle = document.getElementById('auth-toggle');
@@ -187,7 +187,7 @@
             }
 
             try {
-                const res = await fetch(API + '?action=' + endpoint, {
+                const res = await fetch(API_BASE + endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',

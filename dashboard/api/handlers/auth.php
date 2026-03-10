@@ -12,16 +12,17 @@ function handle_login(): void
 {
     $body = get_json_body();
 
-    $username = trim($body['username'] ?? '');
+    $login    = trim($body['username'] ?? '');
     $password = $body['password'] ?? '';
 
-    if (empty($username) || empty($password)) {
+    if (empty($login) || empty($password)) {
         json_error('Username and password are required', 400);
     }
 
-    $db   = get_db();
-    $stmt = $db->prepare("SELECT * FROM users WHERE username = :username");
-    $stmt->execute([':username' => $username]);
+    $db = get_db();
+    // Allow login with username OR email
+    $stmt = $db->prepare("SELECT * FROM users WHERE username = :login OR email = :login");
+    $stmt->execute([':login' => $login]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
