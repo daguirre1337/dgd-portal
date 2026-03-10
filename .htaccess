@@ -1,22 +1,16 @@
-# DGD Portal - Root Redirect
-# Redirect root to dashboard (LiteSpeed/Apache compatible)
-
-DirectoryIndex index.html
-
-# Redirect bare domain to /dashboard/
 RewriteEngine On
-RewriteBase /
 
-# If request is exactly root, redirect to dashboard
-RewriteRule ^$ /dashboard/ [R=301,L]
+# Dashboard subdirectory handles its own routing
+RewriteRule ^dashboard/ - [L]
 
-# Block sensitive directories
+# Redirect all /api/dgd/* requests to the PHP router
+# Except existing files and directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/dgd/(.*)$ api/index.php [QSA,L]
+
+# Protect data directory from direct access
 RewriteRule ^data/ - [F,L]
-RewriteRule ^lib/ - [F,L]
 
-# Security headers
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "DENY"
-    Header set X-XSS-Protection "1; mode=block"
-</IfModule>
+# Protect config files
+RewriteRule \.db$ - [F,L]

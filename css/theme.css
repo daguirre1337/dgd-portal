@@ -1,0 +1,141 @@
+/* ==========================================================================
+   DGD Theme - Deutscher Gutachter Dienst
+   Brand colors, typography, and base variables
+   ========================================================================== */
+
+:root {
+    /* Brand Colors */
+    --dgd-primary: #1a3a5c;
+    --dgd-primary-light: #2c5282;
+    --dgd-primary-dark: #0f2440;
+    --dgd-secondary: #2980b9;
+    --dgd-secondary-light: #3498db;
+    --dgd-secondary-dark: #1f6fa0;
+    --dgd-accent: #27ae60;
+    --dgd-accent-light: #2ecc71;
+    --dgd-accent-dark: #1e8449;
+
+    /* Neutrals */
+    --dgd-white: #ffffff;
+    --dgd-gray-50: #f8f9fa;
+    --dgd-gray-100: #f1f3f5;
+    --dgd-gray-200: #e9ecef;
+    --dgd-gray-300: #dee2e6;
+    --dgd-gray-400: #ced4da;
+    --dgd-gray-500: #adb5bd;
+    --dgd-gray-600: #6c757d;
+    --dgd-gray-700: #495057;
+    --dgd-gray-800: #343a40;
+    --dgd-gray-900: #212529;
+    --dgd-black: #000000;
+
+    /* Semantic Colors */
+    --dgd-success: #27ae60;
+    --dgd-warning: #f39c12;
+    --dgd-danger: #e74c3c;
+    --dgd-info: #2980b9;
+
+    /* Typography */
+    --dgd-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    --dgd-font-family-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono',
+        'Courier New', monospace;
+    --dgd-font-size-xs: 0.8125rem;
+    --dgd-font-size-sm: 0.9375rem;
+    --dgd-font-size-base: 1.0625rem;
+    --dgd-font-size-lg: 1.1875rem;
+    --dgd-font-size-xl: 1.375rem;
+    --dgd-font-size-2xl: 1.625rem;
+    --dgd-font-size-3xl: 2.125rem;
+    --dgd-font-size-4xl: 2.75rem;
+    --dgd-font-size-5xl: 3.25rem;
+    --dgd-font-weight-normal: 400;
+    --dgd-font-weight-medium: 500;
+    --dgd-font-weight-semibold: 600;
+    --dgd-font-weight-bold: 700;
+    --dgd-line-height: 1.6;
+
+    /* Spacing */
+    --dgd-space-xs: 0.25rem;
+    --dgd-space-sm: 0.5rem;
+    --dgd-space-md: 1rem;
+    --dgd-space-lg: 1.5rem;
+    --dgd-space-xl: 2rem;
+    --dgd-space-2xl: 3rem;
+    --dgd-space-3xl: 4rem;
+
+    /* Border Radius */
+    --dgd-radius-sm: 4px;
+    --dgd-radius-md: 8px;
+    --dgd-radius-lg: 12px;
+    --dgd-radius-xl: 16px;
+    --dgd-radius-full: 9999px;
+
+    /* Shadows */
+    --dgd-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --dgd-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    --dgd-shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.05);
+    --dgd-shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.06);
+
+    /* Transitions */
+    --dgd-transition-fast: 150ms ease;
+    --dgd-transition-base: 250ms ease;
+    --dgd-transition-slow: 350ms ease;
+
+    /* Layout */
+    --dgd-max-width: 1200px;
+    --dgd-header-height: 64px;
+}
+
+/* ==========================================================================
+   Base Reset & Typography
+   ========================================================================== */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--dgd-font-family);
+    font-size: var(--dgd-font-size-base);
+    font-weight: var(--dgd-font-weight-normal);
+    line-height: var(--dgd-line-height);
+    color: var(--dgd-gray-900);
+    background-color: var(--dgd-white);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--dgd-font-weight-bold);
+    line-height: 1.3;
+    color: var(--dgd-primary);
+}
+
+h1 { font-size: var(--dgd-font-size-4xl); }
+h2 { font-size: var(--dgd-font-size-3xl); }
+h3 { font-size: var(--dgd-font-size-2xl); }
+h4 { font-size: var(--dgd-font-size-xl); }
+
+a {
+    color: var(--dgd-secondary);
+    text-decoration: none;
+    transition: color var(--dgd-transition-fast);
+}
+
+a:hover {
+    color: var(--dgd-secondary-dark);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
