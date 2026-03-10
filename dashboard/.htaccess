@@ -4,14 +4,38 @@ RewriteBase /dashboard/
 # Dashboard API routing
 RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
-# Protect data directory
+# Protect data directory (always block)
 RewriteRule ^data/ - [F,L]
 
-<FilesMatch "\.(db|sqlite)$">
+# Block direct access to index.html (must go through index.php gate)
+RewriteRule ^index\.html$ index.php [L]
+
+# Allow login page assets without auth (images for login, fonts)
+RewriteRule ^login\.html$ - [L]
+RewriteRule ^img/(dgd-falcon\.png|dgd-logo\.png)$ - [L]
+
+# Protect ALL JS/CSS files behind PHP auth gate
+RewriteRule ^(js|css)/(.+)\.(js|css)$ auth_asset.php?file=$1/$2.$3 [L]
+
+# Default: route to index.php (auth gate)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^$ index.php [L]
+
+# Block database files
+<FilesMatch "\.(db|sqlite|db-shm|db-wal)$">
     Require all denied
 </FilesMatch>
 
+# Block .env files
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+# Security headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
