@@ -2052,3 +2052,271 @@
         min-height: 250px;
     }
 }
+
+/* ==========================================================================
+   Rente & Lifetime Provision Landing Page
+   ========================================================================== */
+
+.dgd-rente-hero {
+    background: linear-gradient(135deg, var(--dgd-primary) 0%, #0d2137 100%);
+    color: #fff;
+    padding: 5rem 0 4rem;
+    text-align: center;
+}
+
+.dgd-rente-hero h1 {
+    color: #fff;
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    line-height: 1.2;
+    margin-bottom: 1.25rem;
+}
+
+.dgd-rente-hero .dgd-hero__subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.15rem;
+    max-width: 640px;
+    margin: 0 auto 2rem;
+}
+
+.dgd-rente-hero .dgd-hero__subtitle strong {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-color: var(--dgd-accent);
+    text-underline-offset: 3px;
+}
+
+.dgd-rente-hero .dgd-btn--primary {
+    background: var(--dgd-accent);
+    border-color: var(--dgd-accent);
+    font-size: 1.1rem;
+}
+
+.dgd-rente-hero .dgd-btn--outline {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.dgd-rente-hero .dgd-btn--outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+}
+
+.dgd-rente-hero .dgd-trust-badge {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* How it works */
+.dgd-rente-how {
+    padding: 4rem 0;
+    background: #fff;
+}
+
+/* Benefits */
+.dgd-rente-benefits {
+    padding: 4rem 0;
+    background: var(--dgd-neutral-50);
+}
+
+.dgd-rente-benefits .dgd-info__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+@media (max-width: 768px) {
+    .dgd-rente-benefits .dgd-info__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Calculation Card */
+.dgd-rente-calc {
+    padding: 4rem 0;
+    background: #fff;
+}
+
+.dgd-rente-calc__card {
+    background: linear-gradient(135deg, var(--dgd-primary) 0%, #0d2137 100%);
+    color: #fff;
+    border-radius: var(--dgd-radius-lg);
+    padding: 3rem;
+    text-align: center;
+}
+
+.dgd-rente-calc__card h2 {
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.dgd-rente-calc__card .dgd-text-muted {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.dgd-rente-calc__grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 2.5rem 0;
+    flex-wrap: wrap;
+}
+
+.dgd-rente-calc__item {
+    text-align: center;
+}
+
+.dgd-rente-calc__value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.dgd-rente-calc__label {
+    display: block;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.25rem;
+}
+
+.dgd-rente-calc__item--highlight {
+    background: var(--dgd-accent);
+    border-radius: var(--dgd-radius-md);
+    padding: 1rem 1.5rem;
+}
+
+.dgd-rente-calc__item--highlight .dgd-rente-calc__value {
+    font-size: 2.25rem;
+}
+
+.dgd-rente-calc__item--highlight .dgd-rente-calc__label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+}
+
+.dgd-rente-calc__note {
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 500px;
+    margin: 0 auto;
+    font-size: 1rem;
+}
+
+.dgd-rente-calc__note strong {
+    color: #fff;
+}
+
+/* Testimonial */
+.dgd-rente-testimonial {
+    padding: 4rem 0;
+    background: var(--dgd-neutral-50);
+}
+
+.dgd-rente-quote {
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+    border: none;
+    padding: 0;
+}
+
+.dgd-rente-quote p {
+    font-size: 1.25rem;
+    font-style: italic;
+    line-height: 1.7;
+    color: var(--dgd-neutral-700);
+    margin-bottom: 1.25rem;
+}
+
+.dgd-rente-quote footer {
+    font-size: 0.95rem;
+    color: var(--dgd-neutral-500);
+}
+
+.dgd-rente-quote footer strong {
+    color: var(--dgd-primary);
+}
+
+/* Signup Section */
+.dgd-rente-signup {
+    padding: 4rem 0;
+    background: #fff;
+}
+
+.dgd-rente-signup .dgd-section {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+/* FAQ */
+.dgd-rente-faq {
+    padding: 4rem 0 5rem;
+    background: var(--dgd-neutral-50);
+}
+
+.dgd-rente-faq__list {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.dgd-rente-faq__item {
+    background: #fff;
+    border-radius: var(--dgd-radius-md);
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--dgd-neutral-200);
+    overflow: hidden;
+}
+
+.dgd-rente-faq__item summary {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--dgd-neutral-800);
+    transition: background var(--dgd-transition-fast);
+}
+
+.dgd-rente-faq__item summary::after {
+    content: '+';
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--dgd-neutral-400);
+    flex-shrink: 0;
+    margin-left: 1rem;
+}
+
+.dgd-rente-faq__item[open] summary::after {
+    content: '\2212';
+}
+
+.dgd-rente-faq__item summary:hover {
+    background: var(--dgd-neutral-50);
+}
+
+.dgd-rente-faq__item summary::-webkit-details-marker {
+    display: none;
+}
+
+.dgd-rente-faq__item p {
+    padding: 0 1.25rem 1rem;
+    color: var(--dgd-neutral-600);
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .dgd-rente-hero {
+        padding: 3rem 0 2.5rem;
+    }
+
+    .dgd-rente-calc__grid {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .dgd-rente-calc__card {
+        padding: 2rem 1.5rem;
+    }
+}

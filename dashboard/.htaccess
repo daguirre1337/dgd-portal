@@ -1,0 +1,17 @@
+RewriteEngine On
+RewriteBase /dashboard/
+
+# Dashboard API routing
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# Protect data directory
+RewriteRule ^data/ - [F,L]
+
+<FilesMatch "\.(db|sqlite)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+</IfModule>

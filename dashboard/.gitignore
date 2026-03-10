@@ -1,0 +1,8 @@
+# Environment variables (API keys)
+.env
+
+# Cache files
+api/cache/
+
+# SQLite database
+data/

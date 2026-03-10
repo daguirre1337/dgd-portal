@@ -41,6 +41,7 @@
         '#melden': 'report-form',
         '#status': 'status-check',
         '#partner': 'partner',
+        '#rente': 'rente',
         '#impressum': 'impressum',
         '#datenschutz': 'datenschutz',
         '#agb': 'agb',
@@ -97,6 +98,7 @@
         if (viewName === 'wizard') {
             setTimeout(initGutachterWizard, 50);
         }
+
     }
 
     // =========================================================================
@@ -1032,6 +1034,61 @@
     }
 
     // =========================================================================
+    // Formular: Rente-Empfehlungspartner
+    // =========================================================================
+
+    function initRenteForm() {
+        const form = document.getElementById('rente-form');
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const successEl = document.getElementById('rente-success');
+            const errorEl = document.getElementById('rente-error');
+
+            successEl.classList.add('dgd-hidden');
+            errorEl.classList.add('dgd-hidden');
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="dgd-spinner"></span> Wird gesendet...';
+
+                const data = {
+                    name: document.getElementById('rente-name').value.trim(),
+                    phone: document.getElementById('rente-phone').value.trim(),
+                    email: document.getElementById('rente-email').value.trim(),
+                    plz: document.getElementById('rente-plz').value.trim(),
+                    experience_years: document.getElementById('rente-experience').value || null,
+                    retirement_date: document.getElementById('rente-retirement').value,
+                    message: document.getElementById('rente-message').value.trim(),
+                };
+
+                if (!data.name || !data.phone) {
+                    errorEl.textContent = 'Bitte geben Sie mindestens Ihren Namen und Ihre Telefonnummer ein.';
+                    errorEl.classList.remove('dgd-hidden');
+                    return;
+                }
+
+                await dgdApi.joinRenteProgram(data);
+
+                form.style.display = 'none';
+                successEl.classList.remove('dgd-hidden');
+
+            } catch (err) {
+                errorEl.textContent = err.message || 'Fehler beim Senden. Bitte versuchen Sie es später erneut.';
+                errorEl.classList.remove('dgd-hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    }
+
+    // =========================================================================
     // Landing Map (GeoDirectory - Deutschland-Übersicht)
     // =========================================================================
 
@@ -1173,6 +1230,7 @@
         initStatusCheck();
         initMobileMenu();
         initPartnerForm();
+        initRenteForm();
 
         // Router starten
         window.addEventListener('hashchange', handleRoute);

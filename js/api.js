@@ -156,6 +156,15 @@ const dgdApi = (() => {
         },
 
         /**
+         * Rente-Empfehlungspartner registrieren
+         * @param {Object} data - Partner-Daten
+         * @returns {Promise<Object>} Ergebnis
+         */
+        async joinRenteProgram(data) {
+            return _request('POST', '/rente', data);
+        },
+
+        /**
          * Dokument zu einem Schadenfall hochladen
          * @param {string} caseId - Fall-ID
          * @param {File} file - Datei zum Hochladen

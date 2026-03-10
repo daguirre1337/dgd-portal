@@ -40,6 +40,7 @@
                     <li><a href="#melden">Schadenfall melden</a></li>
                     <li><a href="#status">Status prüfen</a></li>
                     <li><a href="#partner">Partner werden</a></li>
+                    <li><a href="#rente">Rente &amp; Provision</a></li>
                 </ul>
             </nav>
         </div>
@@ -455,6 +456,292 @@
     </div>
 
     <!-- ================================================================= -->
+    <!-- View: Rente & Lifetime Provision                                  -->
+    <!-- ================================================================= -->
+    <div id="view-rente" class="dgd-view">
+
+        <!-- Hero -->
+        <section class="dgd-rente-hero">
+            <div class="dgd-container">
+                <p class="dgd-hero__eyebrow">DGD Partnerprogramm f&uuml;r Gutachter im Ruhestand</p>
+                <h1>Ihre Expertise.<br>Ihr Netzwerk.<br>Ihre Rente &mdash; aufgeh&uuml;bscht.</h1>
+                <p class="dgd-hero__subtitle">
+                    Sie gehen in den Ruhestand, aber Ihr Name und Ihre Kontakte sind Gold wert?<br>
+                    Verdienen Sie <strong>lebenslang</strong> an jeder Empfehlung &mdash; ohne einen Finger zu r&uuml;hren.
+                </p>
+                <div class="dgd-hero__actions">
+                    <a href="#rente-form" class="dgd-btn dgd-btn--primary dgd-btn--lg" onclick="document.getElementById('rente-signup').scrollIntoView({behavior:'smooth'});return false;">
+                        Jetzt Provision sichern
+                    </a>
+                    <a href="tel:+498000095000" class="dgd-btn dgd-btn--outline dgd-btn--lg">
+                        Pers&ouml;nlich beraten lassen
+                    </a>
+                </div>
+                <div class="dgd-hero__trust">
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128176;</span>
+                        <span>Lebenslange Provision</span>
+                    </div>
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128165;</span>
+                        <span>Kein Aufwand</span>
+                    </div>
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128188;</span>
+                        <span>Vertrag in 5 Minuten</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- So funktioniert's -->
+        <section class="dgd-rente-how">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center">So einfach funktioniert&rsquo;s</h2>
+                <p class="dgd-text-center dgd-text-muted dgd-mb-lg">Drei Schritte zu Ihrem passiven Einkommen</p>
+                <div class="dgd-steps__grid">
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">1</div>
+                        <h3>Registrieren</h3>
+                        <p>
+                            Melden Sie sich als DGD-Empfehlungspartner an.
+                            Dauert keine 5 Minuten &mdash; kostenlos und unverbindlich.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">2</div>
+                        <h3>Empfehlen</h3>
+                        <p>
+                            Ein Bekannter hat einen Unfall? Geben Sie einfach unsere
+                            Nummer weiter oder leiten Sie den Kontakt an uns.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">3</div>
+                        <h3>Kassieren</h3>
+                        <p>
+                            F&uuml;r jeden vermittelten Gutachtenauftrag erhalten Sie
+                            eine Provision &mdash; <strong>lebenslang, automatisch, garantiert</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vorteile -->
+        <section class="dgd-rente-benefits">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center dgd-mb-lg">Warum Gutachter im Ruhestand auf DGD setzen</h2>
+                <div class="dgd-info__grid">
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128176;</div>
+                        <h4>Lebenslange Provision</h4>
+                        <p class="dgd-text-muted">
+                            Keine Einmal-Zahlung. Solange &uuml;ber Sie vermittelte Kunden
+                            Gutachten beauftragen, verdienen Sie mit &mdash; Jahr f&uuml;r Jahr.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128564;</div>
+                        <h4>Null Aufwand</h4>
+                        <p class="dgd-text-muted">
+                            Kein B&uuml;ro, keine Termine, kein Stress. Sie genie&szlig;en
+                            Ihren Ruhestand &mdash; die Provision kommt automatisch.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#127775;</div>
+                        <h4>Ihr Name lebt weiter</h4>
+                        <p class="dgd-text-muted">
+                            Jahrzehnte Erfahrung und Reputation gehen nicht verloren.
+                            Empfehlen Sie DGD und Ihr guter Name arbeitet f&uuml;r Sie.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128200;</div>
+                        <h4>Transparentes Dashboard</h4>
+                        <p class="dgd-text-muted">
+                            Sehen Sie jederzeit, wie viele Empfehlungen aktiv sind
+                            und was Sie verdient haben &mdash; alles online einsehbar.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128101;</div>
+                        <h4>500+ aktive Partner</h4>
+                        <p class="dgd-text-muted">
+                            Sie kommen in ein starkes Netzwerk. Viele ehemalige
+                            Kollegen nutzen DGD bereits &mdash; fragen Sie nach.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128274;</div>
+                        <h4>Vertragssicherheit</h4>
+                        <p class="dgd-text-muted">
+                            Klarer Partnervertrag, monatliche Abrechnung,
+                            p&uuml;nktliche Auszahlung. Kein Kleingedrucktes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rechenbeispiel -->
+        <section class="dgd-rente-calc">
+            <div class="dgd-container">
+                <div class="dgd-rente-calc__card">
+                    <h2>Rechenbeispiel: Was bringt das?</h2>
+                    <p class="dgd-text-muted">Konservativ gerechnet &mdash; echte Partner verdienen oft mehr.</p>
+                    <div class="dgd-rente-calc__grid">
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">2&ndash;3</span>
+                            <span class="dgd-rente-calc__label">Empfehlungen pro Monat</span>
+                        </div>
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">&times;</span>
+                            <span class="dgd-rente-calc__label">&nbsp;</span>
+                        </div>
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">50&ndash;150&thinsp;&euro;</span>
+                            <span class="dgd-rente-calc__label">Provision pro Auftrag</span>
+                        </div>
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">=</span>
+                            <span class="dgd-rente-calc__label">&nbsp;</span>
+                        </div>
+                        <div class="dgd-rente-calc__item dgd-rente-calc__item--highlight">
+                            <span class="dgd-rente-calc__value">100&ndash;450&thinsp;&euro;</span>
+                            <span class="dgd-rente-calc__label">Extra pro Monat</span>
+                        </div>
+                    </div>
+                    <p class="dgd-rente-calc__note">
+                        Das sind <strong>1.200&ndash;5.400&thinsp;&euro; pro Jahr</strong> &mdash; f&uuml;r einen Anruf hier und da.
+                        Und das Beste: Die Provision l&auml;uft weiter, solange der Kunde bei DGD bleibt.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonial -->
+        <section class="dgd-rente-testimonial">
+            <div class="dgd-container">
+                <blockquote class="dgd-rente-quote">
+                    <p>
+                        &bdquo;Seit ich in Rente bin, empfehle ich DGD an meine alten Kontakte.
+                        Letzten Monat kamen 320&thinsp;&euro; rein &mdash; f&uuml;r vielleicht
+                        drei Telefonate. Besser als jede Zusatzversicherung.&ldquo;
+                    </p>
+                    <footer>
+                        <strong>Horst M.</strong>, ehem. Kfz-Sachverst&auml;ndiger aus Kassel, DGD-Partner seit 2025
+                    </footer>
+                </blockquote>
+            </div>
+        </section>
+
+        <!-- Signup Form -->
+        <section class="dgd-rente-signup" id="rente-signup">
+            <div class="dgd-container">
+                <div class="dgd-section">
+                    <h2>Jetzt als Empfehlungspartner registrieren</h2>
+                    <p class="dgd-text-muted">
+                        Kostenlos, unverbindlich, in 5 Minuten erledigt. Wir rufen Sie an
+                        und erkl&auml;ren alles Weitere pers&ouml;nlich.
+                    </p>
+
+                    <form id="rente-form" class="dgd-form dgd-mt-lg">
+                        <div class="dgd-form__row">
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label dgd-form__label--required" for="rente-name">Vollst&auml;ndiger Name</label>
+                                <input type="text" id="rente-name" class="dgd-form__input dgd-form__input--lg" placeholder="Max Mustermann" required>
+                                <div class="dgd-form__error">Bitte geben Sie Ihren Namen ein.</div>
+                            </div>
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label dgd-form__label--required" for="rente-phone">Telefonnummer</label>
+                                <input type="tel" id="rente-phone" class="dgd-form__input dgd-form__input--lg" placeholder="+49 170 1234567" required>
+                                <div class="dgd-form__error">Bitte geben Sie Ihre Telefonnummer ein.</div>
+                            </div>
+                        </div>
+                        <div class="dgd-form__row">
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-email">E-Mail-Adresse</label>
+                                <input type="email" id="rente-email" class="dgd-form__input dgd-form__input--lg" placeholder="max@beispiel.de">
+                            </div>
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-plz">PLZ / Ort</label>
+                                <input type="text" id="rente-plz" class="dgd-form__input dgd-form__input--lg" placeholder="z.B. 35394 Gie&szlig;en">
+                            </div>
+                        </div>
+                        <div class="dgd-form__row">
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-experience">Jahre als Gutachter</label>
+                                <input type="number" id="rente-experience" class="dgd-form__input dgd-form__input--lg" min="0" max="60" placeholder="z.B. 25">
+                            </div>
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-retirement">Ruhestand ab</label>
+                                <select id="rente-retirement" class="dgd-form__select dgd-form__select--lg">
+                                    <option value="">-- Bitte w&auml;hlen --</option>
+                                    <option value="already">Bereits im Ruhestand</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                    <option value="later">Sp&auml;ter / unsicher</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label" for="rente-message">Nachricht (optional)</label>
+                            <textarea id="rente-message" class="dgd-form__textarea dgd-form__textarea--lg" rows="3"
+                                placeholder="z.B. &bdquo;Ich habe 30 Jahre in M&uuml;nchen gearbeitet und kenne viele Werkst&auml;tten...&ldquo;"></textarea>
+                        </div>
+
+                        <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg dgd-btn--full dgd-mt-md">
+                            Unverbindlich anmelden &mdash; Wir rufen Sie an
+                        </button>
+                        <p class="dgd-text-center dgd-text-muted" style="margin-top:0.75rem;font-size:0.85rem;">
+                            &#128274; Ihre Daten sind sicher. Keine Weitergabe an Dritte.
+                        </p>
+                    </form>
+
+                    <div id="rente-success" class="dgd-alert dgd-alert--success dgd-hidden dgd-mt-lg">
+                        <strong>Vielen Dank f&uuml;r Ihr Interesse!</strong><br>
+                        Wir melden uns innerhalb von 24 Stunden pers&ouml;nlich bei Ihnen und besprechen alles Weitere.
+                    </div>
+                    <div id="rente-error" class="dgd-alert dgd-alert--error dgd-hidden dgd-mt-lg"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="dgd-rente-faq">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center dgd-mb-lg">H&auml;ufige Fragen</h2>
+                <div class="dgd-rente-faq__list">
+                    <details class="dgd-rente-faq__item">
+                        <summary>Muss ich noch aktiv als Gutachter arbeiten?</summary>
+                        <p>Nein. Sie m&uuml;ssen keinerlei Gutachten erstellen. Sie empfehlen lediglich DGD weiter &mdash; den Rest &uuml;bernehmen unsere aktiven Partner.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Wie hoch ist die Provision genau?</summary>
+                        <p>Die Provision richtet sich nach dem Auftragsvolumen und wird individuell vereinbart. Im Schnitt liegen Empfehlungsprovisionen zwischen 50 und 150&thinsp;&euro; pro vermitteltem Gutachten.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Was hei&szlig;t &bdquo;lebenslang&ldquo;?</summary>
+                        <p>Solange der von Ihnen vermittelte Kunde &uuml;ber DGD Gutachten in Auftrag gibt, erhalten Sie Ihre Provision. Es gibt keine zeitliche Begrenzung.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Kostet mich die Anmeldung etwas?</summary>
+                        <p>Nein. Die Registrierung und Teilnahme am Empfehlungsprogramm ist v&ouml;llig kostenlos. Es gibt keine versteckten Geb&uuml;hren.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Wann und wie werde ich bezahlt?</summary>
+                        <p>Die Provision wird monatlich abgerechnet und per &Uuml;berweisung auf Ihr Konto ausgezahlt. Sie erhalten eine transparente Abrechnung.</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ================================================================= -->
     <!-- View: Impressum                                                   -->
     <!-- ================================================================= -->
     <div id="view-impressum" class="dgd-view">
@@ -603,6 +890,7 @@
                     <li><a href="#gutachter">Kfz-Gutachter finden</a></li>
                     <li><a href="#melden">Unfallschaden melden</a></li>
                     <li><a href="#partner">Partner werden</a></li>
+                    <li><a href="#rente">Rente &amp; Provision</a></li>
                     <li><a href="#status">Status prüfen</a></li>
                 </ul>
             </div>
@@ -620,6 +908,7 @@
                     <li><a href="#impressum">Impressum</a></li>
                     <li><a href="#datenschutz">Datenschutz</a></li>
                     <li><a href="#agb">AGB</a></li>
+                    <li><a href="/dashboard/">Internes Dashboard</a></li>
                 </ul>
             </div>
         </div>
@@ -636,6 +925,10 @@
     <script src="js/api.js"></script>
     <script src="js/wizard.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- Maria Demir Chatbot -->
+    <link rel="stylesheet" href="css/portal-cortex.css">
+    <script src="js/portal-cortex.js"></script>
 
 </body>
 </html>

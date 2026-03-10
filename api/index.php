@@ -60,6 +60,10 @@ try {
     elseif ($method === 'GET' && preg_match('#/api/dgd/geocode$#', $path)) {
         handle_geocode();
     }
+    // POST /api/dgd/rente
+    elseif ($method === 'POST' && preg_match('#/api/dgd/rente$#', $path)) {
+        handle_rente_signup();
+    }
     // Fallback
     else {
         json_error('Not found: ' . $method . ' ' . $path, 404);
@@ -410,6 +414,79 @@ function handle_geocode(): void
     json_response([
         'results' => $decoded,
         'count'   => is_array($decoded) ? count($decoded) : 0,
+    ]);
+}
+
+
+/**
+ * POST /api/dgd/rente
+ *
+ * Body (JSON):
+ *   name       - required
+ *   phone      - required
+ *   email, plz, experience_years, retirement_date, message - optional
+ */
+function handle_rente_signup(): void
+{
+    $body = get_json_body();
+
+    if (empty($body['name']) || empty($body['phone'])) {
+        json_error('Name und Telefonnummer sind Pflichtfelder.', 400);
+    }
+
+    $db = get_db();
+
+    // Ensure table exists
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS dgd_rente_partners (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            email TEXT DEFAULT '',
+            plz TEXT DEFAULT '',
+            experience_years INTEGER,
+            retirement_date TEXT DEFAULT '',
+            message TEXT DEFAULT '',
+            status TEXT DEFAULT 'new',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    ");
+
+    // Duplicate check on phone
+    $dup = $db->prepare("SELECT id FROM dgd_rente_partners WHERE phone = :phone AND status = 'new'");
+    $dup->execute([':phone' => trim($body['phone'])]);
+    if ($dup->fetch()) {
+        json_error('Sie sind bereits als Empfehlungspartner registriert.', 409);
+    }
+
+    $now = now_iso();
+    $id  = generate_uuid();
+
+    $stmt = $db->prepare("
+        INSERT INTO dgd_rente_partners
+            (id, name, phone, email, plz, experience_years, retirement_date, message, status, created_at, updated_at)
+        VALUES
+            (:id, :name, :phone, :email, :plz, :experience_years, :retirement_date, :message, 'new', :created_at, :updated_at)
+    ");
+
+    $stmt->execute([
+        ':id'               => $id,
+        ':name'             => trim($body['name']),
+        ':phone'            => trim($body['phone']),
+        ':email'            => trim($body['email'] ?? ''),
+        ':plz'              => trim($body['plz'] ?? ''),
+        ':experience_years' => !empty($body['experience_years']) ? (int)$body['experience_years'] : null,
+        ':retirement_date'  => trim($body['retirement_date'] ?? ''),
+        ':message'          => trim($body['message'] ?? ''),
+        ':created_at'       => $now,
+        ':updated_at'       => $now,
+    ]);
+
+    json_success('Vielen Dank! Wir melden uns innerhalb von 24 Stunden.', [
+        'id'         => $id,
+        'status'     => 'new',
+        'created_at' => $now,
     ]);
 }
 

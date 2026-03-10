@@ -1,0 +1,35 @@
+{
+  "features": [
+    {
+      "id": "anomaly-detection",
+      "name": "Anomalie-Erkennung",
+      "hoursPerWeek": 2.0,
+      "activeFrom": "2025-03-01",
+      "description": "Automatische Erkennung von Zeitbuchungs-Anomalien"
+    },
+    {
+      "id": "auto-reports",
+      "name": "Automatische Berichte",
+      "hoursPerWeek": 3.0,
+      "activeFrom": "2025-06-01",
+      "description": "Cortex generiert Wochen-/Monatsberichte automatisch"
+    },
+    {
+      "id": "smart-search",
+      "name": "Intelligente Suche",
+      "hoursPerWeek": 1.5,
+      "activeFrom": "2025-09-01",
+      "description": "Semantische Suche ueber Dokumente und Schadensfaelle"
+    },
+    {
+      "id": "cortex-hr-analysis",
+      "name": "Cortex HR-Analyse",
+      "hoursPerWeek": 2.5,
+      "activeFrom": "2026-01-01",
+      "description": "KI-gestuetzte Mitarbeiter- und Team-Analysen"
+    }
+  ],
+  "manualEntries": [],
+  "developerCompensationPct": 10,
+  "trackingStartDate": "2025-01-01"
+}

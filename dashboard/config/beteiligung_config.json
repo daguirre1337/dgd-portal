@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "companyValuation": 3500000,
+  "currency": "EUR",
+  "valuationDate": "2026-03-01",
+  "hourlyRates": {
+    "CEO": 85,
+    "COO": 75,
+    "Leiter Schadenmanagement": 55,
+    "Gutachter": 50,
+    "Sachbearbeiter": 40,
+    "Prompt Engineer": 45,
+    "Inbound": 35
+  },
+  "defaultHourlyRate": 40,
+  "totalSharesAvailable": 100000,
+  "vestingCliffMonths": 6,
+  "vestingTotalMonths": 24,
+  "eligibleDepartments": ["all"]
+}
