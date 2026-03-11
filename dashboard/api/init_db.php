@@ -7,7 +7,7 @@
  *
  * Tables: users, invite_codes, projects, milestones, kpis, kpi_history,
  *         goals, key_results, feedback_templates, feedback_responses,
- *         project_expenses, revenue_entries
+ *         project_expenses, revenue_entries, elbdesk_cases, elbdesk_revenue
  */
 
 require_once __DIR__ . '/config.php';
@@ -135,6 +135,58 @@ function init_database(): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_projects_category ON projects(category)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_milestones_proj   ON milestones(project_id)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_kpi_history_kpi   ON kpi_history(kpi_id)");
+
+    // ---- elbdesk_cases table ----
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS elbdesk_cases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_id TEXT UNIQUE NOT NULL,
+            customer_name TEXT NOT NULL,
+            customer_email TEXT,
+            customer_phone TEXT,
+            damage_type TEXT NOT NULL,
+            damage_description TEXT,
+            location_street TEXT,
+            location_plz TEXT,
+            location_city TEXT,
+            estimated_value_eur REAL DEFAULT 0,
+            actual_value_eur REAL DEFAULT 0,
+            gutachter_id TEXT,
+            gutachter_name TEXT,
+            status TEXT DEFAULT 'offen',
+            priority TEXT DEFAULT 'normal',
+            phase INTEGER DEFAULT 1,
+            phase_label TEXT DEFAULT 'Eingang',
+            incident_date TEXT,
+            report_date TEXT,
+            assignment_date TEXT,
+            inspection_date TEXT,
+            completion_date TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now')),
+            synced_at TEXT
+        )
+    ");
+
+    // ---- elbdesk_revenue table ----
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS elbdesk_revenue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_id TEXT,
+            month TEXT NOT NULL,
+            description TEXT,
+            amount_eur REAL NOT NULL,
+            type TEXT DEFAULT 'gutachten',
+            source TEXT DEFAULT 'elbdesk',
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (case_id) REFERENCES elbdesk_cases(case_id)
+        )
+    ");
+
+    // ---- elbdesk indexes ----
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_elbdesk_cases_status ON elbdesk_cases(status)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_elbdesk_cases_damage ON elbdesk_cases(damage_type)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_elbdesk_revenue_month ON elbdesk_revenue(month)");
 
     // ---- goals, feedback, finance tables ----
     goals_ensure_tables();
@@ -433,6 +485,151 @@ function init_database(): void
         feedback_seed_data($adminId);
         finance_seed_data($adminId);
 
+        // --- ELBDESK Cases seed data ---
+        $elbdeskCount = (int) $db->query("SELECT COUNT(*) FROM elbdesk_cases")->fetchColumn();
+        if ($elbdeskCount === 0) {
+            $gutachter = [
+                ['id' => 'GA-001', 'name' => 'Thomas Weber'],
+                ['id' => 'GA-002', 'name' => 'Lisa Hartmann'],
+                ['id' => 'GA-003', 'name' => 'Markus Klein'],
+                ['id' => 'GA-004', 'name' => 'Sandra Mueller'],
+                ['id' => 'GA-005', 'name' => 'Jens Brandt'],
+            ];
+
+            $caseStmt = $db->prepare("
+                INSERT INTO elbdesk_cases (
+                    case_id, customer_name, customer_email, customer_phone,
+                    damage_type, damage_description, location_street, location_plz, location_city,
+                    estimated_value_eur, actual_value_eur, gutachter_id, gutachter_name,
+                    status, priority, phase, phase_label,
+                    incident_date, report_date, assignment_date, inspection_date, completion_date,
+                    created_at, updated_at
+                ) VALUES (
+                    :case_id, :customer_name, :customer_email, :customer_phone,
+                    :damage_type, :damage_description, :location_street, :location_plz, :location_city,
+                    :estimated_value_eur, :actual_value_eur, :gutachter_id, :gutachter_name,
+                    :status, :priority, :phase, :phase_label,
+                    :incident_date, :report_date, :assignment_date, :inspection_date, :completion_date,
+                    :created_at, :updated_at
+                )
+            ");
+
+            $elbdeskCases = [
+                // --- 8x offen (phase 1 - Eingang) ---
+                ['ELB-2026-0031', 'Maria Schmidt', 'maria.schmidt@gmx.de', '040-55512301', 'Wasserschaden', 'Rohrbruch in der Kueche, Wasser unter Parkett gelaufen', 'Eppendorfer Weg 42', '20259', 'Hamburg', 3200, 0, null, null, 'offen', 'hoch', 1, 'Eingang', '2026-03-08', '2026-03-09', null, null, null],
+                ['ELB-2026-0032', 'Klaus Petersen', 'k.petersen@web.de', '040-55512302', 'Brandschaden', 'Kuechenbrand durch defekten Herd, Russ an Decke und Waenden', 'Alsterchaussee 15', '20149', 'Hamburg', 8500, 0, null, null, 'offen', 'hoch', 1, 'Eingang', '2026-03-07', '2026-03-08', null, null, null],
+                ['ELB-2026-0033', 'Sabine Richter', 's.richter@outlook.de', '040-55512303', 'Sturmschaden', 'Dachziegel abgedeckt nach Sturm, Wasser eindringt', 'Wandsbeker Chaussee 89', '22089', 'Hamburg', 4100, 0, null, null, 'offen', 'normal', 1, 'Eingang', '2026-03-06', '2026-03-07', null, null, null],
+                ['ELB-2026-0034', 'Hans-Peter Braun', 'hp.braun@t-online.de', '040-55512304', 'Wasserschaden', 'Ueberflutung im Keller nach Starkregen', 'Bergedorfer Str. 112', '21033', 'Hamburg', 2800, 0, null, null, 'offen', 'normal', 1, 'Eingang', '2026-03-09', '2026-03-10', null, null, null],
+                ['ELB-2026-0035', 'Annika Vogt', 'a.vogt@gmail.com', '040-55512305', 'Schimmel', 'Grossflaechiger Schimmelbefall im Schlafzimmer', 'Barmbeker Str. 55', '22303', 'Hamburg', 1900, 0, null, null, 'offen', 'normal', 1, 'Eingang', '2026-03-10', '2026-03-10', null, null, null],
+                ['ELB-2026-0036', 'Florian Engel', 'f.engel@yahoo.de', '040-55512306', 'Baumaengel', 'Risse in tragender Wand nach Neubau', 'Luruper Hauptstr. 78', '22547', 'Hamburg', 5500, 0, null, null, 'offen', 'hoch', 1, 'Eingang', '2026-03-08', '2026-03-09', null, null, null],
+                ['ELB-2026-0037', 'Petra Lange', 'p.lange@gmx.de', '040-55512307', 'Wasserschaden', 'Waschmaschine ausgelaufen, Laminat aufgequollen', 'Osdorfer Landstr. 200', '22549', 'Hamburg', 1500, 0, null, null, 'offen', 'niedrig', 1, 'Eingang', '2026-03-11', '2026-03-11', null, null, null],
+                ['ELB-2026-0038', 'Ralf Zimmermann', 'r.zimmermann@web.de', '040-55512308', 'Sturmschaden', 'Baum auf Garage gefallen, Dach beschaedigt', 'Rahlstedter Weg 33', '22143', 'Hamburg', 6200, 0, null, null, 'offen', 'hoch', 1, 'Eingang', '2026-03-07', '2026-03-08', null, null, null],
+
+                // --- 7x in_bearbeitung (phase 2 - Gutachter beauftragt) ---
+                ['ELB-2026-0021', 'Juergen Hoffmann', 'j.hoffmann@gmx.de', '040-55512201', 'Wasserschaden', 'Wasserschaden durch undichte Dachrinne im Obergeschoss', 'Altona Str. 23', '22765', 'Hamburg', 3800, 0, 'GA-001', 'Thomas Weber', 'in_bearbeitung', 'normal', 2, 'Gutachter beauftragt', '2026-02-28', '2026-03-01', '2026-03-03', null, null],
+                ['ELB-2026-0022', 'Monika Fischer', 'm.fischer@outlook.de', '040-55512202', 'Brandschaden', 'Schwelbrand im Dachstuhl, erhebliche Russschaeden', 'Hohenzollernring 8', '22763', 'Hamburg', 12000, 0, 'GA-002', 'Lisa Hartmann', 'in_bearbeitung', 'hoch', 2, 'Gutachter beauftragt', '2026-02-25', '2026-02-26', '2026-03-01', null, null],
+                ['ELB-2026-0023', 'Dirk Schaefer', 'd.schaefer@t-online.de', '040-55512203', 'Sturmschaden', 'Fassadenschaden durch Sturm Xaver II', 'Harburger Ring 44', '21073', 'Hamburg', 4500, 0, 'GA-003', 'Markus Klein', 'in_bearbeitung', 'normal', 2, 'Gutachter beauftragt', '2026-02-20', '2026-02-21', '2026-02-28', null, null],
+                ['ELB-2026-0024', 'Kathrin Bauer', 'k.bauer@gmail.com', '040-55512204', 'Schimmel', 'Schimmel in Bad und Kueche, Mietminderung angedroht', 'Winterhuder Weg 67', '22085', 'Hamburg', 2200, 0, 'GA-004', 'Sandra Mueller', 'in_bearbeitung', 'normal', 2, 'Gutachter beauftragt', '2026-03-01', '2026-03-02', '2026-03-05', null, null],
+                ['ELB-2026-0025', 'Sven Krause', 's.krause@web.de', '040-55512205', 'Wasserschaden', 'Heizungsrohr geplatzt im Winter, Estrich durchnaesst', 'Bramfelder Str. 99', '22305', 'Hamburg', 5100, 0, 'GA-005', 'Jens Brandt', 'in_bearbeitung', 'hoch', 2, 'Gutachter beauftragt', '2026-02-15', '2026-02-16', '2026-02-25', null, null],
+                ['ELB-2026-0026', 'Eva Wolff', 'e.wolff@gmx.de', '040-55512206', 'Baumaengel', 'Feuchtigkeitseintritt durch mangelhafte Abdichtung', 'Billstedter Hauptstr. 12', '22111', 'Hamburg', 3400, 0, 'GA-001', 'Thomas Weber', 'in_bearbeitung', 'normal', 2, 'Gutachter beauftragt', '2026-03-02', '2026-03-03', '2026-03-06', null, null],
+                ['ELB-2026-0027', 'Torsten Beck', 't.beck@yahoo.de', '040-55512207', 'Wasserschaden', 'Rueckstau aus Kanalisation im Kellergeschoss', 'Poppenbütteler Weg 5', '22399', 'Hamburg', 2900, 0, 'GA-002', 'Lisa Hartmann', 'in_bearbeitung', 'normal', 2, 'Gutachter beauftragt', '2026-03-04', '2026-03-05', '2026-03-08', null, null],
+
+                // --- 5x termin (phase 3 - Termin vereinbart) ---
+                ['ELB-2026-0016', 'Werner Scholz', 'w.scholz@t-online.de', '040-55512101', 'Sturmschaden', 'Schornstein beschaedigt, lose Ziegel auf Dach', 'Blankenese Hauptstr. 3', '22587', 'Hamburg', 3600, 0, 'GA-003', 'Markus Klein', 'termin', 'normal', 3, 'Termin vereinbart', '2026-02-10', '2026-02-11', '2026-02-18', '2026-03-14', null],
+                ['ELB-2026-0017', 'Inge Hartmann', 'i.hartmann@gmx.de', '040-55512102', 'Wasserschaden', 'Wasserfleck an Decke breitet sich aus, Quelle unbekannt', 'Eimsbuetteler Str. 71', '20259', 'Hamburg', 2400, 0, 'GA-004', 'Sandra Mueller', 'termin', 'normal', 3, 'Termin vereinbart', '2026-02-08', '2026-02-09', '2026-02-15', '2026-03-12', null],
+                ['ELB-2026-0018', 'Oliver Neumann', 'o.neumann@outlook.de', '040-55512103', 'Schimmel', 'Schimmel hinter Einbauschrank, gesundheitliche Bedenken', 'Uhlenhorster Weg 19', '22085', 'Hamburg', 1800, 0, 'GA-005', 'Jens Brandt', 'termin', 'hoch', 3, 'Termin vereinbart', '2026-02-12', '2026-02-13', '2026-02-20', '2026-03-15', null],
+                ['ELB-2026-0019', 'Christine Maier', 'c.maier@web.de', '040-55512104', 'Brandschaden', 'Kaminbrand mit Folgeschaeden an Schornstein und Wand', 'Nienstedtener Marktplatz 7', '22609', 'Hamburg', 7200, 0, 'GA-001', 'Thomas Weber', 'termin', 'hoch', 3, 'Termin vereinbart', '2026-02-05', '2026-02-06', '2026-02-14', '2026-03-13', null],
+                ['ELB-2026-0020', 'Martin Schulze', 'm.schulze@gmail.com', '040-55512105', 'Sturmschaden', 'Wintergarten-Verglasung durch Hagel zerstoert', 'Sasel Weg 88', '22393', 'Hamburg', 4800, 0, 'GA-002', 'Lisa Hartmann', 'termin', 'normal', 3, 'Termin vereinbart', '2026-02-15', '2026-02-16', '2026-02-22', '2026-03-16', null],
+
+                // --- 10x abgeschlossen (phase 4 - Fertig) ---
+                ['ELB-2025-0001', 'Andrea Koenig', 'a.koenig@gmx.de', '040-55511001', 'Wasserschaden', 'Rohrbruch in Badezimmer, komplette Sanierung', 'Grindelallee 45', '20146', 'Hamburg', 4200, 4350, 'GA-001', 'Thomas Weber', 'abgeschlossen', 'normal', 4, 'Fertig', '2025-09-15', '2025-09-16', '2025-09-20', '2025-10-05', '2025-10-20'],
+                ['ELB-2025-0002', 'Stefan Huber', 's.huber@web.de', '040-55511002', 'Brandschaden', 'Zimmerbrand durch Kurzschluss, Wiederaufbau EG', 'Rothenbaumchaussee 12', '20148', 'Hamburg', 15000, 14800, 'GA-002', 'Lisa Hartmann', 'abgeschlossen', 'hoch', 4, 'Fertig', '2025-10-01', '2025-10-02', '2025-10-05', '2025-10-20', '2025-11-15'],
+                ['ELB-2025-0003', 'Birgit Lorenz', 'b.lorenz@t-online.de', '040-55511003', 'Sturmschaden', 'Komplette Dachsanierung nach Sturmschaden', 'Elbchaussee 210', '22605', 'Hamburg', 8900, 9200, 'GA-003', 'Markus Klein', 'abgeschlossen', 'hoch', 4, 'Fertig', '2025-10-20', '2025-10-21', '2025-10-25', '2025-11-10', '2025-12-01'],
+                ['ELB-2025-0004', 'Thomas Berger', 't.berger@yahoo.de', '040-55511004', 'Schimmel', 'Schimmelsanierung Keller und EG', 'Mundsburger Damm 30', '22087', 'Hamburg', 3100, 3050, 'GA-004', 'Sandra Mueller', 'abgeschlossen', 'normal', 4, 'Fertig', '2025-11-01', '2025-11-02', '2025-11-05', '2025-11-20', '2025-12-10'],
+                ['ELB-2025-0005', 'Nicole Wagner', 'n.wagner@gmail.com', '040-55511005', 'Wasserschaden', 'Leitungswasserschaden Dachgeschoss, 3 Zimmer betroffen', 'Sierichstr. 56', '22301', 'Hamburg', 6500, 6800, 'GA-005', 'Jens Brandt', 'abgeschlossen', 'hoch', 4, 'Fertig', '2025-11-10', '2025-11-11', '2025-11-15', '2025-12-01', '2025-12-20'],
+                ['ELB-2025-0006', 'Frank Meyer', 'f.meyer@gmx.de', '040-55511006', 'Baumaengel', 'Risse in Fassade und Keller eines Neubaus', 'Habichtstr. 22', '22305', 'Hamburg', 4800, 4600, 'GA-001', 'Thomas Weber', 'abgeschlossen', 'normal', 4, 'Fertig', '2025-12-01', '2025-12-02', '2025-12-05', '2025-12-18', '2026-01-10'],
+                ['ELB-2026-0007', 'Heike Fuchs', 'h.fuchs@outlook.de', '040-55511007', 'Wasserschaden', 'Frostschaden an Wasserleitung, Keller ueberschwemmt', 'Dehnhaide 88', '22081', 'Hamburg', 3500, 3650, 'GA-002', 'Lisa Hartmann', 'abgeschlossen', 'normal', 4, 'Fertig', '2026-01-05', '2026-01-06', '2026-01-10', '2026-01-22', '2026-02-05'],
+                ['ELB-2026-0008', 'Robert Haas', 'r.haas@t-online.de', '040-55511008', 'Wasserschaden', 'Wassereinbruch durch defekte Dachentwasserung', 'Tonndorfer Weg 14', '22045', 'Hamburg', 5200, 5400, 'GA-003', 'Markus Klein', 'abgeschlossen', 'normal', 4, 'Fertig', '2026-01-15', '2026-01-16', '2026-01-20', '2026-02-01', '2026-02-15'],
+                ['ELB-2026-0009', 'Susanne Vogel', 's.vogel@web.de', '040-55511009', 'Wasserschaden', 'Badezimmer-Abdichtung defekt, Schaden in Wohnung darunter', 'Ohlsdorfer Str. 40', '22297', 'Hamburg', 2800, 2950, 'GA-004', 'Sandra Mueller', 'abgeschlossen', 'normal', 4, 'Fertig', '2026-02-01', '2026-02-02', '2026-02-05', '2026-02-18', '2026-03-01'],
+                ['ELB-2026-0010', 'Matthias Ernst', 'm.ernst@gmail.com', '040-55511010', 'Brandschaden', 'Wohnungsbrand OG, Statik-Gutachten erforderlich', 'Hammer Steindamm 65', '20535', 'Hamburg', 11000, 10800, 'GA-005', 'Jens Brandt', 'abgeschlossen', 'hoch', 4, 'Fertig', '2026-02-05', '2026-02-06', '2026-02-10', '2026-02-22', '2026-03-05'],
+            ];
+
+            foreach ($elbdeskCases as $c) {
+                $caseStmt->execute([
+                    ':case_id'             => $c[0],
+                    ':customer_name'       => $c[1],
+                    ':customer_email'      => $c[2],
+                    ':customer_phone'      => $c[3],
+                    ':damage_type'         => $c[4],
+                    ':damage_description'  => $c[5],
+                    ':location_street'     => $c[6],
+                    ':location_plz'        => $c[7],
+                    ':location_city'       => $c[8],
+                    ':estimated_value_eur' => $c[9],
+                    ':actual_value_eur'    => $c[10],
+                    ':gutachter_id'        => $c[11],
+                    ':gutachter_name'      => $c[12],
+                    ':status'              => $c[13],
+                    ':priority'            => $c[14],
+                    ':phase'               => $c[15],
+                    ':phase_label'         => $c[16],
+                    ':incident_date'       => $c[17],
+                    ':report_date'         => $c[18],
+                    ':assignment_date'     => $c[19],
+                    ':inspection_date'     => $c[20],
+                    ':completion_date'     => $c[21],
+                    ':created_at'          => $now,
+                    ':updated_at'          => $now,
+                ]);
+            }
+
+            // --- ELBDESK Revenue seed data (6 months: 2025-10 to 2026-03, ~45,000 EUR total) ---
+            $revStmt = $db->prepare("
+                INSERT INTO elbdesk_revenue (case_id, month, description, amount_eur, type, source, created_at)
+                VALUES (:case_id, :month, :description, :amount_eur, :type, :source, :created_at)
+            ");
+
+            $elbdeskRevenue = [
+                // 2025-10: 2 completed cases
+                ['ELB-2025-0001', '2025-10', 'Gutachten Wasserschaden - Rohrbruch Grindelallee', 2850.00, 'gutachten', 'elbdesk'],
+                ['ELB-2025-0002', '2025-10', 'Gutachten Brandschaden - Zimmerbrand Rothenbaumchaussee (Abschlag)', 3200.00, 'gutachten', 'elbdesk'],
+
+                // 2025-11: remaining + new completions
+                ['ELB-2025-0002', '2025-11', 'Gutachten Brandschaden - Rothenbaumchaussee (Restbetrag)', 3400.00, 'gutachten', 'elbdesk'],
+                ['ELB-2025-0003', '2025-11', 'Gutachten Sturmschaden - Dachsanierung Elbchaussee', 5800.00, 'gutachten', 'elbdesk'],
+
+                // 2025-12: winter completions
+                ['ELB-2025-0004', '2025-12', 'Gutachten Schimmelsanierung - Mundsburger Damm', 1950.00, 'gutachten', 'elbdesk'],
+                ['ELB-2025-0005', '2025-12', 'Gutachten Wasserschaden - Leitungswasser Sierichstr.', 4600.00, 'gutachten', 'elbdesk'],
+                ['ELB-2025-0006', '2025-12', 'Gutachten Baumaengel - Fassadenrisse Habichtstr.', 2750.00, 'gutachten', 'elbdesk'],
+
+                // 2026-01: new year completions
+                ['ELB-2026-0007', '2026-01', 'Gutachten Wasserschaden - Frostschaden Dehnhaide', 2450.00, 'gutachten', 'elbdesk'],
+                ['ELB-2026-0008', '2026-01', 'Gutachten Wasserschaden - Dachentwasserung Tonndorfer Weg', 3100.00, 'gutachten', 'elbdesk'],
+
+                // 2026-02: Q1 continued
+                ['ELB-2026-0009', '2026-02', 'Gutachten Wasserschaden - Badabdichtung Ohlsdorfer Str.', 1850.00, 'gutachten', 'elbdesk'],
+                ['ELB-2026-0008', '2026-02', 'Nachgutachten Dachentwasserung Tonndorfer Weg', 1200.00, 'gutachten', 'elbdesk'],
+                ['ELB-2026-0010', '2026-02', 'Gutachten Brandschaden - Wohnungsbrand Hammer Steindamm (Abschlag)', 4800.00, 'gutachten', 'elbdesk'],
+
+                // 2026-03: current month
+                ['ELB-2026-0010', '2026-03', 'Gutachten Brandschaden - Hammer Steindamm (Restbetrag)', 4600.00, 'gutachten', 'elbdesk'],
+                ['ELB-2026-0009', '2026-03', 'Nachbericht Badabdichtung Ohlsdorfer Str.', 1650.00, 'gutachten', 'elbdesk'],
+            ];
+
+            foreach ($elbdeskRevenue as $r) {
+                $revStmt->execute([
+                    ':case_id'     => $r[0],
+                    ':month'       => $r[1],
+                    ':description' => $r[2],
+                    ':amount_eur'  => $r[3],
+                    ':type'        => $r[4],
+                    ':source'      => $r[5],
+                    ':created_at'  => $now,
+                ]);
+            }
+        }
+
         $db->commit();
 
         // Print admin password when running from CLI
@@ -455,10 +652,12 @@ if (php_sapi_name() === 'cli' && basename(__FILE__) === basename($argv[0] ?? '')
         init_database();
         echo "\nDatabase initialized successfully at " . DB_PATH . "\n";
         $db = get_db();
-        echo "Users:    " . $db->query("SELECT COUNT(*) FROM users")->fetchColumn() . "\n";
-        echo "Projects: " . $db->query("SELECT COUNT(*) FROM projects")->fetchColumn() . "\n";
-        echo "KPIs:     " . $db->query("SELECT COUNT(*) FROM kpis")->fetchColumn() . "\n";
-        echo "Invites:  " . $db->query("SELECT COUNT(*) FROM invite_codes")->fetchColumn() . "\n";
+        echo "Users:           " . $db->query("SELECT COUNT(*) FROM users")->fetchColumn() . "\n";
+        echo "Projects:        " . $db->query("SELECT COUNT(*) FROM projects")->fetchColumn() . "\n";
+        echo "KPIs:            " . $db->query("SELECT COUNT(*) FROM kpis")->fetchColumn() . "\n";
+        echo "Invites:         " . $db->query("SELECT COUNT(*) FROM invite_codes")->fetchColumn() . "\n";
+        echo "ELBDESK Cases:   " . $db->query("SELECT COUNT(*) FROM elbdesk_cases")->fetchColumn() . "\n";
+        echo "ELBDESK Revenue: " . $db->query("SELECT COUNT(*) FROM elbdesk_revenue")->fetchColumn() . "\n";
     } catch (Exception $e) {
         echo "ERROR: " . $e->getMessage() . "\n";
         exit(1);
