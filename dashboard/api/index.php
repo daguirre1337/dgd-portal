@@ -35,6 +35,7 @@ require_once __DIR__ . '/handlers/admin.php';
 require_once __DIR__ . '/handlers/goals.php';
 require_once __DIR__ . '/handlers/feedback.php';
 require_once __DIR__ . '/handlers/finance.php';
+require_once __DIR__ . '/handlers/export.php';
 
 // ---- Auto-initialize database if tables are missing ----
 require_once __DIR__ . '/init_db.php';
@@ -113,6 +114,9 @@ $routes = [
     ['GET',    '#/api/finance/expenses$#',               'handle_list_expenses',    'auth'],
     ['POST',   '#/api/finance/revenue$#',                'handle_create_revenue',   'auth'],
     ['GET',    '#/api/finance/revenue$#',                'handle_list_revenue',     'auth'],
+
+    // Export / Reports
+    ['GET',  '#/api/export$#',       'handle_export',              'auth'],
 
     // Admin
     ['GET',  '#/api/admin/users$#',  'handle_list_users',          'admin'],

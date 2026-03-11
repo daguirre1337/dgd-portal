@@ -13,7 +13,7 @@ DGD.router = (function() {
 
     var VALID_VIEWS = [
         'dashboard', 'timeline', 'kpis', 'mitarbeiter',
-        'finanzen', 'ziele', 'feedback', 'showcase', 'settings'
+        'finanzen', 'ziele', 'feedback', 'roadmap', 'showcase', 'settings'
     ];
 
     var VIEW_TITLES = {
@@ -24,6 +24,7 @@ DGD.router = (function() {
         finanzen: 'Finanzen',
         ziele: 'Ziele & OKR',
         feedback: 'Feedback',
+        roadmap: 'Strategische Roadmap',
         showcase: 'Showcase Builder',
         settings: 'Einstellungen',
     };
@@ -57,6 +58,7 @@ DGD.router = (function() {
             case 'finanzen':     DGD.views.finanzen(content);     break;
             case 'ziele':        DGD.views.ziele(content);        break;
             case 'feedback':     DGD.views.feedback(content);     break;
+            case 'roadmap':      DGD.views.roadmap(content);      break;
             case 'showcase':     DGD.views.showcase(content);     break;
             case 'settings':     DGD.views.settings(content);     break;
         }

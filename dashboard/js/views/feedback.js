@@ -187,6 +187,9 @@ DGD.views = DGD.views || {};
         var html = '';
         html += '<div class="dgd-page-header">';
         html += '<h1 class="dgd-page-header__title">Feedback</h1>';
+        html += '<div class="dgd-page-header__actions">';
+        html += (DGD.export ? DGD.export.buttonHtml('goals') : '');
+        html += '</div>';
         html += '</div>';
 
         // Tabs

@@ -122,6 +122,9 @@
         var html = '';
         html += '<div class="dgd-page-header">';
         html += '<h1 class="dgd-page-header__title">KPI Cockpit</h1>';
+        html += '<div class="dgd-page-header__actions">';
+        html += DGD.export ? DGD.export.buttonHtml('kpis') : '';
+        html += '</div>';
         html += '</div>';
 
         html += '<div class="dgd-kpi-grid">';

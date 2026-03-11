@@ -108,6 +108,7 @@ DGD.views = DGD.views || {};
         html += '<button class="dgd-btn dgd-btn--primary" id="btn-new-goal">';
         html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
         html += ' Neues Ziel</button>';
+        html += (DGD.export ? DGD.export.buttonHtml('goals') : '');
         html += '</div></div>';
 
         // Quarter selector
