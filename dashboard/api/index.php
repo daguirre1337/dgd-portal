@@ -14,9 +14,9 @@
  * KPI Endpoints:
  *   GET|POST /api/kpis  |  GET /api/kpis/{id}/history
  *
- * Goal/OKR Endpoints: (see goals.php)
- * Feedback Endpoints:  (see feedback.php)
- * Finance Endpoints:   (see finance.php)
+ * Goal/OKR Endpoints: (see handlers/goals.php)
+ * Feedback Endpoints:  (see handlers/feedback.php)
+ * Finance Endpoints:   (see handlers/finance.php)
  *
  * Admin Endpoints:
  *   GET|POST /api/invite-codes
@@ -32,10 +32,9 @@ require_once __DIR__ . '/handlers/projects.php';
 require_once __DIR__ . '/handlers/kpis.php';
 require_once __DIR__ . '/handlers/admin.php';
 
-// Existing handler files (already separate)
-require_once __DIR__ . '/goals.php';
-require_once __DIR__ . '/feedback.php';
-require_once __DIR__ . '/finance.php';
+require_once __DIR__ . '/handlers/goals.php';
+require_once __DIR__ . '/handlers/feedback.php';
+require_once __DIR__ . '/handlers/finance.php';
 
 // ---- Auto-initialize database if tables are missing ----
 require_once __DIR__ . '/init_db.php';
@@ -116,6 +115,7 @@ $routes = [
     ['GET',    '#/api/finance/revenue$#',                'handle_list_revenue',     'auth'],
 
     // Admin
+    ['GET',  '#/api/admin/users$#',  'handle_list_users',          'admin'],
     ['GET',  '#/api/invite-codes$#', 'handle_list_invite_codes',   'admin'],
     ['POST', '#/api/invite-codes$#', 'handle_create_invite_code',  'admin'],
 ];

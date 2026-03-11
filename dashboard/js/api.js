@@ -79,4 +79,8 @@ var dashboardApi = {
     createInviteCode: function(data) {
         return this._fetch('/invite-codes', { method: 'POST', body: JSON.stringify(data) });
     },
+
+    getUsers: function() {
+        return this._fetch('/admin/users');
+    },
 };

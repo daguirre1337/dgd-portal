@@ -2,9 +2,25 @@
 /**
  * DGD Dashboard - Admin Handlers
  *
+ * GET  /api/admin/users   - List all registered users (admin only)
  * GET  /api/invite-codes  - List invite codes (admin only)
  * POST /api/invite-codes  - Generate new invite code (admin only)
  */
+
+function handle_list_users(): void
+{
+    $db = get_db();
+
+    $stmt = $db->query("
+        SELECT id, username, email, display_name, role, created_at, last_login
+        FROM users
+        ORDER BY created_at DESC
+    ");
+
+    json_response([
+        'users' => $stmt->fetchAll(),
+    ]);
+}
 
 function handle_list_invite_codes(): void
 {

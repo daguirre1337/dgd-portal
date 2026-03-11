@@ -11,9 +11,9 @@
  */
 
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/goals.php';
-require_once __DIR__ . '/feedback.php';
-require_once __DIR__ . '/finance.php';
+require_once __DIR__ . '/handlers/goals.php';
+require_once __DIR__ . '/handlers/feedback.php';
+require_once __DIR__ . '/handlers/finance.php';
 
 function init_database(): void
 {

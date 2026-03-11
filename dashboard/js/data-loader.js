@@ -17,14 +17,21 @@ DGD.dataLoader = (function() {
             loadTellentData();
             return;
         }
-        Promise.all([
+        var fetches = [
             dashboardApi.getProjects(),
             dashboardApi.getKpis(),
             dashboardApi.getInviteCodes()
-        ]).then(function(results) {
+        ];
+        var isAdmin = DGD.state.user && DGD.state.user.role === 'admin';
+        if (isAdmin) fetches.push(dashboardApi.getUsers());
+
+        Promise.all(fetches).then(function(results) {
             DGD.state.projects = (results[0] && results[0].projects) ? results[0].projects : DGD.demoData.DEMO_PROJECTS.slice();
             DGD.state.kpis = (results[1] && results[1].kpis) ? results[1].kpis : DGD.demoData.DEMO_KPIS.slice();
             DGD.state.inviteCodes = (results[2] && results[2].codes) ? results[2].codes : DGD.demoData.DEMO_INVITE_CODES.slice();
+            if (isAdmin && results[3] && results[3].users) {
+                DGD.state.registeredUsers = results[3].users;
+            }
             DGD.router.route(); // Re-render with loaded data
         });
         loadTellentData();

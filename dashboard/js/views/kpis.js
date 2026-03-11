@@ -3,14 +3,8 @@
    Depends on: namespace.js, helpers.js
    ========================================================================== */
 
-window.DGD = window.DGD || {};
-DGD.views = DGD.views || {};
-
 (function() {
-    var CATEGORY_COLORS = {
-        umsatz: '#27ae60', kunden: '#2980b9', partner: '#e67e22',
-        portal: '#8e44ad', marketing: '#e74c3c', engagement: '#16a085',
-    };
+    var CATEGORY_COLORS = DGD.config.CATEGORY_COLORS;
 
     var FA_TO_EMOJI = {
         'fa-file-alt': '\ud83d\udccb', 'fa-handshake': '\ud83e\udd1d', 'fa-euro-sign': '\ud83d\udcb0',

@@ -23,7 +23,7 @@ function handle_list_projects(): void
     $wc = build_where_clause([
         'p.status'   => $_GET['status'] ?? null,
         'p.category' => $_GET['category'] ?? null,
-    ]);
+    ], ['p.status', 'p.category']);
 
     $stmt = $db->prepare("
         SELECT p.* FROM projects p

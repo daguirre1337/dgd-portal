@@ -5,15 +5,8 @@
  * Prevents information leakage of dashboard structure and API endpoints.
  */
 
-session_set_cookie_params([
-    'lifetime' => 86400,
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => isset($_SERVER['HTTPS']),
-    'httponly'  => true,
-    'samesite'  => 'Lax',
-]);
-session_start();
+require_once __DIR__ . '/api/config.php';
+init_session();
 
 // Not authenticated -> 403
 if (empty($_SESSION['user_id'])) {

@@ -5,28 +5,9 @@
 
 var Timeline = {
 
-    CATEGORY_COLORS: {
-        portal:    '#8e44ad',
-        marketing: '#e74c3c',
-        partner:   '#e67e22',
-        intern:    '#2980b9',
-        kunde:     '#27ae60',
-    },
-
-    CATEGORY_LABELS: {
-        portal:    'Portal',
-        marketing: 'Marketing',
-        partner:   'Partner',
-        intern:    'Intern',
-        kunde:     'Kunde',
-    },
-
-    STATUS_LABELS: {
-        geplant:       'Geplant',
-        aktiv:         'Aktiv',
-        abgeschlossen: 'Abgeschlossen',
-        pausiert:      'Pausiert',
-    },
+    CATEGORY_COLORS: DGD.config.CATEGORY_COLORS,
+    CATEGORY_LABELS: DGD.config.CATEGORY_LABELS,
+    STATUS_LABELS:   DGD.config.STATUS_LABELS,
 
     /**
      * Render a vertical timeline into a container element.

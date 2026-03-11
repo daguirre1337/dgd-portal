@@ -1625,6 +1625,12 @@ select.dgd-form__input {
     border-radius: var(--dgd-radius-sm);
 }
 
+.dgd-btn--xs {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    border-radius: var(--dgd-radius-sm);
+}
+
 .dgd-btn--lg {
     padding: 0.875rem 1.5rem;
     font-size: var(--dgd-font-size-base);
@@ -3575,4 +3581,28 @@ select.dgd-form__input {
         flex-direction: column;
         gap: 0.25rem;
     }
+}
+
+/* Employee status badges */
+.dgd-emp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.dgd-emp-status--registered {
+    background: rgba(39, 174, 96, 0.12);
+    color: #27ae60;
+}
+.dgd-emp-status--invited {
+    background: rgba(230, 126, 34, 0.12);
+    color: #e67e22;
+}
+.dgd-emp-status--none {
+    background: rgba(149, 165, 166, 0.12);
+    color: #95a5a6;
 }

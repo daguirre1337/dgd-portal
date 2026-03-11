@@ -12,11 +12,15 @@
  * @param array $filters  ['column' => 'param_value', ...]
  * @return array ['clause' => 'WHERE ...', 'params' => [...]]
  */
-function build_where_clause(array $filters): array
+function build_where_clause(array $filters, array $allowed_columns = []): array
 {
     $where  = [];
     $params = [];
     foreach ($filters as $column => $value) {
+        // Skip columns not in whitelist (when provided)
+        if (!empty($allowed_columns) && !in_array($column, $allowed_columns, true)) {
+            continue;
+        }
         if ($value !== null && $value !== '') {
             $placeholder = ':' . str_replace('.', '_', $column);
             $where[]     = "{$column} = {$placeholder}";
@@ -47,10 +51,12 @@ function build_update(array $body, array $allowed, array $casts, string $id): ?a
             $val = $body[$field];
             if (isset($casts[$field])) {
                 switch ($casts[$field]) {
-                    case 'int':   $val = (int) $val; break;
-                    case 'float': $val = (float) $val; break;
-                    case 'bool':  $val = (bool) $val ? 1 : 0; break;
-                    default:      $val = trim((string) $val); break;
+                    case 'int':      $val = (int) $val; break;
+                    case 'int_null': $val = $val !== null && $val !== '' ? (int) $val : null; break;
+                    case 'float':    $val = (float) $val; break;
+                    case 'float_null': $val = $val !== null && $val !== '' ? (float) $val : null; break;
+                    case 'bool':     $val = (bool) $val ? 1 : 0; break;
+                    default:         $val = trim((string) $val); break;
                 }
             } else {
                 $val = is_string($val) ? trim($val) : $val;
@@ -81,6 +87,7 @@ function cast_rows(array $rows, array $casts): array
             if (!array_key_exists($field, $row)) continue;
             switch ($type) {
                 case 'int':        $row[$field] = (int) $row[$field]; break;
+                case 'int_null':   $row[$field] = $row[$field] !== null ? (int) $row[$field] : null; break;
                 case 'float':      $row[$field] = (float) $row[$field]; break;
                 case 'float_null': $row[$field] = $row[$field] !== null ? (float) $row[$field] : null; break;
                 case 'bool':       $row[$field] = (bool) $row[$field]; break;
