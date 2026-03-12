@@ -2,9 +2,12 @@
 /**
  * DGD Dashboard - Admin Handlers
  *
- * GET  /api/admin/users   - List all registered users (admin only)
- * GET  /api/invite-codes  - List invite codes (admin only)
- * POST /api/invite-codes  - Generate new invite code (admin only)
+ * GET  /api/admin/users               - List all registered users (admin only)
+ * PUT  /api/admin/users/{id}/role     - Change user role (admin only)
+ * DELETE /api/admin/users/{id}        - Delete user (admin only)
+ * GET  /api/invite-codes              - List invite codes (admin only)
+ * POST /api/invite-codes              - Generate new invite code (admin only)
+ * POST /api/invite-codes/{id}/send    - Send invite email via Cortex/PHP (admin only)
  */
 
 function handle_list_users(): void
@@ -86,6 +89,116 @@ function handle_delete_user(string $userId): void
     }
 
     json_success('User deleted', ['user_id' => $userId]);
+}
+
+function handle_send_invite(string $codeId): void
+{
+    $db = get_db();
+
+    $stmt = $db->prepare("SELECT * FROM invite_codes WHERE id = :id");
+    $stmt->execute([':id' => $codeId]);
+    $invite = $stmt->fetch();
+
+    if (!$invite) {
+        json_error('Invite code not found', 404);
+    }
+    if (empty($invite['invited_email'])) {
+        json_error('No email address for this invite', 400);
+    }
+    if ($invite['used_by']) {
+        json_error('Invite already redeemed', 400);
+    }
+
+    $email = $invite['invited_email'];
+    $name  = $invite['invited_name'] ?: '';
+    $code  = $invite['code'];
+
+    // Build registration URL
+    $dashUrl = 'https://dgd.digital/dashboard/';
+    $registerUrl = $dashUrl . '#register?code=' . urlencode($code);
+
+    $greeting = $name ? "Hallo {$name}" : 'Hallo';
+    $senderName = '';
+    $sender = $db->prepare("SELECT display_name FROM users WHERE id = :id");
+    $sender->execute([':id' => $_SESSION['user_id']]);
+    $senderRow = $sender->fetch();
+    if ($senderRow) {
+        $senderName = $senderRow['display_name'];
+    }
+
+    $subject = 'Einladung zum DGD Dashboard';
+    $body = "{$greeting},\n\n"
+        . "du wurdest zum internen DGD Dashboard eingeladen.\n\n"
+        . "Registriere dich hier:\n{$registerUrl}\n\n"
+        . "Dein Einladungscode: {$code}\n\n"
+        . "Viele Gruesse,\n"
+        . ($senderName ?: 'DGD Team');
+
+    $sentVia = null;
+
+    // Attempt 1: Cortex (localhost:8000) - direct gmail_send, no approval
+    $cortexPayload = json_encode([
+        'tool' => 'gmail_send',
+        'params' => [
+            'to'      => $email,
+            'subject' => $subject,
+            'body'    => $body,
+            'task_id' => 'invite-' . $codeId,
+        ],
+        'skip_approval' => true,
+    ]);
+
+    $ch = curl_init('http://localhost:8000/api/execute-tool');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $cortexPayload,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_TIMEOUT        => 8,
+        CURLOPT_CONNECTTIMEOUT => 3,
+    ]);
+    $cortexResponse = curl_exec($ch);
+    $cortexHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $cortexError = curl_error($ch);
+    curl_close($ch);
+
+    if (!$cortexError && $cortexHttpCode >= 200 && $cortexHttpCode < 300) {
+        $cortexData = json_decode($cortexResponse, true);
+        if (!empty($cortexData['result']) || !empty($cortexData['success'])) {
+            $sentVia = 'cortex';
+        }
+    }
+
+    // Attempt 2: PHP mail() fallback
+    if (!$sentVia) {
+        $headers = "From: DGD Dashboard <noreply@dgd.digital>\r\n"
+            . "Reply-To: d.aguirre@dgd-direkt.de\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n"
+            . "MIME-Version: 1.0\r\n";
+
+        $mailSent = @mail($email, $subject, $body, $headers);
+        if ($mailSent) {
+            $sentVia = 'php_mail';
+        }
+    }
+
+    if (!$sentVia) {
+        json_error('E-Mail konnte nicht gesendet werden. Weder Cortex noch PHP mail() verfuegbar.', 502);
+    }
+
+    // Update invite code with send info
+    $db->prepare("UPDATE invite_codes SET email_sent_at = :sent_at, sent_via = :via WHERE id = :id")
+       ->execute([
+           ':sent_at' => now_iso(),
+           ':via'     => $sentVia,
+           ':id'      => $codeId,
+       ]);
+
+    json_success('Einladung gesendet', [
+        'sent_via' => $sentVia,
+        'email'    => $email,
+        'code'     => $code,
+    ]);
 }
 
 function handle_create_invite_code(): void

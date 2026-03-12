@@ -59,6 +59,12 @@ function init_database(): void
     if (!in_array('invited_name', $colNames)) {
         $db->exec("ALTER TABLE invite_codes ADD COLUMN invited_name TEXT");
     }
+    if (!in_array('email_sent_at', $colNames)) {
+        $db->exec("ALTER TABLE invite_codes ADD COLUMN email_sent_at TEXT");
+    }
+    if (!in_array('sent_via', $colNames)) {
+        $db->exec("ALTER TABLE invite_codes ADD COLUMN sent_via TEXT");
+    }
 
     // ---- projects table ----
     $db->exec("

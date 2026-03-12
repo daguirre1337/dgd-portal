@@ -122,6 +122,7 @@ $routes = [
     ['GET',  '#/api/admin/users$#',                     'handle_list_users',          'admin'],
     ['PUT',  "#/api/admin/users/({$UUID})/role$#i",     'handle_update_user_role',    'admin'],
     ['DELETE', "#/api/admin/users/({$UUID})$#i",        'handle_delete_user',         'admin'],
+    ['POST', "#/api/invite-codes/([A-Za-z0-9-]+)/send$#", 'handle_send_invite',      'admin'],
     ['GET',  '#/api/invite-codes$#',                     'handle_list_invite_codes',   'admin'],
     ['POST', '#/api/invite-codes$#',                     'handle_create_invite_code',  'admin'],
 ];

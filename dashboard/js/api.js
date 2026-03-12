@@ -83,4 +83,19 @@ var dashboardApi = {
     getUsers: function() {
         return this._fetch('/admin/users');
     },
+
+    updateUserRole: function(userId, role) {
+        return this._fetch('/admin/users/' + userId + '/role', {
+            method: 'PUT',
+            body: JSON.stringify({ role: role }),
+        });
+    },
+
+    deleteUser: function(userId) {
+        return this._fetch('/admin/users/' + userId, { method: 'DELETE' });
+    },
+
+    sendInviteEmail: function(codeId) {
+        return this._fetch('/invite-codes/' + codeId + '/send', { method: 'POST' });
+    },
 };
