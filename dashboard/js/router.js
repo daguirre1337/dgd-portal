@@ -16,6 +16,9 @@ DGD.router = (function() {
         'finanzen', 'ziele', 'feedback', 'roadmap', 'showcase', 'settings'
     ];
 
+    // Views that require admin role
+    var ADMIN_VIEWS = ['mitarbeiter', 'finanzen', 'ziele', 'showcase', 'settings'];
+
     var VIEW_TITLES = {
         dashboard: 'Dashboard',
         timeline: 'Zeitleiste',
@@ -33,6 +36,13 @@ DGD.router = (function() {
         if (!DGD.state.authenticated) return;
         var hash = window.location.hash.replace('#', '') || 'dashboard';
         if (VALID_VIEWS.indexOf(hash) === -1) hash = 'dashboard';
+
+        // Role guard: redirect non-admin users away from admin views
+        var userRole = (DGD.state.user && DGD.state.user.role) || 'member';
+        if (userRole !== 'admin' && ADMIN_VIEWS.indexOf(hash) !== -1) {
+            window.location.hash = '#dashboard';
+            hash = 'dashboard';
+        }
 
         // Update sidebar active state
         var links = $$('.dgd-sidebar__link');

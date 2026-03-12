@@ -27,12 +27,25 @@ DGD.auth = (function() {
         loginSuccess(DGD.demoData.DEMO_USER);
     }
 
+    /**
+     * Apply role-based visibility to sidebar links.
+     * Links with data-role="admin" are hidden for non-admin users.
+     */
+    function applyRoleGuards(user) {
+        var role = (user && user.role) || 'member';
+        var adminLinks = document.querySelectorAll('[data-role="admin"]');
+        for (var i = 0; i < adminLinks.length; i++) {
+            adminLinks[i].style.display = (role === 'admin') ? '' : 'none';
+        }
+    }
+
     function loginSuccess(user) {
         DGD.state.authenticated = true;
         DGD.state.user = user;
         $('#login-page').classList.add('dgd-hidden');
         $('#app-shell').classList.remove('dgd-hidden');
         $('#topbar-username').textContent = user.display_name || user.username;
+        applyRoleGuards(user);
         DGD.dataLoader.loadData();
         DGD.router.route();
         // Init Cortex Chat widget

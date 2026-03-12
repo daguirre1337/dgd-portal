@@ -83,16 +83,16 @@ $routes = [
     ['GET',  '#/api/kpis$#',                     'handle_list_kpis',    'auth'],
     ['POST', '#/api/kpis$#',                     'handle_upsert_kpi',   'auth'],
 
-    // Goals / OKR
-    ['POST', "#/api/goals/({$UUID})/key-results$#i", 'handle_create_key_result', 'auth'],
+    // Goals / OKR (read: auth, write: admin)
+    ['POST', "#/api/goals/({$UUID})/key-results$#i", 'handle_create_key_result', 'admin'],
     ['GET',  '#/api/goals/stats$#',                   'handle_goals_stats',       'auth'],
     ['GET',  "#/api/goals/({$UUID})$#i",              'handle_get_goal',          'auth'],
     ['GET',  '#/api/goals$#',                          'handle_list_goals',        'auth'],
-    ['POST', '#/api/goals$#',                          'handle_create_goal',       'auth'],
-    ['PUT',  "#/api/goals/({$UUID})$#i",               'handle_update_goal',       'auth'],
-    ['DELETE', "#/api/goals/({$UUID})$#i",             'handle_delete_goal',       'auth'],
-    ['PUT',  "#/api/key-results/({$UUID})$#i",         'handle_update_key_result', 'auth'],
-    ['DELETE', "#/api/key-results/({$UUID})$#i",       'handle_delete_key_result', 'auth'],
+    ['POST', '#/api/goals$#',                          'handle_create_goal',       'admin'],
+    ['PUT',  "#/api/goals/({$UUID})$#i",               'handle_update_goal',       'admin'],
+    ['DELETE', "#/api/goals/({$UUID})$#i",             'handle_delete_goal',       'admin'],
+    ['PUT',  "#/api/key-results/({$UUID})$#i",         'handle_update_key_result', 'admin'],
+    ['DELETE', "#/api/key-results/({$UUID})$#i",       'handle_delete_key_result', 'admin'],
 
     // Feedback
     ['GET',  '#/api/feedback/pulse-status$#',                   'handle_pulse_status',            'auth'],
@@ -104,24 +104,26 @@ $routes = [
     ['PUT',  "#/api/feedback/templates/({$UUID})$#i",           'handle_update_feedback_template','auth'],
     ['POST', '#/api/feedback/responses$#',                       'handle_submit_feedback_response','auth'],
 
-    // Finance
-    ['GET',    '#/api/finance/summary$#',                'handle_finance_summary',  'auth'],
-    ['GET',    '#/api/finance/monthly$#',                'handle_finance_monthly',  'auth'],
-    ['GET',    '#/api/finance/projects$#',               'handle_finance_projects', 'auth'],
-    ['PUT',    "#/api/finance/expenses/({$UUID})$#i",    'handle_update_expense',   'auth'],
-    ['DELETE', "#/api/finance/expenses/({$UUID})$#i",    'handle_delete_expense',   'auth'],
-    ['POST',   '#/api/finance/expenses$#',               'handle_create_expense',   'auth'],
-    ['GET',    '#/api/finance/expenses$#',               'handle_list_expenses',    'auth'],
-    ['POST',   '#/api/finance/revenue$#',                'handle_create_revenue',   'auth'],
-    ['GET',    '#/api/finance/revenue$#',                'handle_list_revenue',     'auth'],
+    // Finance (admin only)
+    ['GET',    '#/api/finance/summary$#',                'handle_finance_summary',  'admin'],
+    ['GET',    '#/api/finance/monthly$#',                'handle_finance_monthly',  'admin'],
+    ['GET',    '#/api/finance/projects$#',               'handle_finance_projects', 'admin'],
+    ['PUT',    "#/api/finance/expenses/({$UUID})$#i",    'handle_update_expense',   'admin'],
+    ['DELETE', "#/api/finance/expenses/({$UUID})$#i",    'handle_delete_expense',   'admin'],
+    ['POST',   '#/api/finance/expenses$#',               'handle_create_expense',   'admin'],
+    ['GET',    '#/api/finance/expenses$#',               'handle_list_expenses',    'admin'],
+    ['POST',   '#/api/finance/revenue$#',                'handle_create_revenue',   'admin'],
+    ['GET',    '#/api/finance/revenue$#',                'handle_list_revenue',     'admin'],
 
     // Export / Reports
     ['GET',  '#/api/export$#',       'handle_export',              'auth'],
 
     // Admin
-    ['GET',  '#/api/admin/users$#',  'handle_list_users',          'admin'],
-    ['GET',  '#/api/invite-codes$#', 'handle_list_invite_codes',   'admin'],
-    ['POST', '#/api/invite-codes$#', 'handle_create_invite_code',  'admin'],
+    ['GET',  '#/api/admin/users$#',                     'handle_list_users',          'admin'],
+    ['PUT',  "#/api/admin/users/({$UUID})/role$#i",     'handle_update_user_role',    'admin'],
+    ['DELETE', "#/api/admin/users/({$UUID})$#i",        'handle_delete_user',         'admin'],
+    ['GET',  '#/api/invite-codes$#',                     'handle_list_invite_codes',   'admin'],
+    ['POST', '#/api/invite-codes$#',                     'handle_create_invite_code',  'admin'],
 ];
 
 // ---- Dispatch ----

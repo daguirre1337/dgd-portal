@@ -45,6 +45,49 @@ function handle_list_invite_codes(): void
     ]);
 }
 
+function handle_update_user_role(string $userId): void
+{
+    $body = get_json_body();
+    $role = trim($body['role'] ?? '');
+
+    if (!in_array($role, ['admin', 'member'], true)) {
+        json_error('Invalid role. Allowed: admin, member', 400);
+    }
+
+    // Prevent self-demotion
+    if ($userId === $_SESSION['user_id'] && $role !== 'admin') {
+        json_error('Cannot remove your own admin role', 403);
+    }
+
+    $db = get_db();
+    $stmt = $db->prepare("UPDATE users SET role = :role WHERE id = :id");
+    $stmt->execute([':role' => $role, ':id' => $userId]);
+
+    if ($stmt->rowCount() === 0) {
+        json_error('User not found', 404);
+    }
+
+    json_success('Role updated', ['user_id' => $userId, 'role' => $role]);
+}
+
+function handle_delete_user(string $userId): void
+{
+    // Prevent self-deletion
+    if ($userId === $_SESSION['user_id']) {
+        json_error('Cannot delete your own account', 403);
+    }
+
+    $db = get_db();
+    $stmt = $db->prepare("DELETE FROM users WHERE id = :id");
+    $stmt->execute([':id' => $userId]);
+
+    if ($stmt->rowCount() === 0) {
+        json_error('User not found', 404);
+    }
+
+    json_success('User deleted', ['user_id' => $userId]);
+}
+
 function handle_create_invite_code(): void
 {
     $body = get_json_body();
