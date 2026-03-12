@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kfz-Gutachter in Ihrer Nähe finden - kostenlos und unabhängig. Deutscher Gutachter Dienst: Unfallgutachten, Schadensregulierung, 500+ Partner deutschlandweit.">
+    <title>DGD - Ihr unabhängiger Kfz-Gutachter | Deutscher Gutachter Dienst</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="css/portal.css">
+    <link rel="stylesheet" href="css/wizard.css">
+</head>
+<body>
+
+    <!-- Banner: Im Aufbau -->
+    <div class="dgd-construction-banner" id="constructionBanner">
+        <p>
+            Diese Webseite befindet sich gerade im Aufbau. Bitte besuche
+            <a href="https://deutscher-gutachter-dienst.de" target="_blank" rel="noopener">deutscher-gutachter-dienst.de</a>
+        </p>
+        <button class="dgd-construction-banner__close" aria-label="Hinweis schließen">&times;</button>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- Header / Navigation                                               -->
+    <!-- ================================================================= -->
+    <header class="dgd-header">
+        <div class="dgd-header__inner">
+            <a href="#start" class="dgd-header__logo">
+                <img src="img/dgd-falcon.png" alt="DGD Wanderfalke" class="dgd-header__falcon" width="32" height="32">
+                <img src="img/dgd-logo.png" alt="DGD - Deutscher Gutachter Dienst" class="dgd-header__logo-img">
+            </a>
+            <button class="dgd-header__menu-toggle" aria-label="Menü öffnen" aria-expanded="false">
+                &#9776;
+            </button>
+            <nav>
+                <ul class="dgd-header__nav">
+                    <li><a href="#start" class="active">Startseite</a></li>
+                    <li><a href="#gutachter">Gutachter finden</a></li>
+                    <li><a href="#melden">Schadenfall melden</a></li>
+                    <li><a href="#status">Status prüfen</a></li>
+                    <li><a href="#partner">Partner werden</a></li>
+                    <li><a href="#rente">Rente &amp; Provision</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ================================================================= -->
+    <!-- View: Landing Page                                                -->
+    <!-- ================================================================= -->
+    <div id="view-landing" class="dgd-view dgd-view--active">
+
+        <!-- Hero -->
+        <section class="dgd-hero">
+            <div class="dgd-container">
+                <p class="dgd-hero__eyebrow">Deutscher Gutachter Dienst</p>
+                <h1>Unfall gehabt?<br>Ihr Kfz-Gutachter in der Nähe.</h1>
+                <p class="dgd-hero__subtitle">
+                    Kostenlos für Geschädigte. Unabhängig. Deutschlandweit.<br>
+                    Wir kämpfen für Ihr Recht auf faire Schadensregulierung.
+                </p>
+                <div class="dgd-hero__actions">
+                    <a href="#gutachter" class="dgd-btn dgd-btn--primary dgd-btn--lg">
+                        Kfz-Gutachter finden
+                    </a>
+                    <a href="#melden" class="dgd-btn dgd-btn--outline dgd-btn--lg">
+                        Schaden melden
+                    </a>
+                </div>
+                <div class="dgd-hero__trust">
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128101;</span>
+                        <span>500+ Partner</span>
+                    </div>
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#9989;</span>
+                        <span>Kostenlos für Geschädigte</span>
+                    </div>
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128203;</span>
+                        <span>Zertifizierte Sachverständige</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Landing Map -->
+        <section class="dgd-landing-map">
+            <div class="dgd-container">
+                <h2 class="dgd-landing-map__title">Unsere Gutachter in ganz Deutschland</h2>
+                <p class="dgd-landing-map__subtitle">Klicken Sie auf einen Standort oder nutzen Sie die Suche oben.</p>
+                <div class="dgd-landing-map__legend">
+                    <span class="dgd-legend-item"><span class="dgd-legend-dot" style="background:#1a3a5c"></span> Kfz-Sachverständige</span>
+                    <span id="landing-partner-count" class="dgd-landing-map__count"></span>
+                </div>
+                <div id="landing-map" class="dgd-map dgd-map--landing"></div>
+            </div>
+        </section>
+
+        <!-- 3-Schritte Prozess -->
+        <section class="dgd-steps">
+            <div class="dgd-container">
+                <h2 class="dgd-steps__title">In 3 Schritten zu Ihrem Recht</h2>
+                <div class="dgd-steps__grid">
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">1</div>
+                        <h3>Kfz-Schaden melden</h3>
+                        <p>
+                            Beschreiben Sie Ihren Unfallschaden online in wenigen Minuten.
+                            Wir benötigen nur die wichtigsten Angaben zu Ihrem Fahrzeug.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">2</div>
+                        <h3>Gutachter kommt zu Ihnen</h3>
+                        <p>
+                            Ein zertifizierter Kfz-Sachverständiger kommt direkt zu Ihnen
+                            und erstellt ein unabhängiges Gutachten vor Ort.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">3</div>
+                        <h3>Faire Regulierung</h3>
+                        <p>
+                            Wir setzen Ihre Ansprüche gegenüber der Versicherung durch.
+                            Kostenlos für Sie als Geschädigter.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Info / Vorteile -->
+        <section class="dgd-info">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center dgd-mb-lg">Warum DGD für Ihr Kfz-Gutachten?</h2>
+                <div class="dgd-info__grid">
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#9989;</div>
+                        <h4>Kostenlos für Geschädigte</h4>
+                        <p class="dgd-text-muted">
+                            Die gegnerische Versicherung trägt die Kosten für Ihr
+                            unabhängiges Kfz-Gutachten. Null Euro für Sie.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128101;</div>
+                        <h4>500+ Kfz-Sachverständige</h4>
+                        <p class="dgd-text-muted">
+                            Deutschlandweites Netzwerk zertifizierter
+                            Kfz-Gutachter direkt in Ihrer Nähe.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128663;</div>
+                        <h4>Gutachter kommt zu Ihnen</h4>
+                        <p class="dgd-text-muted">
+                            Kein Werkstattbesuch nötig. Unser Sachverständiger kommt
+                            direkt zu Ihrem Fahrzeug - ohne Fahrtkosten.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Gutachter finden (DGDWizard Fullscreen)                     -->
+    <!-- ================================================================= -->
+    <div id="view-wizard" class="dgd-view">
+        <div id="gutachter-wizard-mount"></div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Schadenfall melden                                          -->
+    <!-- ================================================================= -->
+    <div id="view-report-form" class="dgd-view">
+        <div class="dgd-container">
+
+            <!-- Page Header -->
+            <div class="dgd-report-header">
+                <div class="dgd-report-header__icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                        <rect x="9" y="3" width="6" height="4" rx="1"/>
+                        <path d="M9 14l2 2 4-4"/>
+                    </svg>
+                </div>
+                <h2 class="dgd-report-header__title">Schadenfall melden</h2>
+                <p class="dgd-report-header__subtitle">
+                    Füllen Sie das Formular aus und wir kümmern uns um alles Weitere.
+                    Kostenlos für Geschädigte.
+                </p>
+            </div>
+
+            <!-- Partner Badge -->
+            <div id="selected-partner-badge" class="dgd-partner-badge dgd-hidden">
+                <span class="dgd-partner-badge__icon">&#128100;</span>
+                <div class="dgd-partner-badge__info">
+                    <strong id="partner-badge-name"></strong>
+                    <span id="partner-badge-detail"></span>
+                </div>
+                <button type="button" id="partner-badge-remove" class="dgd-partner-badge__remove">&times;</button>
+            </div>
+
+            <form id="report-form" class="dgd-form dgd-report-form" novalidate>
+
+                <!-- Section 1: Kontaktdaten -->
+                <fieldset class="dgd-report-section">
+                    <legend class="dgd-report-section__legend">
+                        <span class="dgd-report-section__number">1</span>
+                        <span>Ihre Kontaktdaten</span>
+                    </legend>
+
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-name">
+                                Vollständiger Name
+                            </label>
+                            <input type="text" id="field-name" class="dgd-form__input dgd-form__input--lg"
+                                   placeholder="Max Mustermann" required>
+                            <div class="dgd-form__error">Bitte geben Sie Ihren Namen ein.</div>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-email">
+                                E-Mail-Adresse
+                            </label>
+                            <input type="email" id="field-email" class="dgd-form__input dgd-form__input--lg"
+                                   placeholder="max@beispiel.de" required>
+                            <div class="dgd-form__error">Bitte geben Sie eine gültige E-Mail-Adresse ein.</div>
+                        </div>
+                    </div>
+
+                    <div class="dgd-form__group">
+                        <label class="dgd-form__label dgd-form__label--required" for="field-phone">
+                            Telefonnummer
+                        </label>
+                        <input type="tel" id="field-phone" class="dgd-form__input dgd-form__input--lg"
+                               placeholder="+49 170 1234567" required>
+                        <div class="dgd-form__error">Bitte geben Sie Ihre Telefonnummer ein.</div>
+                    </div>
+                </fieldset>
+
+                <!-- Section 2: Schadendetails -->
+                <fieldset class="dgd-report-section">
+                    <legend class="dgd-report-section__legend">
+                        <span class="dgd-report-section__number">2</span>
+                        <span>Angaben zum Schaden</span>
+                    </legend>
+
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-damage-type">
+                                Schadensart
+                            </label>
+                            <select id="field-damage-type" class="dgd-form__select dgd-form__select--lg" required>
+                                <option value="kfz_haftpflicht" selected>Kfz-Haftpflichtschaden</option>
+                                <option value="kfz_kasko">Kfz-Kaskoschaden</option>
+                            </select>
+                            <div class="dgd-form__error">Bitte wählen Sie eine Schadensart.</div>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label dgd-form__label--required" for="field-location">
+                                Ort des Schadens
+                            </label>
+                            <input type="text" id="field-location" class="dgd-form__input dgd-form__input--lg"
+                                   placeholder="z.B. Berlin, Hauptstraße 12" required>
+                            <div class="dgd-form__error">Bitte geben Sie den Ort des Schadens ein.</div>
+                        </div>
+                    </div>
+
+                    <div class="dgd-form__group">
+                        <label class="dgd-form__label dgd-form__label--required" for="field-description">
+                            Beschreibung des Schadens
+                        </label>
+                        <textarea id="field-description" class="dgd-form__textarea dgd-form__textarea--lg"
+                                  placeholder="Beschreiben Sie den Unfallhergang und die Schäden..."
+                                  required></textarea>
+                        <div class="dgd-form__hint" id="description-hint">Mindestens 20 Zeichen empfohlen</div>
+                        <div class="dgd-form__error">Bitte beschreiben Sie den Schaden.</div>
+                    </div>
+                </fieldset>
+
+                <!-- Section 3: Fotos -->
+                <fieldset class="dgd-report-section">
+                    <legend class="dgd-report-section__legend">
+                        <span class="dgd-report-section__number">3</span>
+                        <span>Fotos hochladen</span>
+                        <span class="dgd-report-section__optional">(optional)</span>
+                    </legend>
+
+                    <div class="dgd-upload-zone" id="photo-upload-zone">
+                        <div class="dgd-upload-zone__icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="1.5"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <p class="dgd-upload-zone__text">
+                            Fotos hierher ziehen oder
+                            <button type="button" class="dgd-upload-zone__browse">Dateien auswählen</button>
+                        </p>
+                        <p class="dgd-upload-zone__hint">JPG, PNG oder PDF. Max. 10 MB pro Datei.</p>
+                        <input type="file" id="photo-upload-input" class="dgd-hidden"
+                               multiple accept="image/*,.pdf">
+                        <div class="dgd-upload-zone__preview" id="photo-preview"></div>
+                    </div>
+                </fieldset>
+
+                <!-- Submit -->
+                <div class="dgd-report-submit">
+                    <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg dgd-btn--full">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        Schadenfall absenden
+                    </button>
+                    <div class="dgd-report-submit__trust">
+                        <span>&#128274; SSL-verschlüsselt</span>
+                        <span>&#128337; Antwort innerhalb 24h</span>
+                        <span>&#9989; Kostenlos für Geschädigte</span>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Status prüfen                                              -->
+    <!-- ================================================================= -->
+    <div id="view-status-check" class="dgd-view">
+        <div class="dgd-container">
+            <section class="dgd-status-check">
+                <h2>Status Ihres Schadenfalls</h2>
+                <p class="dgd-text-muted">
+                    Geben Sie Ihre Fallnummer ein, um den aktuellen Stand Ihres
+                    Schadenfalls abzurufen.
+                </p>
+
+                <form id="status-form" class="dgd-status-check__form">
+                    <input type="text" id="field-case-id" class="dgd-form__input"
+                           placeholder="Fallnummer eingeben (z.B. DGD-20260305-ABC1)" required>
+                    <button type="submit" class="dgd-btn dgd-btn--secondary">
+                        Status abrufen
+                    </button>
+                </form>
+
+                <div id="status-result"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Partner werden (Warteliste)                                 -->
+    <!-- ================================================================= -->
+    <div id="view-partner" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-section">
+                <h2>Als Kfz-Gutachter Partner werden</h2>
+                <p class="dgd-text-muted">
+                    Sie sind Kfz-Sachverständiger und möchten Teil unseres deutschlandweiten
+                    Netzwerks werden? Registrieren Sie sich auf unserer Warteliste.
+                    Wir prüfen Ihre Qualifikationen und melden uns innerhalb von 48 Stunden.
+                </p>
+
+                <form id="partner-form" class="dgd-form dgd-mt-lg">
+                    <!-- Persönliche Daten -->
+                    <h3>Persönliche Daten</h3>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>Vollständiger Name *</label>
+                            <input type="text" id="partner-name" class="dgd-form__input" required placeholder="Max Mustermann">
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Unternehmen</label>
+                            <input type="text" id="partner-company" class="dgd-form__input" placeholder="Mustermann Gutachten GmbH">
+                        </div>
+                    </div>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>E-Mail-Adresse *</label>
+                            <input type="email" id="partner-email" class="dgd-form__input" required placeholder="max@beispiel.de">
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Telefonnummer *</label>
+                            <input type="tel" id="partner-phone" class="dgd-form__input" required placeholder="+49 170 1234567">
+                        </div>
+                    </div>
+
+                    <!-- Fachgebiet -->
+                    <h3 class="dgd-mt-lg">Fachgebiet</h3>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>Spezialisierung *</label>
+                            <select id="partner-specialty" class="dgd-form__input" required>
+                                <option value="">-- Bitte wählen --</option>
+                                <option value="kfz">Kfz-Sachverständiger</option>
+                            </select>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Berufserfahrung (Jahre)</label>
+                            <input type="number" id="partner-experience" class="dgd-form__input" min="0" max="50" placeholder="z.B. 10">
+                        </div>
+                    </div>
+                    <div class="dgd-form__group" id="partner-other-wrap" style="display:none">
+                        <label>Sonstiges Fachgebiet</label>
+                        <input type="text" id="partner-other-specialty" class="dgd-form__input" placeholder="Beschreiben Sie Ihr Fachgebiet">
+                    </div>
+                    <div class="dgd-form__group">
+                        <label>Zertifizierungen / Qualifikationen</label>
+                        <input type="text" id="partner-certifications" class="dgd-form__input" placeholder="z.B. DEKRA, TÜV, IHK, BDSF">
+                    </div>
+
+                    <!-- Standort -->
+                    <h3 class="dgd-mt-lg">Standort</h3>
+                    <div class="dgd-form__row">
+                        <div class="dgd-form__group">
+                            <label>Postleitzahl *</label>
+                            <input type="text" id="partner-plz" class="dgd-form__input" required placeholder="z.B. 10115" pattern="[0-9]{5}">
+                        </div>
+                        <div class="dgd-form__group">
+                            <label>Stadt *</label>
+                            <input type="text" id="partner-city" class="dgd-form__input" required placeholder="z.B. Berlin">
+                        </div>
+                    </div>
+
+                    <!-- Nachricht -->
+                    <div class="dgd-form__group">
+                        <label>Nachricht (optional)</label>
+                        <textarea id="partner-message" class="dgd-form__input dgd-form__textarea" rows="4"
+                            placeholder="Erzählen Sie uns etwas über sich und warum Sie Partner werden möchten..."></textarea>
+                    </div>
+
+                    <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg dgd-mt-lg">
+                        Auf die Warteliste setzen
+                    </button>
+                </form>
+
+                <div id="partner-success" class="dgd-alert dgd-alert--success dgd-hidden dgd-mt-lg">
+                    <strong>Vielen Dank für Ihre Registrierung!</strong><br>
+                    Wir prüfen Ihre Anfrage und melden uns innerhalb von 48 Stunden bei Ihnen.
+                </div>
+                <div id="partner-error" class="dgd-alert dgd-alert--error dgd-hidden dgd-mt-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Rente & Lifetime Provision                                  -->
+    <!-- ================================================================= -->
+    <div id="view-rente" class="dgd-view">
+
+        <!-- Hero -->
+        <section class="dgd-rente-hero">
+            <div class="dgd-container">
+                <p class="dgd-hero__eyebrow">DGD Partnerprogramm f&uuml;r Gutachter im Ruhestand</p>
+                <h1>Ihre Expertise.<br>Ihr Netzwerk.<br>Ihre Rente &mdash; aufgeh&uuml;bscht.</h1>
+                <p class="dgd-hero__subtitle">
+                    Sie gehen in den Ruhestand, aber Ihr Name und Ihre Kontakte sind Gold wert?<br>
+                    Verdienen Sie <strong>lebenslang</strong> an jeder Empfehlung &mdash; ohne einen Finger zu r&uuml;hren.
+                </p>
+                <div class="dgd-hero__actions">
+                    <a href="#rente-form" class="dgd-btn dgd-btn--primary dgd-btn--lg" onclick="document.getElementById('rente-signup').scrollIntoView({behavior:'smooth'});return false;">
+                        Jetzt Provision sichern
+                    </a>
+                    <a href="tel:+498000095000" class="dgd-btn dgd-btn--outline dgd-btn--lg">
+                        Pers&ouml;nlich beraten lassen
+                    </a>
+                </div>
+                <div class="dgd-hero__trust">
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128176;</span>
+                        <span>Lebenslange Provision</span>
+                    </div>
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128165;</span>
+                        <span>Kein Aufwand</span>
+                    </div>
+                    <div class="dgd-trust-badge">
+                        <span class="dgd-trust-badge__icon">&#128188;</span>
+                        <span>Vertrag in 5 Minuten</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- So funktioniert's -->
+        <section class="dgd-rente-how">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center">So einfach funktioniert&rsquo;s</h2>
+                <p class="dgd-text-center dgd-text-muted dgd-mb-lg">Drei Schritte zu Ihrem passiven Einkommen</p>
+                <div class="dgd-steps__grid">
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">1</div>
+                        <h3>Registrieren</h3>
+                        <p>
+                            Melden Sie sich als DGD-Empfehlungspartner an.
+                            Dauert keine 5 Minuten &mdash; kostenlos und unverbindlich.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">2</div>
+                        <h3>Empfehlen</h3>
+                        <p>
+                            Ein Bekannter hat einen Unfall? Geben Sie einfach unsere
+                            Nummer weiter oder leiten Sie den Kontakt an uns.
+                        </p>
+                    </div>
+                    <div class="dgd-step">
+                        <div class="dgd-step__number">3</div>
+                        <h3>Kassieren</h3>
+                        <p>
+                            F&uuml;r jeden vermittelten Gutachtenauftrag erhalten Sie
+                            eine Provision &mdash; <strong>lebenslang, automatisch, garantiert</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vorteile -->
+        <section class="dgd-rente-benefits">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center dgd-mb-lg">Warum Gutachter im Ruhestand auf DGD setzen</h2>
+                <div class="dgd-info__grid">
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128176;</div>
+                        <h4>Lebenslange Provision</h4>
+                        <p class="dgd-text-muted">
+                            Keine Einmal-Zahlung. Solange &uuml;ber Sie vermittelte Kunden
+                            Gutachten beauftragen, verdienen Sie mit &mdash; Jahr f&uuml;r Jahr.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128564;</div>
+                        <h4>Null Aufwand</h4>
+                        <p class="dgd-text-muted">
+                            Kein B&uuml;ro, keine Termine, kein Stress. Sie genie&szlig;en
+                            Ihren Ruhestand &mdash; die Provision kommt automatisch.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#127775;</div>
+                        <h4>Ihr Name lebt weiter</h4>
+                        <p class="dgd-text-muted">
+                            Jahrzehnte Erfahrung und Reputation gehen nicht verloren.
+                            Empfehlen Sie DGD und Ihr guter Name arbeitet f&uuml;r Sie.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128200;</div>
+                        <h4>Transparentes Dashboard</h4>
+                        <p class="dgd-text-muted">
+                            Sehen Sie jederzeit, wie viele Empfehlungen aktiv sind
+                            und was Sie verdient haben &mdash; alles online einsehbar.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128101;</div>
+                        <h4>500+ aktive Partner</h4>
+                        <p class="dgd-text-muted">
+                            Sie kommen in ein starkes Netzwerk. Viele ehemalige
+                            Kollegen nutzen DGD bereits &mdash; fragen Sie nach.
+                        </p>
+                    </div>
+                    <div class="dgd-info__item">
+                        <div class="dgd-info__icon">&#128274;</div>
+                        <h4>Vertragssicherheit</h4>
+                        <p class="dgd-text-muted">
+                            Klarer Partnervertrag, monatliche Abrechnung,
+                            p&uuml;nktliche Auszahlung. Kein Kleingedrucktes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rechenbeispiel -->
+        <section class="dgd-rente-calc">
+            <div class="dgd-container">
+                <div class="dgd-rente-calc__card">
+                    <h2>Rechenbeispiel: Was bringt das?</h2>
+                    <p class="dgd-text-muted">Konservativ gerechnet &mdash; echte Partner verdienen oft mehr.</p>
+                    <div class="dgd-rente-calc__grid">
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">2&ndash;3</span>
+                            <span class="dgd-rente-calc__label">Empfehlungen pro Monat</span>
+                        </div>
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">&times;</span>
+                            <span class="dgd-rente-calc__label">&nbsp;</span>
+                        </div>
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">50&ndash;150&thinsp;&euro;</span>
+                            <span class="dgd-rente-calc__label">Provision pro Auftrag</span>
+                        </div>
+                        <div class="dgd-rente-calc__item">
+                            <span class="dgd-rente-calc__value">=</span>
+                            <span class="dgd-rente-calc__label">&nbsp;</span>
+                        </div>
+                        <div class="dgd-rente-calc__item dgd-rente-calc__item--highlight">
+                            <span class="dgd-rente-calc__value">100&ndash;450&thinsp;&euro;</span>
+                            <span class="dgd-rente-calc__label">Extra pro Monat</span>
+                        </div>
+                    </div>
+                    <p class="dgd-rente-calc__note">
+                        Das sind <strong>1.200&ndash;5.400&thinsp;&euro; pro Jahr</strong> &mdash; f&uuml;r einen Anruf hier und da.
+                        Und das Beste: Die Provision l&auml;uft weiter, solange der Kunde bei DGD bleibt.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonial -->
+        <section class="dgd-rente-testimonial">
+            <div class="dgd-container">
+                <blockquote class="dgd-rente-quote">
+                    <p>
+                        &bdquo;Seit ich in Rente bin, empfehle ich DGD an meine alten Kontakte.
+                        Letzten Monat kamen 320&thinsp;&euro; rein &mdash; f&uuml;r vielleicht
+                        drei Telefonate. Besser als jede Zusatzversicherung.&ldquo;
+                    </p>
+                    <footer>
+                        <strong>Horst M.</strong>, ehem. Kfz-Sachverst&auml;ndiger aus Kassel, DGD-Partner seit 2025
+                    </footer>
+                </blockquote>
+            </div>
+        </section>
+
+        <!-- Signup Form -->
+        <section class="dgd-rente-signup" id="rente-signup">
+            <div class="dgd-container">
+                <div class="dgd-section">
+                    <h2>Jetzt als Empfehlungspartner registrieren</h2>
+                    <p class="dgd-text-muted">
+                        Kostenlos, unverbindlich, in 5 Minuten erledigt. Wir rufen Sie an
+                        und erkl&auml;ren alles Weitere pers&ouml;nlich.
+                    </p>
+
+                    <form id="rente-form" class="dgd-form dgd-mt-lg">
+                        <div class="dgd-form__row">
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label dgd-form__label--required" for="rente-name">Vollst&auml;ndiger Name</label>
+                                <input type="text" id="rente-name" class="dgd-form__input dgd-form__input--lg" placeholder="Max Mustermann" required>
+                                <div class="dgd-form__error">Bitte geben Sie Ihren Namen ein.</div>
+                            </div>
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label dgd-form__label--required" for="rente-phone">Telefonnummer</label>
+                                <input type="tel" id="rente-phone" class="dgd-form__input dgd-form__input--lg" placeholder="+49 170 1234567" required>
+                                <div class="dgd-form__error">Bitte geben Sie Ihre Telefonnummer ein.</div>
+                            </div>
+                        </div>
+                        <div class="dgd-form__row">
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-email">E-Mail-Adresse</label>
+                                <input type="email" id="rente-email" class="dgd-form__input dgd-form__input--lg" placeholder="max@beispiel.de">
+                            </div>
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-plz">PLZ / Ort</label>
+                                <input type="text" id="rente-plz" class="dgd-form__input dgd-form__input--lg" placeholder="z.B. 35394 Gie&szlig;en">
+                            </div>
+                        </div>
+                        <div class="dgd-form__row">
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-experience">Jahre als Gutachter</label>
+                                <input type="number" id="rente-experience" class="dgd-form__input dgd-form__input--lg" min="0" max="60" placeholder="z.B. 25">
+                            </div>
+                            <div class="dgd-form__group">
+                                <label class="dgd-form__label" for="rente-retirement">Ruhestand ab</label>
+                                <select id="rente-retirement" class="dgd-form__select dgd-form__select--lg">
+                                    <option value="">-- Bitte w&auml;hlen --</option>
+                                    <option value="already">Bereits im Ruhestand</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                    <option value="later">Sp&auml;ter / unsicher</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="dgd-form__group">
+                            <label class="dgd-form__label" for="rente-message">Nachricht (optional)</label>
+                            <textarea id="rente-message" class="dgd-form__textarea dgd-form__textarea--lg" rows="3"
+                                placeholder="z.B. &bdquo;Ich habe 30 Jahre in M&uuml;nchen gearbeitet und kenne viele Werkst&auml;tten...&ldquo;"></textarea>
+                        </div>
+
+                        <button type="submit" class="dgd-btn dgd-btn--primary dgd-btn--lg dgd-btn--full dgd-mt-md">
+                            Unverbindlich anmelden &mdash; Wir rufen Sie an
+                        </button>
+                        <p class="dgd-text-center dgd-text-muted" style="margin-top:0.75rem;font-size:0.85rem;">
+                            &#128274; Ihre Daten sind sicher. Keine Weitergabe an Dritte.
+                        </p>
+                    </form>
+
+                    <div id="rente-success" class="dgd-alert dgd-alert--success dgd-hidden dgd-mt-lg">
+                        <strong>Vielen Dank f&uuml;r Ihr Interesse!</strong><br>
+                        Wir melden uns innerhalb von 24 Stunden pers&ouml;nlich bei Ihnen und besprechen alles Weitere.
+                    </div>
+                    <div id="rente-error" class="dgd-alert dgd-alert--error dgd-hidden dgd-mt-lg"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="dgd-rente-faq">
+            <div class="dgd-container">
+                <h2 class="dgd-text-center dgd-mb-lg">H&auml;ufige Fragen</h2>
+                <div class="dgd-rente-faq__list">
+                    <details class="dgd-rente-faq__item">
+                        <summary>Muss ich noch aktiv als Gutachter arbeiten?</summary>
+                        <p>Nein. Sie m&uuml;ssen keinerlei Gutachten erstellen. Sie empfehlen lediglich DGD weiter &mdash; den Rest &uuml;bernehmen unsere aktiven Partner.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Wie hoch ist die Provision genau?</summary>
+                        <p>Die Provision richtet sich nach dem Auftragsvolumen und wird individuell vereinbart. Im Schnitt liegen Empfehlungsprovisionen zwischen 50 und 150&thinsp;&euro; pro vermitteltem Gutachten.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Was hei&szlig;t &bdquo;lebenslang&ldquo;?</summary>
+                        <p>Solange der von Ihnen vermittelte Kunde &uuml;ber DGD Gutachten in Auftrag gibt, erhalten Sie Ihre Provision. Es gibt keine zeitliche Begrenzung.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Kostet mich die Anmeldung etwas?</summary>
+                        <p>Nein. Die Registrierung und Teilnahme am Empfehlungsprogramm ist v&ouml;llig kostenlos. Es gibt keine versteckten Geb&uuml;hren.</p>
+                    </details>
+                    <details class="dgd-rente-faq__item">
+                        <summary>Wann und wie werde ich bezahlt?</summary>
+                        <p>Die Provision wird monatlich abgerechnet und per &Uuml;berweisung auf Ihr Konto ausgezahlt. Sie erhalten eine transparente Abrechnung.</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Impressum                                                   -->
+    <!-- ================================================================= -->
+    <div id="view-impressum" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-legal">
+                <h1>Impressum</h1>
+                <h2>Angaben gemäß § 5 TMG</h2>
+                <p><strong>DGD Deutscher Gutachter Dienst GmbH</strong><br>
+                Kerkrader Straße 9<br>
+                35394 Gießen</p>
+                <h2>Vertreten durch</h2>
+                <p>Geschäftsführer: Daniel L. Aguirre</p>
+                <h2>Kontakt</h2>
+                <p>Telefon: +49 (0) 800 009 5000<br>
+                E-Mail: service@deutscher-gutachter-dienst.de</p>
+                <h2>Registereintrag</h2>
+                <p>Eintragung im Handelsregister.<br>
+                Registergericht: Amtsgericht Gießen<br>
+                Registernummer: HRB 10465</p>
+                <h2>Umsatzsteuer-ID</h2>
+                <p>Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:<br>
+                DE341455251</p>
+                <h2>Berufsbezeichnung und berufsrechtliche Regelungen</h2>
+                <p>Berufsbezeichnung: Sachverständige / Gutachter<br>
+                Zuständige Kammer: IHK Gießen-Friedberg<br>
+                Verliehen in: Deutschland</p>
+                <h2>Streitschlichtung</h2>
+                <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
+                <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr</a>.</p>
+                <p>Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+                <h2>Haftung für Inhalte</h2>
+                <p>Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen.</p>
+                <h2>Haftung für Links</h2>
+                <p>Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.</p>
+                <h2>Urheberrecht</h2>
+                <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: Datenschutz                                                 -->
+    <!-- ================================================================= -->
+    <div id="view-datenschutz" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-legal">
+                <h1>Datenschutzerklärung</h1>
+                <h2>1. Datenschutz auf einen Blick</h2>
+                <h3>Allgemeine Hinweise</h3>
+                <p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p>
+                <h3>Datenerfassung auf dieser Website</h3>
+                <p><strong>Wer ist verantwortlich für die Datenerfassung auf dieser Website?</strong><br>
+                DGD Deutscher Gutachter Dienst GmbH<br>
+                Kerkrader Straße 9, 35394 Gießen<br>
+                E-Mail: service@deutscher-gutachter-dienst.de<br>
+                Telefon: +49 (0) 800 009 5000</p>
+                <h2>2. Hosting</h2>
+                <p>Diese Website wird bei einem externen Dienstleister gehostet. Die personenbezogenen Daten werden auf den Servern des Hosters gespeichert. Der Einsatz erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.</p>
+                <h2>3. Allgemeine Hinweise und Pflichtinformationen</h2>
+                <h3>Hinweis zur verantwortlichen Stelle</h3>
+                <p>DGD Deutscher Gutachter Dienst GmbH<br>
+                Kerkrader Straße 9, 35394 Gießen<br>
+                Geschäftsführer: Daniel L. Aguirre<br>
+                Telefon: +49 (0) 800 009 5000<br>
+                E-Mail: service@deutscher-gutachter-dienst.de</p>
+                <h3>Speicherdauer</h3>
+                <p>Ihre personenbezogenen Daten verbleiben bei uns, bis der Zweck für die Datenverarbeitung entfällt.</p>
+                <h3>Hinweis zur Datenweitergabe</h3>
+                <p>Im Rahmen der Gutachter-Vermittlung werden Ihre Kontaktdaten und Schadensinformationen an den ausgewählten Sachverständigen weitergegeben (Art. 6 Abs. 1 lit. b DSGVO).</p>
+                <h2>4. Datenerfassung auf dieser Website</h2>
+                <h3>Kontaktformular / Schadenmeldung</h3>
+                <p>Ihre Angaben aus dem Formular werden zwecks Bearbeitung der Anfrage bei uns gespeichert (Art. 6 Abs. 1 lit. b DSGVO).</p>
+                <h3>Server-Log-Dateien</h3>
+                <p>Der Provider erhebt automatisch Informationen in Server-Log-Dateien: Browsertyp, Betriebssystem, Referrer URL, Hostname, Uhrzeit, IP-Adresse (Art. 6 Abs. 1 lit. f DSGVO).</p>
+                <h3>Cookies</h3>
+                <p>Diese Website verwendet keine Tracking-Cookies. Es werden lediglich technisch notwendige Cookies eingesetzt.</p>
+                <h2>5. Ihre Rechte</h2>
+                <ul>
+                    <li><strong>Auskunftsrecht (Art. 15 DSGVO)</strong></li>
+                    <li><strong>Recht auf Berichtigung (Art. 16 DSGVO)</strong></li>
+                    <li><strong>Recht auf Löschung (Art. 17 DSGVO)</strong></li>
+                    <li><strong>Recht auf Einschränkung (Art. 18 DSGVO)</strong></li>
+                    <li><strong>Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</strong></li>
+                    <li><strong>Widerspruchsrecht (Art. 21 DSGVO)</strong></li>
+                    <li><strong>Beschwerderecht (Art. 77 DSGVO)</strong> — Zuständig: Der Hessische Beauftragte für Datenschutz und Informationsfreiheit</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- View: AGB                                                         -->
+    <!-- ================================================================= -->
+    <div id="view-agb" class="dgd-view">
+        <div class="dgd-container">
+            <div class="dgd-legal">
+                <h1>Allgemeine Geschäftsbedingungen (AGB)</h1>
+                <p><strong>DGD Deutscher Gutachter Dienst GmbH</strong> — Stand: März 2026</p>
+                <h2>§ 1 Geltungsbereich</h2>
+                <p>Diese AGB gelten für alle Geschäftsbeziehungen zwischen der DGD Deutscher Gutachter Dienst GmbH (nachfolgend „DGD") und ihren Kunden sowie Partnern.</p>
+                <h2>§ 2 Leistungsbeschreibung</h2>
+                <p>DGD vermittelt über die Plattform dgd.digital qualifizierte Sachverständige und Gutachter an Geschädigte:</p>
+                <ul>
+                    <li>Vermittlung von Kfz-Sachverständigen bei Haftpflicht- und Kaskoschäden</li>
+                    <li>Standort-basierte Gutachtersuche</li>
+                    <li>Digitale Schadenmeldung und Fallverwaltung</li>
+                    <li>Aufnahme von Sachverständigen in das DGD-Netzwerk</li>
+                </ul>
+                <p>Die Vermittlung ist für Geschädigte kostenfrei. Die Kosten des Gutachtens werden in der Regel von der gegnerischen Versicherung getragen.</p>
+                <h2>§ 3 Vertragsschluss</h2>
+                <p>Die Darstellung der Dienstleistungen auf der Website stellt kein bindendes Angebot dar. Erst durch die Kontaktaufnahme des Kunden und die Bestätigung durch DGD kommt ein Vermittlungsvertrag zustande.</p>
+                <h2>§ 4 Pflichten der Partner</h2>
+                <ul>
+                    <li>Nur qualifizierte und wahrheitsgemäße Gutachten erstellen</li>
+                    <li>Aufträge zeitnah bearbeiten</li>
+                    <li>Geltende Datenschutzbestimmungen einhalten</li>
+                    <li>Über gültige Berufszulassungen und Versicherungen verfügen</li>
+                </ul>
+                <h2>§ 5 Haftung</h2>
+                <p>DGD haftet nicht für die Qualität der durch vermittelte Sachverständige erstellten Gutachten. Die Haftung beschränkt sich auf Vorsatz und grobe Fahrlässigkeit.</p>
+                <h2>§ 6 Datenschutz</h2>
+                <p>Die Erhebung und Verarbeitung personenbezogener Daten erfolgt gemäß unserer <a href="#datenschutz">Datenschutzerklärung</a> und der DSGVO.</p>
+                <h2>§ 7 Geistiges Eigentum</h2>
+                <p>Alle Inhalte der Website dgd.digital sind urheberrechtlich geschützt und Eigentum der DGD Deutscher Gutachter Dienst GmbH.</p>
+                <h2>§ 8 Schlussbestimmungen</h2>
+                <p>Es gilt das Recht der Bundesrepublik Deutschland. Gerichtsstand ist Gießen, sofern der Kunde Kaufmann ist oder keinen allgemeinen Gerichtsstand in Deutschland hat.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- Footer                                                            -->
+    <!-- ================================================================= -->
+    <footer class="dgd-footer">
+        <div class="dgd-footer__inner">
+            <div class="dgd-footer__brand">
+                <h3>Deutscher Gutachter Dienst</h3>
+                <p>
+                    Ihr unabhängiger Partner für Kfz-Gutachten nach Unfall.
+                    500+ zertifizierte Sachverständige deutschlandweit. Kostenlos für Geschädigte.
+                </p>
+            </div>
+            <div class="dgd-footer__links">
+                <h4>Leistungen</h4>
+                <ul>
+                    <li><a href="#gutachter">Kfz-Gutachter finden</a></li>
+                    <li><a href="#melden">Unfallschaden melden</a></li>
+                    <li><a href="#partner">Partner werden</a></li>
+                    <li><a href="#rente">Rente &amp; Provision</a></li>
+                    <li><a href="#status">Status prüfen</a></li>
+                </ul>
+            </div>
+            <div class="dgd-footer__links">
+                <h4>Kontakt</h4>
+                <ul>
+                    <li>E-Mail: service@deutscher-gutachter-dienst.de</li>
+                    <li>Tel: +49 (0) 800 009 5000</li>
+                    <li>Web: dgd.digital</li>
+                </ul>
+            </div>
+            <div class="dgd-footer__links">
+                <h4>Rechtliches</h4>
+                <ul>
+                    <li><a href="#impressum">Impressum</a></li>
+                    <li><a href="#datenschutz">Datenschutz</a></li>
+                    <li><a href="#agb">AGB</a></li>
+                    <li><a href="/dashboard/">Internes Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="dgd-footer__bottom">
+            <div class="dgd-footer__eu-label">
+            <img src="img/eu-funded.png" alt="Finanziert von der Europäischen Union" class="dgd-footer__eu-funded">
+        </div>
+        <p>&copy; 2026 Deutscher Gutachter Dienst (DGD). Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="lib/leaflet/leaflet.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/wizard.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Maria Demir Chatbot v2.0 -->
+    <link rel="stylesheet" href="css/portal-cortex.css?v=2.0">
+    <link rel="stylesheet" href="css/maria-welcome.css?v=2.0">
+    <script src="js/portal-cortex.js?v=2.0"></script>
+
+</body>
+</html>
