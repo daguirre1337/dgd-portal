@@ -76,16 +76,16 @@
                     <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     KPI Cockpit
                 </a>
-                <a href="#mitarbeiter" class="dgd-sidebar__link" data-view="mitarbeiter" data-role="admin">
+                <a href="#mitarbeiter" class="dgd-sidebar__link" data-view="mitarbeiter">
                     <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                     Mitarbeiter
                 </a>
                 <div class="dgd-sidebar__section">BUSINESS</div>
-                <a href="#finanzen" class="dgd-sidebar__link" data-view="finanzen" data-role="admin">
+                <a href="#finanzen" class="dgd-sidebar__link" data-view="finanzen">
                     <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                     Finanzen
                 </a>
-                <a href="#ziele" class="dgd-sidebar__link" data-view="ziele" data-role="admin">
+                <a href="#ziele" class="dgd-sidebar__link" data-view="ziele">
                     <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
                     Ziele
                 </a>
@@ -97,13 +97,17 @@
                     <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     Roadmap
                 </a>
+                <a href="#crm" class="dgd-sidebar__link" data-view="crm">
+                    <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="8"/><line x1="18" y1="11" x2="23" y2="11"/><line x1="18" y1="14" x2="21" y2="14"/></svg>
+                    CRM
+                </a>
                 <div class="dgd-sidebar__section">TOOLS</div>
-                <a href="#showcase" class="dgd-sidebar__link" data-view="showcase" data-role="admin">
+                <a href="#showcase" class="dgd-sidebar__link" data-view="showcase">
                     <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                     Showcase Builder
                 </a>
                 <div class="dgd-sidebar__section">VERWALTUNG</div>
-                <a href="#settings" class="dgd-sidebar__link" data-view="settings" data-role="admin">
+                <a href="#settings" class="dgd-sidebar__link" data-view="settings">
                     <svg class="dgd-sidebar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                     Einstellungen
                 </a>
@@ -118,6 +122,7 @@
                 </button>
                 <h3 class="dgd-topbar__title" id="topbar-title">Dashboard</h3>
                 <div class="dgd-topbar__user">
+                    <span id="page-owner-badge" class="dgd-page-owner" style="display:none"></span>
                     <span id="topbar-username"></span>
                     <button class="dgd-btn dgd-btn--outline dgd-btn--sm" id="logout-btn">Abmelden</button>
                 </div>
@@ -160,6 +165,7 @@
     <script defer src="js/views/roadmap.js"></script>
     <script defer src="js/views/showcase.js"></script>
     <script defer src="js/views/settings.js"></script>
+    <script defer src="js/views/crm.js"></script>
 
     <!-- Auth & Routing -->
     <script defer src="js/auth.js"></script>

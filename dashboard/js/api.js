@@ -16,6 +16,7 @@ var dashboardApi = {
         })
         .then(function(res) {
             if (res.status === 401) {
+                if (window.DGD && DGD.state && DGD.state.demoMode) return null;
                 window.location.hash = '#login';
                 throw new Error('Nicht autorisiert');
             }
@@ -84,18 +85,62 @@ var dashboardApi = {
         return this._fetch('/admin/users');
     },
 
-    updateUserRole: function(userId, role) {
-        return this._fetch('/admin/users/' + userId + '/role', {
-            method: 'PUT',
-            body: JSON.stringify({ role: role }),
-        });
+    // Page Owners
+    getPageOwners: function() {
+        return this._fetch('/admin/page-owners');
+    },
+    updatePageOwner: function(viewName, ownerName) {
+        return this._fetch('/admin/page-owners/' + viewName, { method: 'PUT', body: JSON.stringify({ owner_name: ownerName }) });
     },
 
-    deleteUser: function(userId) {
-        return this._fetch('/admin/users/' + userId, { method: 'DELETE' });
+    // CRM - Contacts
+    getCrmContacts: function(filters) {
+        var q = filters ? '?' + new URLSearchParams(filters) : '';
+        return this._fetch('/crm/contacts' + q);
+    },
+    createCrmContact: function(data) {
+        return this._fetch('/crm/contacts', { method: 'POST', body: JSON.stringify(data) });
+    },
+    updateCrmContact: function(id, data) {
+        return this._fetch('/crm/contacts/' + id, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    deleteCrmContact: function(id) {
+        return this._fetch('/crm/contacts/' + id, { method: 'DELETE' });
+    },
+    getCrmContactInteractions: function(id) {
+        return this._fetch('/crm/contacts/' + id + '/interactions');
     },
 
-    sendInviteEmail: function(codeId) {
-        return this._fetch('/invite-codes/' + codeId + '/send', { method: 'POST' });
+    // CRM - Deals
+    getCrmDeals: function(filters) {
+        var q = filters ? '?' + new URLSearchParams(filters) : '';
+        return this._fetch('/crm/deals' + q);
+    },
+    createCrmDeal: function(data) {
+        return this._fetch('/crm/deals', { method: 'POST', body: JSON.stringify(data) });
+    },
+    updateCrmDeal: function(id, data) {
+        return this._fetch('/crm/deals/' + id, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    deleteCrmDeal: function(id) {
+        return this._fetch('/crm/deals/' + id, { method: 'DELETE' });
+    },
+
+    // CRM - Interactions
+    createCrmInteraction: function(data) {
+        return this._fetch('/crm/interactions', { method: 'POST', body: JSON.stringify(data) });
+    },
+
+    // CRM - Stats & Pipeline
+    getCrmStats: function() {
+        return this._fetch('/crm/stats');
+    },
+    getCrmPipeline: function() {
+        return this._fetch('/crm/pipeline');
+    },
+
+    // CRM - Import
+    importCrmTrello: function(data) {
+        return this._fetch('/crm/import/trello', { method: 'POST', body: JSON.stringify(data) });
     },
 };

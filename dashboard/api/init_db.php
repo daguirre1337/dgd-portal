@@ -15,6 +15,91 @@ require_once __DIR__ . '/handlers/goals.php';
 require_once __DIR__ . '/handlers/feedback.php';
 require_once __DIR__ . '/handlers/finance.php';
 
+/**
+ * Ensure CRM and page_owners tables exist (migration for existing DBs)
+ */
+function crm_ensure_tables(): void
+{
+    $db = get_db();
+
+    // page_owners
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS page_owners (
+            view_name TEXT PRIMARY KEY,
+            owner_name TEXT NOT NULL DEFAULT 'Daniel',
+            updated_by TEXT,
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ");
+    $allViews = ['dashboard','timeline','kpis','mitarbeiter','finanzen','ziele','feedback','roadmap','showcase','settings','crm'];
+    foreach ($allViews as $v) {
+        $db->exec("INSERT OR IGNORE INTO page_owners (view_name, owner_name) VALUES ('{$v}', 'Daniel')");
+    }
+
+    // CRM contacts
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_contacts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            organization TEXT,
+            role TEXT,
+            tags TEXT DEFAULT '[]',
+            notes TEXT DEFAULT '',
+            pipeline_stage TEXT DEFAULT 'lead',
+            deal_value REAL DEFAULT 0,
+            source TEXT DEFAULT 'manual',
+            assigned_to TEXT DEFAULT '',
+            last_contacted TEXT,
+            next_followup TEXT,
+            health_score INTEGER DEFAULT 100,
+            created_by TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_stage ON crm_contacts(pipeline_stage)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_org ON crm_contacts(organization)");
+
+    // CRM interactions
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_interactions (
+            id TEXT PRIMARY KEY,
+            contact_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            details TEXT DEFAULT '',
+            sentiment TEXT DEFAULT 'neutral',
+            created_by TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_interactions_contact ON crm_interactions(contact_id)");
+
+    // CRM deals
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_deals (
+            id TEXT PRIMARY KEY,
+            contact_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            value REAL DEFAULT 0,
+            stage TEXT DEFAULT 'lead',
+            probability INTEGER DEFAULT 10,
+            expected_close TEXT,
+            notes TEXT DEFAULT '',
+            assigned_to TEXT DEFAULT '',
+            created_by TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_deals_stage ON crm_deals(stage)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_deals_contact ON crm_deals(contact_id)");
+}
+
 function init_database(): void
 {
     $db = get_db();
@@ -58,12 +143,6 @@ function init_database(): void
     }
     if (!in_array('invited_name', $colNames)) {
         $db->exec("ALTER TABLE invite_codes ADD COLUMN invited_name TEXT");
-    }
-    if (!in_array('email_sent_at', $colNames)) {
-        $db->exec("ALTER TABLE invite_codes ADD COLUMN email_sent_at TEXT");
-    }
-    if (!in_array('sent_via', $colNames)) {
-        $db->exec("ALTER TABLE invite_codes ADD COLUMN sent_via TEXT");
     }
 
     // ---- projects table ----
@@ -193,6 +272,83 @@ function init_database(): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_elbdesk_cases_status ON elbdesk_cases(status)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_elbdesk_cases_damage ON elbdesk_cases(damage_type)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_elbdesk_revenue_month ON elbdesk_revenue(month)");
+
+    // ---- page_owners table ----
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS page_owners (
+            view_name TEXT PRIMARY KEY,
+            owner_name TEXT NOT NULL DEFAULT 'Daniel',
+            updated_by TEXT,
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ");
+
+    // Seed page_owners with Daniel for all views
+    $allViews = ['dashboard','timeline','kpis','mitarbeiter','finanzen','ziele','feedback','roadmap','showcase','settings','crm'];
+    foreach ($allViews as $v) {
+        $db->exec("INSERT OR IGNORE INTO page_owners (view_name, owner_name) VALUES ('{$v}', 'Daniel')");
+    }
+
+    // ---- CRM tables ----
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_contacts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            organization TEXT,
+            role TEXT,
+            tags TEXT DEFAULT '[]',
+            notes TEXT DEFAULT '',
+            pipeline_stage TEXT DEFAULT 'lead',
+            deal_value REAL DEFAULT 0,
+            source TEXT DEFAULT 'manual',
+            assigned_to TEXT DEFAULT '',
+            last_contacted TEXT,
+            next_followup TEXT,
+            health_score INTEGER DEFAULT 100,
+            created_by TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_stage ON crm_contacts(pipeline_stage)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_org ON crm_contacts(organization)");
+
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_interactions (
+            id TEXT PRIMARY KEY,
+            contact_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            details TEXT DEFAULT '',
+            sentiment TEXT DEFAULT 'neutral',
+            created_by TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_interactions_contact ON crm_interactions(contact_id)");
+
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_deals (
+            id TEXT PRIMARY KEY,
+            contact_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            value REAL DEFAULT 0,
+            stage TEXT DEFAULT 'lead',
+            probability INTEGER DEFAULT 10,
+            expected_close TEXT,
+            notes TEXT DEFAULT '',
+            assigned_to TEXT DEFAULT '',
+            created_by TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_deals_stage ON crm_deals(stage)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_deals_contact ON crm_deals(contact_id)");
 
     // ---- goals, feedback, finance tables ----
     goals_ensure_tables();

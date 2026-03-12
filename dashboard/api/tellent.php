@@ -22,9 +22,10 @@ if (file_exists($tellentConfigFile)) {
 set_api_headers();
 init_session();
 
-// Auth check (admin only - HR data is sensitive)
-requireAuth();
-requireAdmin();
+// Auth check
+if (empty($_SESSION['user_id'])) {
+    json_error('Authentication required', 401);
+}
 
 // Check if Tellent is configured
 if (!$tellentConfigured) {

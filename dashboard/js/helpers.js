@@ -27,17 +27,9 @@ DGD.helpers = {
 
     formatDate(iso) {
         if (!iso) return '';
-        // Handle full ISO timestamps (2026-03-10T15:42:30+00:00) and plain dates (2026-03-10)
-        var d = new Date(iso);
-        if (!isNaN(d.getTime())) {
-            var day = String(d.getDate()).padStart(2, '0');
-            var month = String(d.getMonth() + 1).padStart(2, '0');
-            return day + '.' + month + '.' + d.getFullYear();
-        }
-        // Fallback: simple split for YYYY-MM-DD
         var parts = iso.split('-');
-        if (parts.length >= 3) return parts[2].substring(0, 2) + '.' + parts[1] + '.' + parts[0];
-        return iso;
+        if (parts.length !== 3) return iso;
+        return `${parts[2]}.${parts[1]}.${parts[0]}`;
     },
 
     formatCurrency(val) {

@@ -4,8 +4,7 @@ DirectoryIndex index.php
 RewriteEngine On
 RewriteBase /dashboard/
 
-# Dashboard API routing - allow tellent.php directly
-RewriteRule ^api/tellent\.php$ - [L]
+# Dashboard API routing
 RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
 # Protect data directory (always block)

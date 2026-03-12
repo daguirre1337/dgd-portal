@@ -36,6 +36,7 @@ require_once __DIR__ . '/handlers/goals.php';
 require_once __DIR__ . '/handlers/feedback.php';
 require_once __DIR__ . '/handlers/finance.php';
 require_once __DIR__ . '/handlers/export.php';
+require_once __DIR__ . '/handlers/crm.php';
 
 // ---- Auto-initialize database if tables are missing ----
 require_once __DIR__ . '/init_db.php';
@@ -45,6 +46,9 @@ $_table_count = (int) $_db_check->query(
 )->fetchColumn();
 if ($_table_count === 0) {
     init_database();
+} else {
+    // Run migrations for new tables on existing DBs
+    crm_ensure_tables();
 }
 unset($_db_check, $_table_count);
 
@@ -83,16 +87,16 @@ $routes = [
     ['GET',  '#/api/kpis$#',                     'handle_list_kpis',    'auth'],
     ['POST', '#/api/kpis$#',                     'handle_upsert_kpi',   'auth'],
 
-    // Goals / OKR (read: auth, write: admin)
-    ['POST', "#/api/goals/({$UUID})/key-results$#i", 'handle_create_key_result', 'admin'],
+    // Goals / OKR
+    ['POST', "#/api/goals/({$UUID})/key-results$#i", 'handle_create_key_result', 'auth'],
     ['GET',  '#/api/goals/stats$#',                   'handle_goals_stats',       'auth'],
     ['GET',  "#/api/goals/({$UUID})$#i",              'handle_get_goal',          'auth'],
     ['GET',  '#/api/goals$#',                          'handle_list_goals',        'auth'],
-    ['POST', '#/api/goals$#',                          'handle_create_goal',       'admin'],
-    ['PUT',  "#/api/goals/({$UUID})$#i",               'handle_update_goal',       'admin'],
-    ['DELETE', "#/api/goals/({$UUID})$#i",             'handle_delete_goal',       'admin'],
-    ['PUT',  "#/api/key-results/({$UUID})$#i",         'handle_update_key_result', 'admin'],
-    ['DELETE', "#/api/key-results/({$UUID})$#i",       'handle_delete_key_result', 'admin'],
+    ['POST', '#/api/goals$#',                          'handle_create_goal',       'auth'],
+    ['PUT',  "#/api/goals/({$UUID})$#i",               'handle_update_goal',       'auth'],
+    ['DELETE', "#/api/goals/({$UUID})$#i",             'handle_delete_goal',       'auth'],
+    ['PUT',  "#/api/key-results/({$UUID})$#i",         'handle_update_key_result', 'auth'],
+    ['DELETE', "#/api/key-results/({$UUID})$#i",       'handle_delete_key_result', 'auth'],
 
     // Feedback
     ['GET',  '#/api/feedback/pulse-status$#',                   'handle_pulse_status',            'auth'],
@@ -104,27 +108,41 @@ $routes = [
     ['PUT',  "#/api/feedback/templates/({$UUID})$#i",           'handle_update_feedback_template','auth'],
     ['POST', '#/api/feedback/responses$#',                       'handle_submit_feedback_response','auth'],
 
-    // Finance (admin only)
-    ['GET',    '#/api/finance/summary$#',                'handle_finance_summary',  'admin'],
-    ['GET',    '#/api/finance/monthly$#',                'handle_finance_monthly',  'admin'],
-    ['GET',    '#/api/finance/projects$#',               'handle_finance_projects', 'admin'],
-    ['PUT',    "#/api/finance/expenses/({$UUID})$#i",    'handle_update_expense',   'admin'],
-    ['DELETE', "#/api/finance/expenses/({$UUID})$#i",    'handle_delete_expense',   'admin'],
-    ['POST',   '#/api/finance/expenses$#',               'handle_create_expense',   'admin'],
-    ['GET',    '#/api/finance/expenses$#',               'handle_list_expenses',    'admin'],
-    ['POST',   '#/api/finance/revenue$#',                'handle_create_revenue',   'admin'],
-    ['GET',    '#/api/finance/revenue$#',                'handle_list_revenue',     'admin'],
+    // Finance
+    ['GET',    '#/api/finance/summary$#',                'handle_finance_summary',  'auth'],
+    ['GET',    '#/api/finance/monthly$#',                'handle_finance_monthly',  'auth'],
+    ['GET',    '#/api/finance/projects$#',               'handle_finance_projects', 'auth'],
+    ['PUT',    "#/api/finance/expenses/({$UUID})$#i",    'handle_update_expense',   'auth'],
+    ['DELETE', "#/api/finance/expenses/({$UUID})$#i",    'handle_delete_expense',   'auth'],
+    ['POST',   '#/api/finance/expenses$#',               'handle_create_expense',   'auth'],
+    ['GET',    '#/api/finance/expenses$#',               'handle_list_expenses',    'auth'],
+    ['POST',   '#/api/finance/revenue$#',                'handle_create_revenue',   'auth'],
+    ['GET',    '#/api/finance/revenue$#',                'handle_list_revenue',     'auth'],
 
     // Export / Reports
     ['GET',  '#/api/export$#',       'handle_export',              'auth'],
 
+    // CRM
+    ['GET',    '#/api/crm/stats$#',                                'handle_crm_stats',               'auth'],
+    ['GET',    '#/api/crm/pipeline$#',                             'handle_crm_pipeline',            'auth'],
+    ['POST',   '#/api/crm/import/trello$#',                        'handle_crm_import_trello',       'admin'],
+    ['POST',   '#/api/crm/interactions$#',                         'handle_create_crm_interaction',  'auth'],
+    ['GET',    "#/api/crm/contacts/({$UUID})/interactions$#i",     'handle_crm_contact_interactions', 'auth'],
+    ['GET',    '#/api/crm/contacts$#',                             'handle_list_crm_contacts',       'auth'],
+    ['POST',   '#/api/crm/contacts$#',                             'handle_create_crm_contact',      'auth'],
+    ['PUT',    "#/api/crm/contacts/({$UUID})$#i",                  'handle_update_crm_contact',      'auth'],
+    ['DELETE', "#/api/crm/contacts/({$UUID})$#i",                  'handle_delete_crm_contact',      'auth'],
+    ['GET',    '#/api/crm/deals$#',                                'handle_list_crm_deals',          'auth'],
+    ['POST',   '#/api/crm/deals$#',                                'handle_create_crm_deal',         'auth'],
+    ['PUT',    "#/api/crm/deals/({$UUID})$#i",                     'handle_update_crm_deal',         'auth'],
+    ['DELETE', "#/api/crm/deals/({$UUID})$#i",                     'handle_delete_crm_deal',         'auth'],
+
     // Admin
-    ['GET',  '#/api/admin/users$#',                     'handle_list_users',          'admin'],
-    ['PUT',  "#/api/admin/users/({$UUID})/role$#i",     'handle_update_user_role',    'admin'],
-    ['DELETE', "#/api/admin/users/({$UUID})$#i",        'handle_delete_user',         'admin'],
-    ['POST', "#/api/invite-codes/([A-Za-z0-9-]+)/send$#", 'handle_send_invite',      'admin'],
-    ['GET',  '#/api/invite-codes$#',                     'handle_list_invite_codes',   'admin'],
-    ['POST', '#/api/invite-codes$#',                     'handle_create_invite_code',  'admin'],
+    ['GET',  '#/api/admin/users$#',            'handle_list_users',          'admin'],
+    ['GET',  '#/api/admin/page-owners$#',      'handle_list_page_owners',    'auth'],
+    ['PUT',  '#/api/admin/page-owners/([a-z-]+)$#', 'handle_update_page_owner', 'admin'],
+    ['GET',  '#/api/invite-codes$#',           'handle_list_invite_codes',   'admin'],
+    ['POST', '#/api/invite-codes$#',           'handle_create_invite_code',  'admin'],
 ];
 
 // ---- Dispatch ----
