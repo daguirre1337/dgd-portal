@@ -540,9 +540,10 @@ DGD.views = DGD.views || {};
                 name: 'Cortex DigitalTwin',
                 description: 'KI-Assistent, E-Mail-Versand, Chat',
                 icon: '&#129302;',
-                connected: false, // checked async below
+                connected: false, // checked async after render
                 detail: 'localhost:8000',
                 link: null,
+                asyncCheck: true,
             },
             {
                 name: 'Dashboard API',
@@ -670,5 +671,28 @@ DGD.views = DGD.views || {};
                 });
             });
         }
+
+        // Async Cortex connectivity check
+        (function() {
+            var badges = container.querySelectorAll('.dgd-integration-badge');
+            for (var b = 0; b < badges.length; b++) {
+                var row = badges[b].closest('.dgd-integration-row');
+                if (row && row.querySelector('.dgd-integration-row__name') &&
+                    row.querySelector('.dgd-integration-row__name').textContent.indexOf('Cortex') !== -1) {
+                    var badge = badges[b];
+                    var detailEl = row.querySelector('.dgd-integration-row__detail');
+                    fetch('http://localhost:8000/api/status', { method: 'GET', mode: 'cors' })
+                        .then(function(res) {
+                            if (res.ok) {
+                                badge.className = 'dgd-integration-badge dgd-integration-badge--connected';
+                                badge.innerHTML = '<span class="dgd-integration-badge__dot"></span>Verbunden';
+                                if (detailEl) detailEl.textContent = 'localhost:8000 erreichbar';
+                            }
+                        })
+                        .catch(function() { /* stays disconnected */ });
+                    break;
+                }
+            }
+        })();
     };
 })();
