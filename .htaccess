@@ -1,2 +1,16 @@
 RewriteEngine On
-RewriteRule ^$ /dashboard/ [L,R=301]
+
+# Dashboard subdirectory handles its own routing
+RewriteRule ^dashboard/ - [L]
+
+# Redirect all /api/dgd/* requests to the PHP router
+# Except existing files and directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/dgd/(.*)$ api/index.php [QSA,L]
+
+# Protect data directory from direct access
+RewriteRule ^data/ - [F,L]
+
+# Protect config files
+RewriteRule \.db$ - [F,L]
