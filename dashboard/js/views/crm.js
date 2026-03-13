@@ -10,12 +10,15 @@
     var $ = function(sel) { return document.querySelector(sel); };
 
     var STAGES = [
-        { key: 'lead',         label: 'Lead',         color: '#94a3b8' },
-        { key: 'kontakt',      label: 'Kontakt',      color: '#60a5fa' },
-        { key: 'angebot',      label: 'Angebot',      color: '#f59e0b' },
-        { key: 'verhandlung',  label: 'Verhandlung',  color: '#a78bfa' },
-        { key: 'gewonnen',     label: 'Gewonnen',     color: '#34d399' },
-        { key: 'verloren',     label: 'Verloren',     color: '#f87171' },
+        { key: 'lead',         label: 'Lead',              color: '#94a3b8' },
+        { key: 'kontakt',      label: 'Kontakt',           color: '#60a5fa' },
+        { key: 'registriert',  label: 'Registriert',       color: '#22d3ee' },
+        { key: 'verifiziert',  label: 'Verifiziert',       color: '#a78bfa' },
+        { key: 'geprueft',     label: 'Gepr\u00fcfter Partner', color: '#f59e0b' },
+        { key: 'aktiviert',    label: 'Aktiviert',         color: '#34d399' },
+        { key: 'plan_b',       label: 'Plan B',            color: '#fb923c' },
+        { key: 'reaktivieren', label: 'Reaktivieren',      color: '#38bdf8' },
+        { key: 'verloren',     label: 'Verloren',          color: '#f87171' },
     ];
 
     var INTERACTION_TYPES = [
@@ -115,7 +118,7 @@
         }
 
         var html = '<table class="crm-table"><thead><tr>';
-        html += '<th>Name</th><th>Organisation</th><th>Stage</th><th>Wert</th>';
+        html += '<th>Name</th><th>Organisation</th><th>Ort</th><th>Stage</th><th>GA</th>';
         html += '<th>Zustaendig</th><th>Follow-up</th><th>Aktionen</th>';
         html += '</tr></thead><tbody>';
 
@@ -125,9 +128,14 @@
             html += '<td class="crm-cell--name"><strong>' + esc(c.name) + '</strong>';
             if (c.email) html += '<br><small>' + esc(c.email) + '</small>';
             html += '</td>';
-            html += '<td>' + esc(c.organization || '-') + '</td>';
+            html += '<td>' + esc(c.organization || '-');
+            if (c.business_type) html += '<br><small>' + esc(c.business_type) + '</small>';
+            html += '</td>';
+            html += '<td>' + esc(c.city || '-');
+            if (c.zip) html += '<br><small>' + esc(c.zip) + '</small>';
+            html += '</td>';
             html += '<td><span class="crm-stage-badge" style="background:' + stageColor(c.pipeline_stage) + '">' + stageLabel(c.pipeline_stage) + '</span></td>';
-            html += '<td>' + (c.deal_value > 0 ? formatCurrency(c.deal_value) : '-') + '</td>';
+            html += '<td>' + (c.ga_count > 0 ? c.ga_count : '-') + '</td>';
             html += '<td>' + esc(c.assigned_to || '-') + '</td>';
             html += '<td>' + (isOverdue ? '<span class="crm-overdue">' : '') + formatDate(c.next_followup) + (isOverdue ? '</span>' : '') + '</td>';
             html += '<td class="crm-actions">';
@@ -288,7 +296,9 @@
         html += formField('E-Mail', 'email', 'crm-f-email', contact ? contact.email : '');
         html += formField('Telefon', 'text', 'crm-f-phone', contact ? contact.phone : '');
         html += formField('Organisation', 'text', 'crm-f-org', contact ? contact.organization : '');
-        html += formField('Rolle', 'text', 'crm-f-role', contact ? contact.role : '');
+        html += formField('Position', 'text', 'crm-f-jobtitle', contact ? contact.job_title : '');
+        html += formField('Betriebsart', 'text', 'crm-f-biztype', contact ? contact.business_type : '');
+        html += formField('Webseite', 'url', 'crm-f-website', contact ? contact.website : '');
         html += formField('Zustaendig', 'text', 'crm-f-assigned', contact ? contact.assigned_to : '');
 
         html += '<div class="dgd-form__group">';
@@ -300,9 +310,17 @@
         });
         html += '</select></div>';
 
-        html += formField('Deal-Wert (EUR)', 'number', 'crm-f-value', contact ? contact.deal_value : '0');
+        html += formField('GA-Anzahl', 'number', 'crm-f-gacount', contact ? contact.ga_count : '0');
         html += formField('Naechster Follow-up', 'date', 'crm-f-followup', contact && contact.next_followup ? contact.next_followup.substring(0, 10) : '');
         html += '</div>';
+
+        html += '<fieldset style="border:1px solid #334155;border-radius:8px;padding:12px;margin:8px 0"><legend style="color:#94a3b8;font-size:0.85rem">Adresse</legend>';
+        html += '<div class="crm-form-grid">';
+        html += formField('Stra\u00dfe + Nr.', 'text', 'crm-f-street', contact ? contact.street : '');
+        html += formField('PLZ', 'text', 'crm-f-zip', contact ? contact.zip : '');
+        html += formField('Ort', 'text', 'crm-f-city', contact ? contact.city : '');
+        html += formField('Bundesland', 'text', 'crm-f-state', contact ? contact.state : '');
+        html += '</div></fieldset>';
 
         html += '<div class="dgd-form__group">';
         html += '<label class="dgd-form__label">Notizen</label>';
@@ -327,12 +345,18 @@
                 email: mc.querySelector('#crm-f-email').value,
                 phone: mc.querySelector('#crm-f-phone').value,
                 organization: mc.querySelector('#crm-f-org').value,
-                role: mc.querySelector('#crm-f-role').value,
+                job_title: mc.querySelector('#crm-f-jobtitle').value,
+                business_type: mc.querySelector('#crm-f-biztype').value,
+                website: mc.querySelector('#crm-f-website').value,
                 assigned_to: mc.querySelector('#crm-f-assigned').value,
                 pipeline_stage: mc.querySelector('#crm-f-stage').value,
-                deal_value: parseFloat(mc.querySelector('#crm-f-value').value) || 0,
+                ga_count: parseInt(mc.querySelector('#crm-f-gacount').value) || 0,
                 next_followup: mc.querySelector('#crm-f-followup').value || null,
                 notes: mc.querySelector('#crm-f-notes').value,
+                street: mc.querySelector('#crm-f-street').value,
+                zip: mc.querySelector('#crm-f-zip').value,
+                city: mc.querySelector('#crm-f-city').value,
+                state: mc.querySelector('#crm-f-state').value,
             };
 
             var promise = isEdit
@@ -454,13 +478,32 @@
 
             // Contact Info
             html += '<div class="crm-detail__info">';
+            html += '<div class="crm-detail__grid">';
             html += '<div class="crm-detail__field"><strong>E-Mail:</strong> ' + esc(contact.email || '-') + '</div>';
             html += '<div class="crm-detail__field"><strong>Telefon:</strong> ' + esc(contact.phone || '-') + '</div>';
             html += '<div class="crm-detail__field"><strong>Organisation:</strong> ' + esc(contact.organization || '-') + '</div>';
-            html += '<div class="crm-detail__field"><strong>Rolle:</strong> ' + esc(contact.role || '-') + '</div>';
+            html += '<div class="crm-detail__field"><strong>Position:</strong> ' + esc(contact.job_title || '-') + '</div>';
+            html += '<div class="crm-detail__field"><strong>Betriebsart:</strong> ' + esc(contact.business_type || '-') + '</div>';
+            if (contact.website) html += '<div class="crm-detail__field"><strong>Website:</strong> <a href="' + esc(contact.website) + '" target="_blank" style="color:#60a5fa">' + esc(contact.website) + '</a></div>';
             html += '<div class="crm-detail__field"><strong>Stage:</strong> <span class="crm-stage-badge" style="background:' + stageColor(contact.pipeline_stage) + '">' + stageLabel(contact.pipeline_stage) + '</span></div>';
+            if (contact.ga_count > 0) html += '<div class="crm-detail__field"><strong>GA-Stufe:</strong> ' + contact.ga_count + ' GAs</div>';
             html += '<div class="crm-detail__field"><strong>Zustaendig:</strong> ' + esc(contact.assigned_to || '-') + '</div>';
-            html += '<div class="crm-detail__field"><strong>Notizen:</strong> ' + esc(contact.notes || '-') + '</div>';
+            html += '</div>';
+
+            // Address block
+            var hasAddr = contact.street || contact.zip || contact.city;
+            if (hasAddr) {
+                html += '<div class="crm-detail__address" style="margin:12px 0;padding:8px 12px;background:#1e293b;border-radius:6px;border-left:3px solid #60a5fa">';
+                html += '<strong style="color:#94a3b8;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em">Adresse</strong><br>';
+                if (contact.street) html += esc(contact.street) + '<br>';
+                if (contact.zip || contact.city) html += esc((contact.zip || '') + ' ' + (contact.city || '')) + '<br>';
+                if (contact.state) html += esc(contact.state);
+                html += '</div>';
+            }
+
+            if (contact.notes) {
+                html += '<div class="crm-detail__field" style="margin-top:8px"><strong>Notizen:</strong><br><span style="white-space:pre-wrap;color:#cbd5e1;font-size:0.9rem">' + esc(contact.notes) + '</span></div>';
+            }
             html += '<div class="crm-detail__actions">';
             html += '<button class="dgd-btn dgd-btn--sm dgd-btn--primary" id="crm-edit-contact">Bearbeiten</button>';
             html += '<button class="dgd-btn dgd-btn--sm dgd-btn--outline" id="crm-add-interaction">+ Interaktion</button>';

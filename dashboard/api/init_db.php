@@ -62,6 +62,26 @@ function crm_ensure_tables(): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_stage ON crm_contacts(pipeline_stage)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_org ON crm_contacts(organization)");
 
+    // Migration: add new columns for Trello/Crmble compatibility
+    $cols = $db->query("PRAGMA table_info(crm_contacts)")->fetchAll();
+    $colNames = array_column($cols, 'name');
+    $newCols = [
+        'street'          => 'TEXT',
+        'zip'             => 'TEXT',
+        'city'            => 'TEXT',
+        'state'           => 'TEXT',
+        'website'         => 'TEXT',
+        'job_title'       => 'TEXT',
+        'business_type'   => 'TEXT',
+        'ga_count'        => 'INTEGER DEFAULT 0',
+        'trello_card_id'  => 'TEXT',
+    ];
+    foreach ($newCols as $col => $type) {
+        if (!in_array($col, $colNames)) {
+            $db->exec("ALTER TABLE crm_contacts ADD COLUMN {$col} {$type}");
+        }
+    }
+
     // CRM interactions
     $db->exec("
         CREATE TABLE IF NOT EXISTS crm_interactions (

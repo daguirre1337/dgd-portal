@@ -88,26 +88,37 @@ function handle_create_crm_contact(): void
 
     $db->prepare("
         INSERT INTO crm_contacts (id, name, email, phone, organization, role, tags, notes,
-            pipeline_stage, deal_value, source, assigned_to, next_followup, created_by, created_at, updated_at)
+            pipeline_stage, deal_value, source, assigned_to, next_followup, created_by, created_at, updated_at,
+            street, zip, city, state, website, job_title, business_type, ga_count, trello_card_id)
         VALUES (:id, :name, :email, :phone, :org, :role, :tags, :notes,
-            :stage, :deal_value, :source, :assigned, :followup, :created_by, :now, :now2)
+            :stage, :deal_value, :source, :assigned, :followup, :created_by, :now, :now2,
+            :street, :zip, :city, :state, :website, :job_title, :business_type, :ga_count, :trello_card_id)
     ")->execute([
-        ':id'         => $id,
-        ':name'       => trim($body['name']),
-        ':email'      => trim($body['email'] ?? ''),
-        ':phone'      => trim($body['phone'] ?? ''),
-        ':org'        => trim($body['organization'] ?? ''),
-        ':role'       => trim($body['role'] ?? ''),
-        ':tags'       => $tags,
-        ':notes'      => trim($body['notes'] ?? ''),
-        ':stage'      => trim($body['pipeline_stage'] ?? 'lead'),
-        ':deal_value' => (float)($body['deal_value'] ?? 0),
-        ':source'     => trim($body['source'] ?? 'manual'),
-        ':assigned'   => trim($body['assigned_to'] ?? ''),
-        ':followup'   => $body['next_followup'] ?? null,
-        ':created_by' => $_SESSION['user_id'],
-        ':now'        => $now,
-        ':now2'       => $now,
+        ':id'             => $id,
+        ':name'           => trim($body['name']),
+        ':email'          => trim($body['email'] ?? ''),
+        ':phone'          => trim($body['phone'] ?? ''),
+        ':org'            => trim($body['organization'] ?? ''),
+        ':role'           => trim($body['role'] ?? ''),
+        ':tags'           => $tags,
+        ':notes'          => trim($body['notes'] ?? ''),
+        ':stage'          => trim($body['pipeline_stage'] ?? 'lead'),
+        ':deal_value'     => (float)($body['deal_value'] ?? 0),
+        ':source'         => trim($body['source'] ?? 'manual'),
+        ':assigned'       => trim($body['assigned_to'] ?? ''),
+        ':followup'       => $body['next_followup'] ?? null,
+        ':created_by'     => $_SESSION['user_id'],
+        ':now'            => $now,
+        ':now2'           => $now,
+        ':street'         => trim($body['street'] ?? ''),
+        ':zip'            => trim($body['zip'] ?? ''),
+        ':city'           => trim($body['city'] ?? ''),
+        ':state'          => trim($body['state'] ?? ''),
+        ':website'        => trim($body['website'] ?? ''),
+        ':job_title'      => trim($body['job_title'] ?? ''),
+        ':business_type'  => trim($body['business_type'] ?? ''),
+        ':ga_count'       => (int)($body['ga_count'] ?? 0),
+        ':trello_card_id' => trim($body['trello_card_id'] ?? ''),
     ]);
 
     json_success('Kontakt erstellt', ['id' => $id]);
@@ -128,7 +139,8 @@ function handle_update_crm_contact(string $id): void
     $params = [':id' => $id, ':now' => now_iso()];
 
     $allowed = ['name', 'email', 'phone', 'organization', 'role', 'notes',
-                'pipeline_stage', 'source', 'assigned_to', 'next_followup', 'last_contacted'];
+                'pipeline_stage', 'source', 'assigned_to', 'next_followup', 'last_contacted',
+                'street', 'zip', 'city', 'state', 'website', 'job_title', 'business_type', 'trello_card_id'];
     foreach ($allowed as $f) {
         if (isset($body[$f])) {
             $fields[] = "{$f} = :{$f}";
@@ -147,6 +159,10 @@ function handle_update_crm_contact(string $id): void
     if (isset($body['health_score'])) {
         $fields[] = "health_score = :health_score";
         $params[':health_score'] = (int)$body['health_score'];
+    }
+    if (isset($body['ga_count'])) {
+        $fields[] = "ga_count = :ga_count";
+        $params[':ga_count'] = (int)$body['ga_count'];
     }
 
     if (empty($fields)) {
@@ -402,7 +418,7 @@ function handle_crm_pipeline(): void
 {
     $db = get_db();
 
-    $stages = ['lead', 'kontakt', 'angebot', 'verhandlung', 'gewonnen', 'verloren'];
+    $stages = ['lead', 'kontakt', 'registriert', 'verifiziert', 'geprueft', 'aktiviert', 'plan_b', 'reaktivieren', 'verloren'];
     $pipeline = [];
 
     foreach ($stages as $stage) {
@@ -456,30 +472,44 @@ function handle_crm_import_trello(): void
         }
     }
 
-    // Stage mapping (configurable via body)
+    // Stage mapping: Trello list name keywords -> CRM stages
     $stageMapping = $body['stage_mapping'] ?? [];
     if (empty($stageMapping)) {
-        // Default mapping
         $stageMapping = [
-            'lead'         => ['lead', 'leads', 'neue kontakte', 'new', 'neu', 'eingang', 'backlog'],
-            'kontakt'      => ['kontakt', 'kontaktiert', 'contacted', 'in kontakt', 'angesprochen'],
-            'angebot'      => ['angebot', 'angebote', 'proposal', 'quote', 'offerte'],
-            'verhandlung'  => ['verhandlung', 'negotiation', 'in verhandlung', 'review'],
-            'gewonnen'     => ['gewonnen', 'won', 'deal', 'kunde', 'abgeschlossen', 'done', 'fertig'],
-            'verloren'     => ['verloren', 'lost', 'abgesagt', 'rejected'],
+            'lead'         => ['lead', 'leads', 'neue leads', 'new', 'neu', 'eingang', 'backlog', 'zukunft', 'adyoucate'],
+            'kontakt'      => ['anrufen', 'wiedervorlage', 'wv', 'setting', 'kontakt', 'kontaktiert', 'vor-ort'],
+            'registriert'  => ['registriert'],
+            'verifiziert'  => ['verifiziert'],
+            'geprueft'     => ['geprueft', 'geprüft', 'mustergutachten'],
+            'aktiviert'    => ['aktiviert', ' ga'],
+            'plan_b'       => ['plan b'],
+            'reaktivieren' => ['reaktivieren'],
+            'verloren'     => ['verloren', 'lost', 'ungeeignet', 'abgelehnt', 'kein interesse'],
         ];
+    }
+
+    // GA count mapping: extract number from list name like "5 GA", "10 GAs", etc.
+    $gaPattern = '/(\d+)\s*GAs?/i';
+
+    // Build member ID -> name map
+    $memberMap = [];
+    foreach ($board['members'] ?? [] as $member) {
+        $memberMap[$member['id']] = $member['fullName'] ?? $member['username'] ?? '';
     }
 
     $db  = get_db();
     $now = now_iso();
     $imported = 0;
     $skipped = 0;
+    $updated = 0;
 
     $contactStmt = $db->prepare("
         INSERT INTO crm_contacts (id, name, email, phone, organization, tags, notes,
-            pipeline_stage, assigned_to, next_followup, source, created_by, created_at, updated_at)
+            pipeline_stage, assigned_to, next_followup, source, created_by, created_at, updated_at,
+            street, zip, city, state, website, job_title, business_type, ga_count, trello_card_id)
         VALUES (:id, :name, :email, :phone, :org, :tags, :notes,
-            :stage, :assigned, :followup, 'trello', :created_by, :created_at, :updated_at)
+            :stage, :assigned, :followup, 'trello', :created_by, :created_at, :updated_at,
+            :street, :zip, :city, :state, :website, :job_title, :business_type, :ga_count, :trello_card_id)
     ");
 
     foreach ($cards as $card) {
@@ -489,12 +519,22 @@ function handle_crm_import_trello(): void
         }
 
         $name = trim($card['name'] ?? '');
-        if (empty($name)) {
+        if (empty($name) || $name === '---') {
             $skipped++;
             continue;
         }
 
-        // Check duplicate by name
+        $cardId = $card['id'] ?? '';
+
+        // Check duplicate by trello_card_id first, then by name
+        if (!empty($cardId)) {
+            $dup = $db->prepare("SELECT id FROM crm_contacts WHERE trello_card_id = :tid");
+            $dup->execute([':tid' => $cardId]);
+            if ($dup->fetch()) {
+                $skipped++;
+                continue;
+            }
+        }
         $dup = $db->prepare("SELECT id FROM crm_contacts WHERE name = :name");
         $dup->execute([':name' => $name]);
         if ($dup->fetch()) {
@@ -502,35 +542,74 @@ function handle_crm_import_trello(): void
             continue;
         }
 
+        // --- Extract Crmble contact fields from pluginData ---
+        $crmbleFields = [];
+        foreach ($card['pluginData'] ?? [] as $pd) {
+            $val = $pd['value'] ?? '';
+            if (is_string($val) && strpos($val, 'CRMBLE_CARD_CONTACT') !== false) {
+                $parsed = json_decode($val, true);
+                $contact = $parsed['CRMBLE_CARD_CONTACT'] ?? [];
+                foreach ($contact['crmbleFieldsValues'] ?? [] as $field) {
+                    $fid = $field['id'] ?? '';
+                    $fval = trim($field['value'] ?? '');
+                    if (!empty($fval)) {
+                        $crmbleFields[$fid] = $fval;
+                    }
+                }
+                break;
+            }
+        }
+
+        // Build contact data from Crmble fields (priority) + fallback from description
+        $desc = $card['desc'] ?? '';
+        $email = $crmbleFields['email'] ?? '';
+        $phone = $crmbleFields['phone'] ?? '';
+        $org = $crmbleFields['company'] ?? '';
+        $jobTitle = $crmbleFields['jobTitle'] ?? '';
+        $street = $crmbleFields['_90b3'] ?? '';
+        $hausnr = $crmbleFields['_9520'] ?? '';
+        if (!empty($hausnr)) $street = $street ? "{$street} {$hausnr}" : $hausnr;
+        $zip = $crmbleFields['_9e4e'] ?? '';
+        $city = $crmbleFields['_bafd'] ?? '';
+        $state = $crmbleFields['_ab85'] ?? '';
+        $website = $crmbleFields['_af5b'] ?? '';
+        $businessType = $crmbleFields['_b8a5'] ?? '';
+
+        // Use firstName + lastName from Crmble if card name looks generic
+        $crmbleName = trim(($crmbleFields['firstName'] ?? '') . ' ' . ($crmbleFields['lastName'] ?? ''));
+        if (!empty($crmbleName) && strlen($crmbleName) > 2) {
+            // Keep original card name (usually already a person name)
+        }
+
+        // Fallback: extract from description if Crmble fields empty
+        if (empty($email) && preg_match('/[\w.+-]+@[\w-]+\.[\w.]+/', $desc, $m)) {
+            $email = $m[0];
+        }
+        if (empty($phone) && preg_match('/(?:\+?\d[\d\s\/-]{6,}|\d{3,5}[\s\/-]\d{3,})/', $desc, $m)) {
+            $phone = trim($m[0]);
+        }
+        if (empty($org) && preg_match('/(?:firma|unternehmen|company|org)[:\s]+(.+)/i', $desc, $m)) {
+            $org = trim($m[1]);
+        }
+
         // Determine stage from list name
-        $listName = strtolower($listMap[$card['idList'] ?? ''] ?? '');
+        $listName = $listMap[$card['idList'] ?? ''] ?? '';
+        $listNameLower = strtolower($listName);
         $stage = 'lead';
         foreach ($stageMapping as $stageKey => $keywords) {
             foreach ($keywords as $kw) {
-                if (strpos($listName, strtolower($kw)) !== false) {
+                if (strpos($listNameLower, strtolower($kw)) !== false) {
                     $stage = $stageKey;
                     break 2;
                 }
             }
         }
 
-        // Extract info from description
-        $desc = $card['desc'] ?? '';
-        $email = '';
-        $phone = '';
-        $org = '';
-
-        // Try to extract email
-        if (preg_match('/[\w.+-]+@[\w-]+\.[\w.]+/', $desc, $m)) {
-            $email = $m[0];
-        }
-        // Try to extract phone
-        if (preg_match('/(?:\+?\d[\d\s\/-]{6,}|\d{3,5}[\s\/-]\d{3,})/', $desc, $m)) {
-            $phone = trim($m[0]);
-        }
-        // Try to extract organization (line starting with "Firma:" or "Unternehmen:" or "Company:")
-        if (preg_match('/(?:firma|unternehmen|company|org)[:\s]+(.+)/i', $desc, $m)) {
-            $org = trim($m[1]);
+        // Extract GA count from list name
+        $gaCount = 0;
+        if (preg_match($gaPattern, $listName, $gaMatch)) {
+            $gaCount = (int)$gaMatch[1];
+            if ($stage === 'lead') $stage = 'aktiviert'; // GA lists = aktiviert
         }
 
         // Labels -> tags
@@ -540,11 +619,16 @@ function handle_crm_import_trello(): void
                 $tags[] = $label['name'];
             }
         }
+        // Add list name as tag for context
+        if (!empty($listName)) {
+            $tags[] = 'trello:' . $listName;
+        }
 
-        // Assignee
+        // Assignee from card members
         $assigned = '';
-        if (!empty($card['members'])) {
-            $assigned = $card['members'][0]['fullName'] ?? $card['members'][0]['username'] ?? '';
+        $memberIds = $card['idMembers'] ?? [];
+        if (!empty($memberIds)) {
+            $assigned = $memberMap[$memberIds[0]] ?? '';
         }
 
         // Due date -> next_followup
@@ -560,19 +644,28 @@ function handle_crm_import_trello(): void
         }
 
         $contactStmt->execute([
-            ':id'         => generate_uuid(),
-            ':name'       => $name,
-            ':email'      => $email,
-            ':phone'      => $phone,
-            ':org'        => $org,
-            ':tags'       => json_encode($tags),
-            ':notes'      => $desc,
-            ':stage'      => $stage,
-            ':assigned'   => $assigned,
-            ':followup'   => $followup,
-            ':created_by' => $_SESSION['user_id'],
-            ':created_at' => $createdAt,
-            ':updated_at' => $now,
+            ':id'             => generate_uuid(),
+            ':name'           => $name,
+            ':email'          => $email,
+            ':phone'          => $phone,
+            ':org'            => $org,
+            ':tags'           => json_encode($tags),
+            ':notes'          => $desc,
+            ':stage'          => $stage,
+            ':assigned'       => $assigned,
+            ':followup'       => $followup,
+            ':created_by'     => $_SESSION['user_id'],
+            ':created_at'     => $createdAt,
+            ':updated_at'     => $now,
+            ':street'         => $street,
+            ':zip'            => $zip,
+            ':city'           => $city,
+            ':state'          => $state,
+            ':website'        => $website,
+            ':job_title'      => $jobTitle,
+            ':business_type'  => $businessType,
+            ':ga_count'       => $gaCount,
+            ':trello_card_id' => $cardId,
         ]);
 
         $imported++;
@@ -581,6 +674,7 @@ function handle_crm_import_trello(): void
     json_success("Trello-Import abgeschlossen", [
         'imported' => $imported,
         'skipped'  => $skipped,
+        'updated'  => $updated,
         'total'    => count($cards),
     ]);
 }

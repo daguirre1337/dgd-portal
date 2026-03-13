@@ -775,7 +775,16 @@ function create_crm_lead(array $data): void
                 health_score INTEGER DEFAULT 100,
                 created_by TEXT,
                 created_at TEXT,
-                updated_at TEXT
+                updated_at TEXT,
+                street TEXT,
+                zip TEXT,
+                city TEXT,
+                state TEXT,
+                website TEXT,
+                job_title TEXT,
+                business_type TEXT,
+                ga_count INTEGER DEFAULT 0,
+                trello_card_id TEXT
             )
         ");
 
@@ -786,23 +795,33 @@ function create_crm_lead(array $data): void
             INSERT INTO crm_contacts
                 (id, name, email, phone, organization, role, tags, notes,
                  pipeline_stage, deal_value, source, assigned_to, health_score,
-                 created_by, created_at, updated_at)
+                 created_by, created_at, updated_at,
+                 street, zip, city, state, website, job_title, business_type, ga_count)
             VALUES
                 (:id, :name, :email, :phone, :org, :role, :tags, :notes,
                  'lead', 0, :source, '', 100,
-                 'system-portal', :now, :now2)
+                 'system-portal', :now, :now2,
+                 :street, :zip, :city, :state, :website, :job_title, :business_type, :ga_count)
         ")->execute([
-            ':id'     => $id,
-            ':name'   => $data['name'] ?? '',
-            ':email'  => $data['email'] ?? '',
-            ':phone'  => $data['phone'] ?? '',
-            ':org'    => $data['organization'] ?? '',
-            ':role'   => $data['role'] ?? '',
-            ':tags'   => $data['tags'] ?? '[]',
-            ':notes'  => $data['notes'] ?? '',
-            ':source' => $data['source'] ?? 'website',
-            ':now'    => $now,
-            ':now2'   => $now,
+            ':id'            => $id,
+            ':name'          => $data['name'] ?? '',
+            ':email'         => $data['email'] ?? '',
+            ':phone'         => $data['phone'] ?? '',
+            ':org'           => $data['organization'] ?? '',
+            ':role'          => $data['role'] ?? '',
+            ':tags'          => $data['tags'] ?? '[]',
+            ':notes'         => $data['notes'] ?? '',
+            ':source'        => $data['source'] ?? 'website',
+            ':now'           => $now,
+            ':now2'          => $now,
+            ':street'        => $data['street'] ?? '',
+            ':zip'           => $data['zip'] ?? '',
+            ':city'          => $data['city'] ?? '',
+            ':state'         => $data['state'] ?? '',
+            ':website'       => $data['website'] ?? '',
+            ':job_title'     => $data['job_title'] ?? '',
+            ':business_type' => $data['business_type'] ?? '',
+            ':ga_count'      => (int)($data['ga_count'] ?? 0),
         ]);
 
         error_log("DGD CRM: Lead created - {$data['name']} (source: {$data['source']}, id: {$id})");
