@@ -59,6 +59,29 @@ function init_database(): void
         )
     ");
 
+    // ---- cases table (Schadensmeldungen) ----
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS dgd_cases (
+            id TEXT PRIMARY KEY,
+            reference_id TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            accident_date TEXT,
+            accident_location TEXT,
+            accident_description TEXT DEFAULT '',
+            license_plate TEXT DEFAULT '',
+            vehicle_brand TEXT DEFAULT '',
+            vehicle_model TEXT DEFAULT '',
+            insurance_opponent TEXT DEFAULT '',
+            claim_number TEXT DEFAULT '',
+            status TEXT DEFAULT 'new',
+            notes TEXT DEFAULT '',
+            created_at TEXT,
+            updated_at TEXT
+        )
+    ");
+
     // ---- indexes ----
     $db->exec("CREATE INDEX IF NOT EXISTS idx_partners_specialty ON dgd_partners(specialty)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_partners_plz       ON dgd_partners(plz)");
@@ -66,6 +89,8 @@ function init_database(): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_partners_coords    ON dgd_partners(lat, lng)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_waitlist_status     ON dgd_waitlist(status)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_waitlist_email      ON dgd_waitlist(email)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_cases_reference     ON dgd_cases(reference_id)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_cases_status        ON dgd_cases(status)");
 
     // ---- demo data (only if table is empty) ----
     $count = $db->query("SELECT COUNT(*) FROM dgd_partners")->fetchColumn();

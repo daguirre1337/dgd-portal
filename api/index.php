@@ -8,11 +8,15 @@
  *   GET  /api/dgd/partners          - List partners (optional filters)
  *   GET  /api/dgd/partners/nearby   - Nearby search by lat/lng
  *   GET  /api/dgd/partners/{id}     - Partner detail
- *   POST /api/dgd/waitlist          - Join partner waitlist
+ *   POST /api/dgd/waitlist          - Join partner waitlist + CRM lead + email
+ *   POST /api/dgd/rente             - Rente partner signup + CRM lead + email
+ *   POST /api/dgd/cases             - Create damage report + email
+ *   GET  /api/dgd/cases/{ref}       - Check case status by reference ID
  *   GET  /api/dgd/geocode           - Nominatim geocoding proxy
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/email_helper.php';
 
 // ---- Auto-initialize database if tables are missing ----
 require_once __DIR__ . '/init_db.php';
@@ -63,6 +67,14 @@ try {
     // POST /api/dgd/rente
     elseif ($method === 'POST' && preg_match('#/api/dgd/rente$#', $path)) {
         handle_rente_signup();
+    }
+    // POST /api/dgd/cases
+    elseif ($method === 'POST' && preg_match('#/api/dgd/cases$#', $path)) {
+        handle_create_case();
+    }
+    // GET /api/dgd/cases/{reference_id}
+    elseif ($method === 'GET' && preg_match('#/api/dgd/cases/([A-Z0-9-]+)$#', $path, $m)) {
+        handle_get_case($m[1]);
     }
     // Fallback
     else {
@@ -333,6 +345,26 @@ function handle_waitlist_join(): void
         ':updated_at'       => $now,
     ]);
 
+    // Send notification email
+    send_notification_email(
+        MAIL_NOTIFY_ADDRESS,
+        'Neue Partner-Bewerbung: ' . trim($body['name']),
+        build_partner_email_body($body, 'partner')
+    );
+
+    // Create CRM lead in dashboard
+    create_crm_lead([
+        'name'         => trim($body['name']),
+        'email'        => trim($body['email']),
+        'phone'        => trim($body['phone']),
+        'organization' => trim($body['company'] ?? ''),
+        'role'         => trim($body['specialty'] ?? 'kfz') . ' Gutachter',
+        'source'       => 'website-partner',
+        'tags'         => json_encode(['Website-Anfrage', 'Partner', trim($body['specialty'] ?? '')]),
+        'notes'        => 'PLZ: ' . trim($body['plz'] ?? '') . ' ' . trim($body['city'] ?? '')
+                        . ($body['message'] ? "\n" . trim($body['message']) : ''),
+    ]);
+
     json_success('Successfully joined the waitlist', [
         'id'         => $id,
         'status'     => 'pending',
@@ -483,11 +515,301 @@ function handle_rente_signup(): void
         ':updated_at'       => $now,
     ]);
 
+    // Send notification email
+    send_notification_email(
+        MAIL_NOTIFY_ADDRESS,
+        'Neuer Empfehlungspartner (Rente): ' . trim($body['name']),
+        build_partner_email_body($body, 'rente')
+    );
+
+    // Create CRM lead in dashboard
+    create_crm_lead([
+        'name'         => trim($body['name']),
+        'email'        => trim($body['email'] ?? ''),
+        'phone'        => trim($body['phone']),
+        'organization' => '',
+        'role'         => 'Empfehlungspartner (Rente)',
+        'source'       => 'website-rente',
+        'tags'         => json_encode(['Website-Anfrage', 'Rente-Partner']),
+        'notes'        => 'PLZ: ' . trim($body['plz'] ?? '')
+                        . ($body['message'] ? "\n" . trim($body['message']) : ''),
+    ]);
+
     json_success('Vielen Dank! Wir melden uns innerhalb von 24 Stunden.', [
         'id'         => $id,
         'status'     => 'new',
         'created_at' => $now,
     ]);
+}
+
+
+// ============================================================
+//  CASES HANDLERS (Schadensmeldungen)
+// ============================================================
+
+/**
+ * POST /api/dgd/cases
+ *
+ * Body (JSON):
+ *   name                 - required
+ *   email                - required
+ *   phone                - required
+ *   accident_date, accident_location, accident_description,
+ *   license_plate, vehicle_brand, vehicle_model,
+ *   insurance_opponent, claim_number - optional
+ */
+function handle_create_case(): void
+{
+    $body = get_json_body();
+
+    // Required fields
+    $required = ['name', 'email', 'phone'];
+    $missing  = [];
+    foreach ($required as $field) {
+        if (empty(trim($body[$field] ?? ''))) {
+            $missing[] = $field;
+        }
+    }
+    if (count($missing) > 0) {
+        json_error('Pflichtfelder fehlen: ' . implode(', ', $missing), 400);
+    }
+
+    if (!filter_var($body['email'], FILTER_VALIDATE_EMAIL)) {
+        json_error('Ungueltige E-Mail-Adresse', 400);
+    }
+
+    $db  = get_db();
+
+    // Ensure dgd_cases table exists
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS dgd_cases (
+            id TEXT PRIMARY KEY,
+            reference_id TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            accident_date TEXT,
+            accident_location TEXT,
+            accident_description TEXT DEFAULT '',
+            license_plate TEXT DEFAULT '',
+            vehicle_brand TEXT DEFAULT '',
+            vehicle_model TEXT DEFAULT '',
+            insurance_opponent TEXT DEFAULT '',
+            claim_number TEXT DEFAULT '',
+            status TEXT DEFAULT 'new',
+            notes TEXT DEFAULT '',
+            created_at TEXT,
+            updated_at TEXT
+        )
+    ");
+
+    $now = now_iso();
+    $id  = generate_uuid();
+
+    // Generate reference ID: DGD-YYYY-NNNNN
+    $year = date('Y');
+    $count = (int)$db->query("SELECT COUNT(*) FROM dgd_cases WHERE reference_id LIKE 'DGD-{$year}-%'")->fetchColumn();
+    $reference_id = sprintf('DGD-%s-%05d', $year, $count + 1);
+
+    $stmt = $db->prepare("
+        INSERT INTO dgd_cases
+            (id, reference_id, name, email, phone,
+             accident_date, accident_location, accident_description,
+             license_plate, vehicle_brand, vehicle_model,
+             insurance_opponent, claim_number,
+             status, created_at, updated_at)
+        VALUES
+            (:id, :ref, :name, :email, :phone,
+             :accident_date, :accident_location, :accident_description,
+             :license_plate, :vehicle_brand, :vehicle_model,
+             :insurance_opponent, :claim_number,
+             'new', :created_at, :updated_at)
+    ");
+
+    $stmt->execute([
+        ':id'                   => $id,
+        ':ref'                  => $reference_id,
+        ':name'                 => trim($body['name']),
+        ':email'                => trim($body['email']),
+        ':phone'                => trim($body['phone']),
+        ':accident_date'        => trim($body['accident_date'] ?? ''),
+        ':accident_location'    => trim($body['accident_location'] ?? ''),
+        ':accident_description' => trim($body['accident_description'] ?? ''),
+        ':license_plate'        => trim($body['license_plate'] ?? ''),
+        ':vehicle_brand'        => trim($body['vehicle_brand'] ?? ''),
+        ':vehicle_model'        => trim($body['vehicle_model'] ?? ''),
+        ':insurance_opponent'   => trim($body['insurance_opponent'] ?? ''),
+        ':claim_number'         => trim($body['claim_number'] ?? ''),
+        ':created_at'           => $now,
+        ':updated_at'           => $now,
+    ]);
+
+    // Send notification email to kontakt@dgd-direkt.de
+    $email_data = array_merge($body, ['reference_id' => $reference_id]);
+    send_notification_email(
+        MAIL_NOTIFY_ADDRESS,
+        'Neue Schadensmeldung ' . $reference_id . ': ' . trim($body['name']),
+        build_case_email_body($email_data)
+    );
+
+    json_success('Ihre Schadensmeldung wurde erfolgreich eingereicht.', [
+        'id'           => $id,
+        'reference_id' => $reference_id,
+        'status'       => 'new',
+        'created_at'   => $now,
+    ]);
+}
+
+/**
+ * GET /api/dgd/cases/{reference_id}
+ *
+ * Returns limited case info (privacy: no full details).
+ */
+function handle_get_case(string $ref): void
+{
+    $db   = get_db();
+
+    // Ensure dgd_cases table exists
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS dgd_cases (
+            id TEXT PRIMARY KEY,
+            reference_id TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            accident_date TEXT,
+            accident_location TEXT,
+            accident_description TEXT DEFAULT '',
+            license_plate TEXT DEFAULT '',
+            vehicle_brand TEXT DEFAULT '',
+            vehicle_model TEXT DEFAULT '',
+            insurance_opponent TEXT DEFAULT '',
+            claim_number TEXT DEFAULT '',
+            status TEXT DEFAULT 'new',
+            notes TEXT DEFAULT '',
+            created_at TEXT,
+            updated_at TEXT
+        )
+    ");
+
+    $stmt = $db->prepare("SELECT reference_id, name, status, created_at, updated_at FROM dgd_cases WHERE reference_id = :ref");
+    $stmt->execute([':ref' => $ref]);
+    $case = $stmt->fetch();
+
+    if (!$case) {
+        json_error('Vorgang nicht gefunden. Bitte pruefen Sie Ihre Referenznummer.', 404);
+    }
+
+    // Map status to German labels
+    $status_labels = [
+        'new'         => 'Eingegangen',
+        'in_progress' => 'In Bearbeitung',
+        'assigned'    => 'Gutachter zugewiesen',
+        'inspection'  => 'Besichtigung geplant',
+        'report'      => 'Gutachten wird erstellt',
+        'completed'   => 'Abgeschlossen',
+        'cancelled'   => 'Storniert',
+    ];
+
+    json_response([
+        'case' => [
+            'reference_id' => $case['reference_id'],
+            'name'         => $case['name'],
+            'status'       => $case['status'],
+            'status_label' => $status_labels[$case['status']] ?? $case['status'],
+            'created_at'   => $case['created_at'],
+            'updated_at'   => $case['updated_at'],
+        ],
+    ]);
+}
+
+
+// ============================================================
+//  CRM LEAD HELPER (writes directly to dashboard.db)
+// ============================================================
+
+/**
+ * Create a CRM contact/lead in the dashboard database.
+ *
+ * This bypasses the dashboard API (which requires auth) by writing
+ * directly to the dashboard SQLite database.
+ *
+ * @param array $data Keys: name, email, phone, organization, role, source, tags, notes
+ */
+function create_crm_lead(array $data): void
+{
+    try {
+        $dashboard_db_path = __DIR__ . '/../dashboard/data/dashboard.db';
+        $dashboard_data_dir = dirname($dashboard_db_path);
+
+        // Ensure dashboard data directory exists
+        if (!is_dir($dashboard_data_dir)) {
+            mkdir($dashboard_data_dir, 0755, true);
+        }
+
+        $crm_db = new PDO('sqlite:' . $dashboard_db_path, null, null, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ]);
+        $crm_db->exec('PRAGMA journal_mode=WAL');
+        $crm_db->exec('PRAGMA foreign_keys=ON');
+
+        // Ensure crm_contacts table exists (safety check)
+        $crm_db->exec("
+            CREATE TABLE IF NOT EXISTS crm_contacts (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT,
+                phone TEXT,
+                organization TEXT,
+                role TEXT,
+                tags TEXT DEFAULT '[]',
+                notes TEXT DEFAULT '',
+                pipeline_stage TEXT DEFAULT 'lead',
+                deal_value REAL DEFAULT 0,
+                source TEXT DEFAULT 'manual',
+                assigned_to TEXT DEFAULT '',
+                last_contacted TEXT,
+                next_followup TEXT,
+                health_score INTEGER DEFAULT 100,
+                created_by TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            )
+        ");
+
+        $id  = generate_uuid();
+        $now = now_iso();
+
+        $crm_db->prepare("
+            INSERT INTO crm_contacts
+                (id, name, email, phone, organization, role, tags, notes,
+                 pipeline_stage, deal_value, source, assigned_to, health_score,
+                 created_by, created_at, updated_at)
+            VALUES
+                (:id, :name, :email, :phone, :org, :role, :tags, :notes,
+                 'lead', 0, :source, '', 100,
+                 'system-portal', :now, :now2)
+        ")->execute([
+            ':id'     => $id,
+            ':name'   => $data['name'] ?? '',
+            ':email'  => $data['email'] ?? '',
+            ':phone'  => $data['phone'] ?? '',
+            ':org'    => $data['organization'] ?? '',
+            ':role'   => $data['role'] ?? '',
+            ':tags'   => $data['tags'] ?? '[]',
+            ':notes'  => $data['notes'] ?? '',
+            ':source' => $data['source'] ?? 'website',
+            ':now'    => $now,
+            ':now2'   => $now,
+        ]);
+
+        error_log("DGD CRM: Lead created - {$data['name']} (source: {$data['source']}, id: {$id})");
+    } catch (Exception $e) {
+        // Don't fail the main form submission if CRM insert fails
+        error_log("DGD CRM Error: Failed to create lead - " . $e->getMessage());
+    }
 }
 
 
