@@ -126,6 +126,7 @@ $routes = [
     ['GET',    '#/api/crm/stats$#',                                'handle_crm_stats',               'auth'],
     ['GET',    '#/api/crm/pipeline$#',                             'handle_crm_pipeline',            'auth'],
     ['POST',   '#/api/crm/import/trello$#',                        'handle_crm_import_trello',       'admin'],
+    ['POST',   '#/api/crm/cleanup-dupes$#',                        'handle_crm_cleanup_dupes',       'admin'],
     ['POST',   '#/api/crm/interactions$#',                         'handle_create_crm_interaction',  'auth'],
     ['GET',    "#/api/crm/contacts/({$UUID})/interactions$#i",     'handle_crm_contact_interactions', 'auth'],
     ['GET',    '#/api/crm/contacts$#',                             'handle_list_crm_contacts',       'auth'],

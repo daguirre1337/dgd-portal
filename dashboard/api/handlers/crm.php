@@ -678,3 +678,44 @@ function handle_crm_import_trello(): void
         'total'    => count($cards),
     ]);
 }
+
+// ---- Cleanup Duplicates ----
+
+function handle_crm_cleanup_dupes(): void
+{
+    $db = get_db();
+
+    $totalBefore = (int) $db->query("SELECT COUNT(*) FROM crm_contacts WHERE source='trello'")->fetchColumn();
+
+    $dupeGroups = (int) $db->query("
+        SELECT COUNT(*) FROM (
+            SELECT trello_card_id FROM crm_contacts
+            WHERE source='trello' AND trello_card_id != '' AND trello_card_id IS NOT NULL
+            GROUP BY trello_card_id HAVING COUNT(*) > 1
+        )
+    ")->fetchColumn();
+
+    // Delete older duplicates, keep highest id per trello_card_id
+    $stmt = $db->prepare("
+        DELETE FROM crm_contacts
+        WHERE source='trello'
+          AND trello_card_id != ''
+          AND trello_card_id IS NOT NULL
+          AND id NOT IN (
+              SELECT MAX(id) FROM crm_contacts
+              WHERE source='trello' AND trello_card_id != '' AND trello_card_id IS NOT NULL
+              GROUP BY trello_card_id
+          )
+    ");
+    $stmt->execute();
+    $deleted = $stmt->rowCount();
+
+    $totalAfter = (int) $db->query("SELECT COUNT(*) FROM crm_contacts WHERE source='trello'")->fetchColumn();
+
+    json_success("Duplikate bereinigt", [
+        'total_before'    => $totalBefore,
+        'duplicate_groups' => $dupeGroups,
+        'deleted'          => $deleted,
+        'total_after'      => $totalAfter,
+    ]);
+}
