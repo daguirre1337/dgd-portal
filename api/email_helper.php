@@ -47,6 +47,9 @@ function send_notification_email(string $to, string $subject, string $body_html)
 function build_email_template(string $subject, string $body_html): string
 {
     $year = date('Y');
+    $logo_url = 'https://dgd.digital/img/dgd-logo.png';
+    $falcon_url = 'https://dgd.digital/img/dgd-falcon.png';
+
     return <<<HTML
 <!DOCTYPE html>
 <html lang="de">
@@ -55,30 +58,89 @@ function build_email_template(string $subject, string $body_html): string
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{$subject}</title>
 </head>
-<body style="margin:0; padding:0; background-color:#f5f5f5; font-family:Arial, Helvetica, sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5; padding:20px 0;">
+<body style="margin:0; padding:0; background-color:#F4F4F8; font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F4F4F8; padding:32px 16px;">
         <tr>
             <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-                    <!-- Header -->
+                <!-- Outer container -->
+                <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(26,58,92,0.08);">
+
+                    <!-- Header with gradient -->
                     <tr>
-                        <td style="background-color:#1A365D; padding:24px 32px; text-align:center;">
-                            <h1 style="color:#D4A843; margin:0; font-size:24px; font-weight:bold;">DGD Digital</h1>
-                            <p style="color:#ffffff; margin:4px 0 0; font-size:13px; opacity:0.8;">Deutscher Gutachter Dienst</p>
+                        <td style="background: linear-gradient(135deg, #1a3a5c 0%, #0f2440 100%); padding:0;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <!-- Gold top accent bar -->
+                                <tr>
+                                    <td style="height:4px; background: linear-gradient(90deg, #D4A843 0%, #b8912e 50%, #D4A843 100%);"></td>
+                                </tr>
+                                <!-- Logo row -->
+                                <tr>
+                                    <td style="padding:28px 32px 12px; text-align:center;">
+                                        <img src="{$logo_url}" alt="DGD" width="180" style="display:inline-block; max-width:180px; height:auto;" />
+                                    </td>
+                                </tr>
+                                <!-- Tagline -->
+                                <tr>
+                                    <td style="padding:0 32px 24px; text-align:center;">
+                                        <p style="margin:0; font-size:13px; color:#D4A843; letter-spacing:2px; font-weight:600; text-transform:uppercase;">Deutscher Gutachter Dienst</p>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
+
+                    <!-- Subject bar -->
+                    <tr>
+                        <td style="background-color:#f8f9fa; padding:14px 32px; border-bottom:1px solid #e9ecef;">
+                            <p style="margin:0; font-size:14px; color:#1a3a5c; font-weight:600;">
+                                {$subject}
+                            </p>
+                        </td>
+                    </tr>
+
                     <!-- Body -->
                     <tr>
                         <td style="padding:32px;">
                             {$body_html}
                         </td>
                     </tr>
+
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color:#f8f9fa; padding:20px 32px; border-top:1px solid #e9ecef;">
-                            <p style="margin:0; font-size:12px; color:#6c757d; text-align:center;">
-                                Diese E-Mail wurde automatisch vom DGD Portal gesendet.<br>
-                                &copy; {$year} DGD Digital &middot; <a href="https://dgd.digital" style="color:#1A365D;">dgd.digital</a>
+                        <td style="background-color:#1a3a5c; padding:24px 32px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="text-align:center; padding-bottom:12px;">
+                                        <img src="{$falcon_url}" alt="" width="28" height="28" style="display:inline-block; opacity:0.6;" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align:center;">
+                                        <p style="margin:0 0 6px; font-size:12px; color:rgba(255,255,255,0.7);">
+                                            Diese E-Mail wurde automatisch vom DGD Portal gesendet.
+                                        </p>
+                                        <p style="margin:0 0 6px; font-size:12px; color:rgba(255,255,255,0.5);">
+                                            &copy; {$year} DGD &ndash; Deutscher Gutachter Dienst
+                                        </p>
+                                        <p style="margin:0;">
+                                            <a href="https://dgd.digital" style="color:#D4A843; font-size:12px; text-decoration:none;">dgd.digital</a>
+                                            <span style="color:rgba(255,255,255,0.3); margin:0 8px;">&middot;</span>
+                                            <a href="https://dgd-direkt.de" style="color:#D4A843; font-size:12px; text-decoration:none;">dgd-direkt.de</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                </table>
+
+                <!-- Below-footer note -->
+                <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                    <tr>
+                        <td style="padding:16px 32px; text-align:center;">
+                            <p style="margin:0; font-size:11px; color:#adb5bd;">
+                                DGD &ndash; Ihr unabh&auml;ngiger Kfz-Gutachter. Kostenlos f&uuml;r Gesch&auml;digte.
                             </p>
                         </td>
                     </tr>
@@ -110,7 +172,7 @@ function build_case_email_body(array $data): string
     $claim = htmlspecialchars($data['claim_number'] ?? '-');
 
     return <<<HTML
-<h2 style="color:#1A365D; margin:0 0 16px; font-size:20px;">Neue Schadensmeldung</h2>
+<h2 style="color:#1a3a5c; margin:0 0 16px; font-size:20px;">Neue Schadensmeldung</h2>
 <p style="color:#333; margin:0 0 8px;">Referenz-Nr.: <strong style="color:#D4A843;">{$ref}</strong></p>
 
 <table width="100%" cellpadding="8" cellspacing="0" style="margin:16px 0; border-collapse:collapse;">
@@ -120,7 +182,7 @@ function build_case_email_body(array $data): string
     </tr>
     <tr>
         <td style="border:1px solid #dee2e6; font-weight:bold; color:#495057;">E-Mail</td>
-        <td style="border:1px solid #dee2e6; color:#333;"><a href="mailto:{$email}" style="color:#1A365D;">{$email}</a></td>
+        <td style="border:1px solid #dee2e6; color:#333;"><a href="mailto:{$email}" style="color:#1a3a5c;">{$email}</a></td>
     </tr>
     <tr style="background-color:#f8f9fa;">
         <td style="border:1px solid #dee2e6; font-weight:bold; color:#495057;">Telefon</td>
@@ -152,7 +214,7 @@ function build_case_email_body(array $data): string
     </tr>
 </table>
 
-<h3 style="color:#1A365D; margin:16px 0 8px; font-size:16px;">Beschreibung</h3>
+<h3 style="color:#1a3a5c; margin:16px 0 8px; font-size:16px;">Beschreibung</h3>
 <div style="background-color:#f8f9fa; padding:12px 16px; border-radius:4px; border-left:4px solid #D4A843; color:#333;">
     {$description}
 </div>
@@ -222,7 +284,7 @@ HTML;
     if (!empty(trim($data['message'] ?? ''))) {
         $message = nl2br(htmlspecialchars($data['message']));
         $message_section = <<<HTML
-<h3 style="color:#1A365D; margin:16px 0 8px; font-size:16px;">Nachricht</h3>
+<h3 style="color:#1a3a5c; margin:16px 0 8px; font-size:16px;">Nachricht</h3>
 <div style="background-color:#f8f9fa; padding:12px 16px; border-radius:4px; border-left:4px solid #D4A843; color:#333;">
     {$message}
 </div>
@@ -230,7 +292,7 @@ HTML;
     }
 
     return <<<HTML
-<h2 style="color:#1A365D; margin:0 0 16px; font-size:20px;">{$title}</h2>
+<h2 style="color:#1a3a5c; margin:0 0 16px; font-size:20px;">{$title}</h2>
 
 <table width="100%" cellpadding="8" cellspacing="0" style="margin:16px 0; border-collapse:collapse;">
     <tr>
@@ -243,7 +305,7 @@ HTML;
     </tr>
     <tr>
         <td style="border:1px solid #dee2e6; font-weight:bold; color:#495057;">E-Mail</td>
-        <td style="border:1px solid #dee2e6; color:#333;"><a href="mailto:{$email}" style="color:#1A365D;">{$email}</a></td>
+        <td style="border:1px solid #dee2e6; color:#333;"><a href="mailto:{$email}" style="color:#1a3a5c;">{$email}</a></td>
     </tr>
     <tr style="background-color:#f8f9fa;">
         <td style="border:1px solid #dee2e6; font-weight:bold; color:#495057;">Telefon</td>
