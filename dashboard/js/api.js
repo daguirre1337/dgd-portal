@@ -93,6 +93,12 @@ var dashboardApi = {
         return this._fetch('/admin/page-owners/' + viewName, { method: 'PUT', body: JSON.stringify({ owner_name: ownerName }) });
     },
 
+    // Feedback - Admin
+    getAllFeedbackResponses: function(params) {
+        var q = params ? '?' + new URLSearchParams(params) : '';
+        return this._fetch('/feedback/all-responses' + q);
+    },
+
     // CRM - Contacts
     getCrmContacts: function(filters) {
         var q = filters ? '?' + new URLSearchParams(filters) : '';

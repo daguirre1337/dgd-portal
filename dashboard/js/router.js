@@ -13,7 +13,7 @@ DGD.router = (function() {
 
     var VALID_VIEWS = [
         'dashboard', 'timeline', 'kpis', 'mitarbeiter',
-        'finanzen', 'ziele', 'feedback', 'roadmap', 'crm', 'showcase', 'settings'
+        'finanzen', 'ziele', 'feedback', 'roadmap', 'crm', 'showcase', 'settings', 'admin'
     ];
 
     var VIEW_TITLES = {
@@ -28,6 +28,7 @@ DGD.router = (function() {
         crm: 'CRM',
         showcase: 'Showcase Builder',
         settings: 'Einstellungen',
+        admin: 'Admin',
     };
 
     // Cache for page owners
@@ -106,6 +107,7 @@ DGD.router = (function() {
             case 'roadmap':      DGD.views.roadmap(content);      break;
             case 'crm':          DGD.views.crm(content);          break;
             case 'showcase':     DGD.views.showcase(content);     break;
+            case 'admin':        DGD.views.admin(content);        break;
             case 'settings':     DGD.views.settings(content);     break;
         }
 

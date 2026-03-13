@@ -99,6 +99,7 @@ $routes = [
     ['DELETE', "#/api/key-results/({$UUID})$#i",       'handle_delete_key_result', 'auth'],
 
     // Feedback
+    ['GET',  '#/api/feedback/all-responses$#',                  'handle_list_all_feedback_responses', 'admin'],
     ['GET',  '#/api/feedback/pulse-status$#',                   'handle_pulse_status',            'auth'],
     ['GET',  '#/api/feedback/trends$#',                          'handle_feedback_trends',         'auth'],
     ['GET',  "#/api/feedback/results/({$UUID})$#i",             'handle_feedback_results',        'auth'],

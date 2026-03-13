@@ -190,11 +190,27 @@ var CortexChat = (function() {
 
         showTyping();
 
-        // Build request with user context
+        // Build request with user context + current page
         var contextPrefix = '';
         if (_user) {
+            var currentView = (window.location.hash || '#dashboard').replace('#', '') || 'dashboard';
+            var viewTitles = {
+                dashboard: 'Dashboard (Uebersicht)',
+                timeline: 'Zeitleiste',
+                kpis: 'KPI Cockpit',
+                mitarbeiter: 'Mitarbeiter',
+                finanzen: 'Finanzen',
+                ziele: 'Ziele & OKR',
+                feedback: 'Feedback',
+                roadmap: 'Strategische Roadmap',
+                crm: 'CRM (Vertrieb)',
+                showcase: 'Showcase Builder',
+                settings: 'Einstellungen',
+                admin: 'Admin Panel'
+            };
+            var viewLabel = viewTitles[currentView] || currentView;
             contextPrefix = '[DGD Dashboard - User: ' + (_user.display_name || _user.username) +
-                ' (' + (_user.role || 'member') + ')]\n';
+                ' (' + (_user.role || 'member') + ') - Aktuelle Seite: ' + viewLabel + ']\n';
         }
 
         var body = JSON.stringify({

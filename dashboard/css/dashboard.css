@@ -4339,3 +4339,44 @@ select.dgd-form__input {
 /* ---- CRM Filters ---- */
 .crm-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .crm-filters select, .crm-filters input { font-size: 13px; padding: 6px 10px; border: 1px solid var(--dgd-gray-300); border-radius: 6px; }
+
+/* ==========================================================================
+   Admin Panel - Feedback Overview
+   ========================================================================== */
+
+.dgd-admin-feedback-card {
+    margin-bottom: 0.75rem;
+    border-left: 3px solid var(--dgd-gray-200);
+    transition: border-color 0.2s;
+}
+.dgd-admin-feedback-card:hover {
+    border-left-color: var(--dgd-primary);
+}
+
+.dgd-admin-qa-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.dgd-admin-qa-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.dgd-admin-qa-question {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--dgd-gray-600);
+}
+.dgd-admin-qa-answer {
+    font-size: 0.9rem;
+    color: var(--dgd-gray-800);
+    padding-left: 0.5rem;
+}
+.dgd-admin-qa-answer--text {
+    background: var(--dgd-gray-50);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-style: italic;
+    border: 1px solid var(--dgd-gray-100);
+}

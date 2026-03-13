@@ -524,6 +524,84 @@ function handle_feedback_trends(): void
 }
 
 
+/**
+ * GET /api/feedback/all-responses
+ * Admin-only: Returns all feedback responses with template info, respondent names.
+ * Query params: ?type=pulse&limit=100&offset=0
+ */
+function handle_list_all_feedback_responses(): void
+{
+    requireAuth();
+    // Only admin can see all responses
+    if (($_SESSION['user_role'] ?? '') !== 'admin') {
+        json_error('Admin access required', 403);
+    }
+
+    feedback_ensure_tables();
+    $db = get_db();
+
+    $where  = [];
+    $params = [];
+
+    if (!empty($_GET['type'])) {
+        $where[]         = 't.type = :type';
+        $params[':type'] = $_GET['type'];
+    }
+
+    $limit  = min(max((int) ($_GET['limit'] ?? 100), 1), 500);
+    $offset = max((int) ($_GET['offset'] ?? 0), 0);
+
+    $whereClause = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    // Count total
+    $countSql = "SELECT COUNT(*) FROM feedback_responses r
+                 JOIN feedback_templates t ON r.template_id = t.id
+                 {$whereClause}";
+    $countStmt = $db->prepare($countSql);
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    // Fetch with joins
+    $sql = "SELECT r.id, r.template_id, r.respondent_id, r.target_id, r.answers,
+                   r.anonymous, r.created_at,
+                   t.title as template_title, t.type as template_type, t.questions as template_questions,
+                   u.display_name as respondent_name, u.username as respondent_username
+            FROM feedback_responses r
+            JOIN feedback_templates t ON r.template_id = t.id
+            LEFT JOIN users u ON r.respondent_id = u.id
+            {$whereClause}
+            ORDER BY r.created_at DESC
+            LIMIT :limit OFFSET :offset";
+
+    $stmt = $db->prepare($sql);
+    foreach ($params as $k => $v) {
+        $stmt->bindValue($k, $v);
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $responses = $stmt->fetchAll();
+
+    // Parse JSON fields
+    foreach ($responses as &$resp) {
+        $resp['answers']            = json_decode($resp['answers'], true) ?? [];
+        $resp['template_questions'] = json_decode($resp['template_questions'], true) ?? [];
+        $resp['anonymous']          = (int) $resp['anonymous'];
+        if ($resp['anonymous']) {
+            $resp['respondent_name']     = 'Anonym';
+            $resp['respondent_username'] = null;
+        }
+    }
+
+    json_response([
+        'responses' => $responses,
+        'total'     => $total,
+        'limit'     => $limit,
+        'offset'    => $offset,
+    ]);
+}
+
+
 // ============================================================
 //  SEED DATA
 // ============================================================

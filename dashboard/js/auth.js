@@ -34,6 +34,11 @@ DGD.auth = (function() {
         $('#app-shell').classList.remove('dgd-hidden');
         $('#topbar-username').textContent = user.display_name || user.username;
         DGD.dataLoader.loadData();
+        // Show/hide admin-only sidebar items
+        var adminLinks = document.querySelectorAll('.dgd-sidebar__link--admin-only');
+        for (var i = 0; i < adminLinks.length; i++) {
+            adminLinks[i].style.display = (user.role === 'admin') ? '' : 'none';
+        }
         DGD.router.route();
         // Init Cortex Chat widget
         if (typeof CortexChat !== 'undefined') {
