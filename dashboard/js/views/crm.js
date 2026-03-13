@@ -1,6 +1,6 @@
 /* ==========================================================================
-   DGD Dashboard - CRM View
-   Contacts, Deals Pipeline, Interactions, Trello Import
+   DGD Dashboard - CRM View (Rewrite)
+   4 Tabs: Tagesansicht, Kontakte, Pipeline, Partner-Aktivierung
    Depends on: namespace.js, helpers.js, api.js
    ========================================================================== */
 
@@ -8,18 +8,34 @@
     'use strict';
 
     var $ = function(sel) { return document.querySelector(sel); };
+    var esc = function(v) { return DGD.helpers.escapeHtml(v); };
+    var api = function() { return window.dashboardApi || DGD.api; };
 
-    var STAGES = [
-        { key: 'lead',         label: 'Lead',              color: '#94a3b8' },
-        { key: 'kontakt',      label: 'Kontakt',           color: '#60a5fa' },
-        { key: 'registriert',  label: 'Registriert',       color: '#22d3ee' },
-        { key: 'verifiziert',  label: 'Verifiziert',       color: '#a78bfa' },
-        { key: 'geprueft',     label: 'Gepr\u00fcfter Partner', color: '#f59e0b' },
-        { key: 'aktiviert',    label: 'Aktiviert',         color: '#34d399' },
-        { key: 'plan_b',       label: 'Plan B',            color: '#fb923c' },
-        { key: 'reaktivieren', label: 'Reaktivieren',      color: '#38bdf8' },
-        { key: 'verloren',     label: 'Verloren',          color: '#f87171' },
+    // ---- Constants ----
+
+    var LEAD_STAGES = [
+        { key: 'neu',                  label: 'Neu',                      color: '#94a3b8' },
+        { key: 'nicht_erreicht',       label: 'Nicht erreicht',           color: '#64748b' },
+        { key: 'quali_terminiert',     label: 'Quali terminiert',         color: '#60a5fa' },
+        { key: 'no_show_quali',        label: 'No-Show Quali',            color: '#f97316' },
+        { key: 'quali_gefuehrt',       label: 'Quali gef\u00fchrt',      color: '#a78bfa' },
+        { key: 'abschluss_terminiert', label: 'Abschluss terminiert',     color: '#22d3ee' },
+        { key: 'no_show_abschluss',    label: 'No-Show Abschluss',        color: '#fb923c' },
+        { key: 'abschluss_gefuehrt',   label: 'Abschluss gef\u00fchrt',  color: '#8b5cf6' },
+        { key: 'entscheidung',         label: 'Entscheidung ausstehend',  color: '#eab308' },
+        { key: 'gewonnen',             label: 'Gewonnen',                 color: '#22c55e' },
+        { key: 'verloren',             label: 'Verloren',                 color: '#ef4444' },
+        { key: 'stillgelegt',          label: 'Stillgelegt / WV',         color: '#6b7280' },
     ];
+
+    var ACTIVATION_STAGES = [
+        { key: 'registriert',    label: 'Registriert',    color: '#60a5fa' },
+        { key: 'verifiziert',    label: 'Verifiziert',    color: '#a78bfa' },
+        { key: 'testschaden',    label: 'Testschaden',    color: '#f59e0b' },
+        { key: 'erster_auftrag', label: 'Erster Auftrag', color: '#22c55e' },
+    ];
+
+    var LEADQUELLEN = ['Website-Partner', 'Website-Rente', 'Empfehlung', 'Kaltakquise', 'Trello', 'Sonstige'];
 
     var INTERACTION_TYPES = [
         { key: 'email',   label: 'E-Mail',   icon: '@' },
@@ -28,13 +44,15 @@
         { key: 'note',    label: 'Notiz',    icon: '\u270E' },
     ];
 
+    // ---- Helpers ----
+
     function stageLabel(key) {
-        var s = STAGES.find(function(st) { return st.key === key; });
+        var s = LEAD_STAGES.find(function(st) { return st.key === key; });
         return s ? s.label : key;
     }
 
     function stageColor(key) {
-        var s = STAGES.find(function(st) { return st.key === key; });
+        var s = LEAD_STAGES.find(function(st) { return st.key === key; });
         return s ? s.color : '#94a3b8';
     }
 
@@ -48,195 +66,268 @@
         return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    // ---- Main View ----
-
-    function render(container, stats, contacts, pipeline) {
-        var esc = DGD.helpers.escapeHtml;
-
-        var html = '<div class="crm-view">';
-
-        // KPI Header
-        html += '<div class="crm-kpis">';
-        html += kpiCard('Kontakte', stats.total_contacts, '', 'crm-kpi--contacts');
-        html += kpiCard('Pipeline-Wert', formatCurrency(stats.pipeline_value), stats.open_deals + ' Deals', 'crm-kpi--pipeline');
-        html += kpiCard('Gewonnen', formatCurrency(stats.won_value), stats.won_count + ' Deals', 'crm-kpi--won');
-        html += kpiCard('Conversion', stats.conversion_rate + '%', stats.won_count + 'W / ' + stats.lost_count + 'V', 'crm-kpi--conv');
-        if (stats.overdue_followups > 0) {
-            html += kpiCard('Ueberfaellig', stats.overdue_followups, 'Follow-ups', 'crm-kpi--overdue');
-        }
-        html += '</div>';
-
-        // Toolbar
-        html += '<div class="crm-toolbar">';
-        html += '<div class="crm-toolbar__left">';
-        html += '<button class="dgd-btn dgd-btn--primary dgd-btn--sm" id="crm-add-contact">+ Kontakt</button>';
-        html += '<button class="dgd-btn dgd-btn--outline dgd-btn--sm" id="crm-add-deal">+ Deal</button>';
-        html += '<button class="dgd-btn dgd-btn--outline dgd-btn--sm" id="crm-import-trello">Trello Import</button>';
-        html += '</div>';
-        html += '<div class="crm-toolbar__right">';
-        html += '<input type="text" class="dgd-form__input dgd-form__input--sm" id="crm-search" placeholder="Suchen...">';
-        html += '<select class="dgd-form__input dgd-form__input--sm" id="crm-filter-stage"><option value="">Alle Stages</option>';
-        STAGES.forEach(function(s) {
-            html += '<option value="' + s.key + '">' + s.label + '</option>';
-        });
-        html += '</select>';
-        html += '</div></div>';
-
-        // Tab switcher
-        html += '<div class="crm-tabs">';
-        html += '<button class="crm-tab crm-tab--active" data-tab="contacts">Kontakte</button>';
-        html += '<button class="crm-tab" data-tab="pipeline">Pipeline</button>';
-        html += '</div>';
-
-        // Contacts Table
-        html += '<div id="crm-tab-contacts" class="crm-tab-content">';
-        html += renderContactsTable(contacts, esc);
-        html += '</div>';
-
-        // Pipeline Board
-        html += '<div id="crm-tab-pipeline" class="crm-tab-content" style="display:none">';
-        html += renderPipeline(pipeline, esc);
-        html += '</div>';
-
-        html += '</div>';
-
-        container.innerHTML = html;
-        bindEvents(container);
+    function formatDateTime(iso) {
+        if (!iso) return '-';
+        var d = new Date(iso);
+        return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function kpiCard(label, value, sub, cls) {
+    function formatTime(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function isOverdue(dateStr) {
+        if (!dateStr) return false;
+        return new Date(dateStr) < new Date();
+    }
+
+    function safe(promise) { return promise.catch(function() { return null; }); }
+
+    function formField(label, type, id, value, attrs) {
+        attrs = attrs || '';
+        return '<div class="dgd-form__group">'
+            + '<label class="dgd-form__label" for="' + id + '">' + label + '</label>'
+            + '<input type="' + type + '" class="dgd-form__input" id="' + id + '" value="' + esc(String(value || '')) + '" ' + attrs + '>'
+            + '</div>';
+    }
+
+    function formSelect(label, id, options, selected) {
+        var html = '<div class="dgd-form__group">';
+        html += '<label class="dgd-form__label" for="' + id + '">' + label + '</label>';
+        html += '<select class="dgd-form__input" id="' + id + '">';
+        options.forEach(function(opt) {
+            var val = typeof opt === 'string' ? opt : opt.key;
+            var lbl = typeof opt === 'string' ? opt : opt.label;
+            var sel = val === selected ? ' selected' : '';
+            html += '<option value="' + esc(val) + '"' + sel + '>' + esc(lbl) + '</option>';
+        });
+        html += '</select></div>';
+        return html;
+    }
+
+    function formTextarea(label, id, value, attrs) {
+        attrs = attrs || '';
+        return '<div class="dgd-form__group">'
+            + '<label class="dgd-form__label" for="' + id + '">' + label + '</label>'
+            + '<textarea class="dgd-form__input" id="' + id + '" rows="3" ' + attrs + '>' + esc(value || '') + '</textarea>'
+            + '</div>';
+    }
+
+    function formCheckbox(label, id, checked) {
+        return '<div class="dgd-form__group dgd-form__group--inline">'
+            + '<label class="dgd-form__label" style="display:flex;align-items:center;gap:6px;cursor:pointer">'
+            + '<input type="checkbox" id="' + id + '"' + (checked ? ' checked' : '') + '> ' + label
+            + '</label></div>';
+    }
+
+    function partnerBadge(partnerType, gaCount) {
+        var html = '';
+        if (partnerType === 'sv') {
+            html += '<span class="crm-label-badge crm-label-badge--sv">SV</span> ';
+        } else if (partnerType === 'profi') {
+            html += '<span class="crm-label-badge crm-label-badge--profi">Profi</span> ';
+            if (gaCount > 10) {
+                html += '<span class="crm-label-badge crm-label-badge--top-potential">Top-Potential</span> ';
+            }
+        }
+        return html;
+    }
+
+    function closeModal() {
+        var mc = document.getElementById('modal-container');
+        if (mc) mc.innerHTML = '';
+    }
+
+    // Reference to current container for refreshing
+    var _container = null;
+    var _activeTab = 'daily';
+
+    function refreshView() {
+        if (_container) DGD.views.crm(_container);
+    }
+
+    // ---- KPI Bar ----
+
+    function renderKpiBar(stats) {
+        var s = stats || {};
+        var html = '<div class="crm-kpis">';
+        html += kpiCard('Kontakte', s.total_contacts || 0, '', 'crm-kpi--contacts');
+        html += kpiCard('Aufgaben heute', s.tasks_today || 0, '', 'crm-kpi--tasks', 'background:#dbeafe;color:#1d4ed8');
+        html += kpiCard('\u00dcberf\u00e4llig', s.overdue_tasks || 0, '', 'crm-kpi--overdue', (s.overdue_tasks || 0) > 0 ? 'background:#fee2e2;color:#dc2626' : '');
+        html += kpiCard('Partner in Aktivierung', s.partners_activating || 0, '', '');
+        html += kpiCard('Gewonnen', s.won_count || 0, '', 'crm-kpi--won');
+        html += '</div>';
+        return html;
+    }
+
+    function kpiCard(label, value, sub, cls, badgeStyle) {
+        var valueHtml = '<div class="crm-kpi__value"';
+        if (badgeStyle) valueHtml += ' style="' + badgeStyle + ';padding:2px 10px;border-radius:8px;display:inline-block"';
+        valueHtml += '>' + value + '</div>';
         return '<div class="crm-kpi ' + (cls || '') + '">'
-            + '<div class="crm-kpi__value">' + value + '</div>'
+            + valueHtml
             + '<div class="crm-kpi__label">' + label + '</div>'
             + (sub ? '<div class="crm-kpi__sub">' + sub + '</div>' : '')
             + '</div>';
     }
 
-    function renderContactsTable(contacts, esc) {
-        if (!contacts || contacts.length === 0) {
-            return '<div class="crm-empty">Keine Kontakte vorhanden. Erstelle einen neuen Kontakt oder importiere aus Trello.</div>';
-        }
+    // ---- Tab Navigation ----
 
-        var html = '<table class="crm-table"><thead><tr>';
-        html += '<th>Name</th><th>Organisation</th><th>Ort</th><th>Stage</th><th>GA</th>';
-        html += '<th>Zustaendig</th><th>Follow-up</th><th>Aktionen</th>';
-        html += '</tr></thead><tbody>';
-
-        contacts.forEach(function(c) {
-            var isOverdue = c.next_followup && new Date(c.next_followup) < new Date();
-            html += '<tr class="crm-row' + (isOverdue ? ' crm-row--overdue' : '') + '" data-id="' + c.id + '">';
-            html += '<td class="crm-cell--name"><strong>' + esc(c.name) + '</strong>';
-            if (c.email) html += '<br><small>' + esc(c.email) + '</small>';
-            html += '</td>';
-            html += '<td>' + esc(c.organization || '-');
-            if (c.business_type) html += '<br><small>' + esc(c.business_type) + '</small>';
-            html += '</td>';
-            html += '<td>' + esc(c.city || '-');
-            if (c.zip) html += '<br><small>' + esc(c.zip) + '</small>';
-            html += '</td>';
-            html += '<td><span class="crm-stage-badge" style="background:' + stageColor(c.pipeline_stage) + '">' + stageLabel(c.pipeline_stage) + '</span></td>';
-            html += '<td>' + (c.ga_count > 0 ? c.ga_count : '-') + '</td>';
-            html += '<td>' + esc(c.assigned_to || '-') + '</td>';
-            html += '<td>' + (isOverdue ? '<span class="crm-overdue">' : '') + formatDate(c.next_followup) + (isOverdue ? '</span>' : '') + '</td>';
-            html += '<td class="crm-actions">';
-            html += '<button class="dgd-btn dgd-btn--sm crm-btn-detail" data-id="' + c.id + '" title="Details">Details</button>';
-            html += '<button class="dgd-btn dgd-btn--sm dgd-btn--outline crm-btn-delete" data-id="' + c.id + '" title="Loeschen">&times;</button>';
-            html += '</td></tr>';
+    function renderTabs() {
+        var tabs = [
+            { key: 'daily',      label: 'Tagesansicht' },
+            { key: 'contacts',   label: 'Kontakte' },
+            { key: 'pipeline',   label: 'Pipeline' },
+            { key: 'activation', label: 'Partner-Aktivierung' },
+        ];
+        var html = '<div class="crm-tabs">';
+        tabs.forEach(function(t) {
+            var active = t.key === _activeTab ? ' crm-tab--active' : '';
+            html += '<button class="crm-tab' + active + '" data-tab="' + t.key + '">' + t.label + '</button>';
         });
-
-        html += '</tbody></table>';
+        html += '</div>';
         return html;
     }
 
-    function renderPipeline(pipeline, esc) {
-        var html = '<div class="crm-pipeline">';
+    // ---- Daily View ----
 
-        // Only show active stages (not gewonnen/verloren)
-        var activeStages = pipeline.filter(function(p) {
-            return p.stage !== 'gewonnen' && p.stage !== 'verloren';
-        });
-
-        activeStages.forEach(function(col) {
-            html += '<div class="crm-pipeline__col">';
-            html += '<div class="crm-pipeline__header" style="border-top:3px solid ' + stageColor(col.stage) + '">';
-            html += '<span>' + stageLabel(col.stage) + '</span>';
-            html += '<span class="crm-pipeline__count">' + col.count + ' | ' + formatCurrency(col.total_value) + '</span>';
-            html += '</div>';
-
-            col.deals.forEach(function(d) {
-                html += '<div class="crm-pipeline__card" data-deal-id="' + d.id + '">';
-                html += '<div class="crm-pipeline__card-title">' + esc(d.title) + '</div>';
-                html += '<div class="crm-pipeline__card-contact">' + esc(d.contact_name || '') + '</div>';
-                html += '<div class="crm-pipeline__card-value">' + formatCurrency(d.value) + '</div>';
-                if (d.expected_close) {
-                    html += '<div class="crm-pipeline__card-date">' + formatDate(d.expected_close) + '</div>';
-                }
-                html += '</div>';
-            });
-
-            if (col.deals.length === 0) {
-                html += '<div class="crm-pipeline__empty">Keine Deals</div>';
+    function renderDailyView(container) {
+        container.innerHTML = '<div class="crm-loading">Tagesansicht wird geladen...</div>';
+        safe(api().getCrmTasksToday()).then(function(data) {
+            if (!data || !data.categories) {
+                container.innerHTML = '<div class="crm-empty-state">Keine Aufgaben f\u00fcr heute \ud83c\udf89</div>';
+                return;
             }
 
+            var cats = data.categories;
+            if (cats.length === 0) {
+                container.innerHTML = '<div class="crm-empty-state">Keine Aufgaben f\u00fcr heute \ud83c\udf89</div>';
+                return;
+            }
+
+            var html = '<div class="crm-daily-view">';
+            cats.forEach(function(cat) {
+                var sectionClass = 'crm-daily-section';
+                if (cat.key === 'overdue') sectionClass += ' crm-daily-section--overdue';
+                else if (cat.key === 'quali') sectionClass += ' crm-daily-section--quali';
+                else if (cat.key === 'abschluss') sectionClass += ' crm-daily-section--abschluss';
+                else if (cat.key === 'erstkontakt') sectionClass += ' crm-daily-section--erstkontakt';
+                else if (cat.key === 'aktivierung') sectionClass += ' crm-daily-section--aktivierung';
+
+                if (cat.color) {
+                    html += '<div class="' + sectionClass + '" style="border-left-color:' + cat.color + '">';
+                } else {
+                    html += '<div class="' + sectionClass + '">';
+                }
+
+                html += '<div class="crm-daily-section__header">';
+                html += '<span>' + esc(cat.label) + '</span>';
+                html += '<span class="crm-daily-section__count">' + (cat.tasks ? cat.tasks.length : 0) + '</span>';
+                html += '</div>';
+
+                if (cat.tasks && cat.tasks.length > 0) {
+                    cat.tasks.forEach(function(task) {
+                        var rowClass = 'crm-task-row';
+                        if (cat.key === 'overdue') rowClass += ' crm-task-row--overdue';
+
+                        html += '<div class="' + rowClass + '">';
+                        html += '<span class="crm-task-time">' + esc(formatTime(task.due_date) || '') + '</span>';
+                        html += '<a class="crm-task-contact" href="#" data-contact-id="' + esc(task.contact_id || '') + '">' + esc(task.contact_name || 'Unbekannt') + '</a>';
+                        html += '<span class="crm-task-title">' + esc(task.title || '') + '</span>';
+                        html += '<div class="crm-task-actions">';
+                        html += '<button class="dgd-btn dgd-btn--xs" data-action="complete" data-task-id="' + esc(task.id) + '" title="Erledigt">\u2713</button>';
+                        html += '<button class="dgd-btn dgd-btn--xs" data-action="reschedule" data-task-id="' + esc(task.id) + '" title="Verschieben">\u21BB</button>';
+                        html += '</div>';
+                        html += '</div>';
+                    });
+                } else {
+                    html += '<div class="crm-empty-state" style="padding:12px">Keine Aufgaben</div>';
+                }
+
+                html += '</div>';
+            });
             html += '</div>';
+
+            container.innerHTML = html;
+            bindDailyEvents(container);
         });
-
-        // Won/Lost summary
-        var won = pipeline.find(function(p) { return p.stage === 'gewonnen'; }) || { count: 0, total_value: 0 };
-        var lost = pipeline.find(function(p) { return p.stage === 'verloren'; }) || { count: 0, total_value: 0 };
-
-        html += '<div class="crm-pipeline__summary">';
-        html += '<span class="crm-pipeline__won">Gewonnen: ' + won.count + ' (' + formatCurrency(won.total_value) + ')</span>';
-        html += '<span class="crm-pipeline__lost">Verloren: ' + lost.count + ' (' + formatCurrency(lost.total_value) + ')</span>';
-        html += '</div>';
-
-        html += '</div>';
-        return html;
     }
 
-    // ---- Events ----
+    function bindDailyEvents(container) {
+        container.addEventListener('click', function(e) {
+            var target = e.target;
 
-    function bindEvents(container) {
-        // Tab switching
-        container.querySelectorAll('.crm-tab').forEach(function(tab) {
-            tab.addEventListener('click', function() {
-                container.querySelectorAll('.crm-tab').forEach(function(t) { t.classList.remove('crm-tab--active'); });
-                container.querySelectorAll('.crm-tab-content').forEach(function(c) { c.style.display = 'none'; });
-                tab.classList.add('crm-tab--active');
-                var target = tab.getAttribute('data-tab');
-                var el = container.querySelector('#crm-tab-' + target);
-                if (el) el.style.display = '';
-            });
+            // Contact link
+            if (target.classList.contains('crm-task-contact')) {
+                e.preventDefault();
+                var contactId = target.getAttribute('data-contact-id');
+                if (contactId) showContactDetail(contactId);
+                return;
+            }
+
+            // Task actions
+            var btn = target.closest('[data-action]');
+            if (!btn) return;
+
+            var action = btn.getAttribute('data-action');
+            var taskId = btn.getAttribute('data-task-id');
+            if (!taskId) return;
+
+            if (action === 'complete') {
+                api().updateCrmTask(taskId, { status: 'completed' }).then(function() {
+                    renderDailyView(container);
+                });
+            } else if (action === 'reschedule') {
+                // Simple reschedule: move to tomorrow
+                var tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(9, 0, 0, 0);
+                api().updateCrmTask(taskId, { due_date: tomorrow.toISOString() }).then(function() {
+                    renderDailyView(container);
+                });
+            }
         });
+    }
 
-        // Add Contact
-        var addBtn = container.querySelector('#crm-add-contact');
-        if (addBtn) addBtn.addEventListener('click', function() { showContactModal(); });
+    // ---- Contacts Table ----
 
-        // Add Deal
-        var dealBtn = container.querySelector('#crm-add-deal');
-        if (dealBtn) dealBtn.addEventListener('click', function() { showDealModal(); });
+    function renderContactsTable(container) {
+        // Toolbar
+        var html = '<div class="crm-toolbar">';
+        html += '<div class="crm-toolbar__left">';
+        html += '<button class="dgd-btn dgd-btn--primary dgd-btn--sm" id="crm-add-contact">+ Kontakt</button>';
+        html += '</div>';
+        html += '<div class="crm-toolbar__right">';
+        html += '<div class="crm-filters">';
+        html += '<input type="text" class="dgd-form__input dgd-form__input--sm" id="crm-search" placeholder="Suchen...">';
+        html += '<select class="dgd-form__input dgd-form__input--sm" id="crm-filter-stage"><option value="">Alle Listen</option>';
+        LEAD_STAGES.forEach(function(s) {
+            html += '<option value="' + s.key + '">' + s.label + '</option>';
+        });
+        html += '</select>';
+        html += '<select class="dgd-form__input dgd-form__input--sm" id="crm-filter-type"><option value="">Alle Typen</option>';
+        html += '<option value="sv">SV</option><option value="profi">Profi</option>';
+        html += '</select>';
+        html += '</div></div></div>';
 
-        // Trello Import
-        var importBtn = container.querySelector('#crm-import-trello');
-        if (importBtn) importBtn.addEventListener('click', function() { showTrelloImportModal(); });
+        html += '<div id="crm-contacts-body"><div class="crm-loading">Kontakte werden geladen...</div></div>';
 
-        // Search
+        container.innerHTML = html;
+
+        // Load contacts
+        loadContacts(container);
+
+        // Events
+        var searchTimer;
         var searchInput = container.querySelector('#crm-search');
         var filterStage = container.querySelector('#crm-filter-stage');
-        var searchTimer;
+        var filterType = container.querySelector('#crm-filter-type');
 
         function doSearch() {
-            var filters = {};
-            if (searchInput && searchInput.value) filters.search = searchInput.value;
-            if (filterStage && filterStage.value) filters.stage = filterStage.value;
-            dashboardApi.getCrmContacts(filters).then(function(data) {
-                if (data) {
-                    var tbody = container.querySelector('#crm-tab-contacts');
-                    if (tbody) tbody.innerHTML = renderContactsTable(data.contacts, DGD.helpers.escapeHtml);
-                    bindTableEvents(container);
-                }
-            });
+            loadContacts(container);
         }
 
         if (searchInput) {
@@ -245,87 +336,370 @@
                 searchTimer = setTimeout(doSearch, 300);
             });
         }
-        if (filterStage) {
-            filterStage.addEventListener('change', doSearch);
-        }
+        if (filterStage) filterStage.addEventListener('change', doSearch);
+        if (filterType) filterType.addEventListener('change', doSearch);
 
-        bindTableEvents(container);
+        var addBtn = container.querySelector('#crm-add-contact');
+        if (addBtn) addBtn.addEventListener('click', function() { showContactModal(); });
     }
 
-    function bindTableEvents(container) {
-        // Detail buttons
-        container.querySelectorAll('.crm-btn-detail').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                showContactDetail(btn.getAttribute('data-id'));
-            });
-        });
+    function loadContacts(container) {
+        var filters = {};
+        var searchInput = container.querySelector('#crm-search');
+        var filterStage = container.querySelector('#crm-filter-stage');
+        var filterType = container.querySelector('#crm-filter-type');
 
-        // Delete buttons
-        container.querySelectorAll('.crm-btn-delete').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                if (confirm('Kontakt wirklich loeschen?')) {
-                    dashboardApi.deleteCrmContact(btn.getAttribute('data-id')).then(function() {
-                        DGD.views.crm($('#main-content'));
+        if (searchInput && searchInput.value) filters.search = searchInput.value;
+        if (filterStage && filterStage.value) filters.stage = filterStage.value;
+        if (filterType && filterType.value) filters.partner_type = filterType.value;
+
+        safe(api().getCrmContacts(filters)).then(function(data) {
+            var contacts = data ? (data.contacts || []) : [];
+            var body = container.querySelector('#crm-contacts-body');
+            if (!body) return;
+
+            if (contacts.length === 0) {
+                body.innerHTML = '<div class="crm-empty">Keine Kontakte gefunden.</div>';
+                return;
+            }
+
+            var html = '<table class="crm-table"><thead><tr>';
+            html += '<th>Name</th><th>Organisation</th><th>Betriebsart</th><th>Liste</th>';
+            html += '<th>Leadquelle</th><th>Next Step</th><th>Datum</th><th>Zust\u00e4ndig</th><th>Aktionen</th>';
+            html += '</tr></thead><tbody>';
+
+            contacts.forEach(function(c) {
+                var overdue = isOverdue(c.next_step_date);
+                html += '<tr class="crm-row' + (overdue ? ' crm-row--overdue' : '') + '" data-id="' + c.id + '">';
+
+                // Name
+                html += '<td class="crm-cell--name"><strong>' + esc(c.name) + '</strong>';
+                if (c.email) html += '<br><small>' + esc(c.email) + '</small>';
+                html += '</td>';
+
+                // Organisation
+                html += '<td>' + esc(c.organization || '-') + '</td>';
+
+                // Betriebsart + badges
+                html += '<td>';
+                html += partnerBadge(c.partner_type, c.ga_count);
+                if (c.business_type) html += '<br><small>' + esc(c.business_type) + '</small>';
+                html += '</td>';
+
+                // Pipeline stage badge
+                html += '<td><span class="crm-stage-badge" style="background:' + stageColor(c.pipeline_stage) + '">' + stageLabel(c.pipeline_stage) + '</span></td>';
+
+                // Leadquelle
+                html += '<td>' + esc(c.lead_source || '-') + '</td>';
+
+                // Next Step
+                html += '<td>' + esc(c.next_step || '-') + '</td>';
+
+                // Datum
+                html += '<td>';
+                if (overdue) html += '<span class="crm-overdue">';
+                html += formatDate(c.next_step_date);
+                if (overdue) html += '</span>';
+                html += '</td>';
+
+                // Zustaendig
+                html += '<td>' + esc(c.assigned_to || '-') + '</td>';
+
+                // Aktionen
+                html += '<td class="crm-actions">';
+                html += '<button class="dgd-btn dgd-btn--sm crm-btn-detail" data-id="' + c.id + '">Details</button>';
+                html += '<button class="dgd-btn dgd-btn--sm dgd-btn--outline crm-btn-edit" data-id="' + c.id + '">\u270E</button>';
+                html += '<button class="dgd-btn dgd-btn--sm dgd-btn--outline crm-btn-delete" data-id="' + c.id + '">&times;</button>';
+                html += '</td></tr>';
+            });
+
+            html += '</tbody></table>';
+            body.innerHTML = html;
+
+            // Bind table events via delegation
+            body.addEventListener('click', function(e) {
+                var btn = e.target.closest('button');
+                if (!btn) return;
+                var id = btn.getAttribute('data-id');
+                if (!id) return;
+
+                if (btn.classList.contains('crm-btn-detail')) {
+                    showContactDetail(id);
+                } else if (btn.classList.contains('crm-btn-edit')) {
+                    safe(api().getCrmContacts({ search: '' })).then(function(d) {
+                        var contact = d ? (d.contacts || []).find(function(c) { return c.id === id; }) : null;
+                        if (contact) showContactModal(contact);
                     });
+                } else if (btn.classList.contains('crm-btn-delete')) {
+                    if (confirm('Kontakt wirklich l\u00f6schen?')) {
+                        api().deleteCrmContact(id).then(function() {
+                            loadContacts(container);
+                        });
+                    }
                 }
             });
         });
+    }
 
-        // Pipeline deal cards
-        container.querySelectorAll('.crm-pipeline__card').forEach(function(card) {
-            card.addEventListener('click', function() {
-                showDealDetail(card.getAttribute('data-deal-id'));
+    // ---- Pipeline ----
+
+    function renderPipeline(container) {
+        container.innerHTML = '<div class="crm-loading">Pipeline wird geladen...</div>';
+
+        safe(api().getCrmContacts()).then(function(data) {
+            var contacts = data ? (data.contacts || []) : [];
+
+            // Group contacts by pipeline_stage
+            var columns = {};
+            LEAD_STAGES.forEach(function(s) { columns[s.key] = []; });
+            contacts.forEach(function(c) {
+                var stage = c.pipeline_stage || 'neu';
+                if (!columns[stage]) columns[stage] = [];
+                columns[stage].push(c);
+            });
+
+            var html = '<div class="crm-pipeline" style="overflow-x:auto">';
+            LEAD_STAGES.forEach(function(stage) {
+                var cards = columns[stage.key] || [];
+                html += '<div class="crm-pipeline__col" data-stage="' + stage.key + '">';
+                html += '<div class="crm-pipeline__header" style="border-top:3px solid ' + stage.color + '">';
+                html += '<span>' + esc(stage.label) + '</span>';
+                html += '<span class="crm-pipeline__count">' + cards.length + '</span>';
+                html += '</div>';
+
+                cards.forEach(function(c) {
+                    html += '<div class="crm-pipeline__card" draggable="true" data-contact-id="' + c.id + '">';
+                    html += '<div class="crm-pipeline__card-name">' + esc(c.name) + '</div>';
+                    html += '<div class="crm-pipeline__card-org">' + esc(c.organization || '') + '</div>';
+                    if (c.next_step) {
+                        html += '<div class="crm-pipeline__card-step">Next Step: ' + esc(c.next_step) + '</div>';
+                    }
+                    if (c.next_step_date) {
+                        html += '<div class="crm-pipeline__card-date">' + formatDate(c.next_step_date) + '</div>';
+                    }
+                    html += partnerBadge(c.partner_type, c.ga_count);
+                    html += '</div>';
+                });
+
+                if (cards.length === 0) {
+                    html += '<div class="crm-pipeline__empty">Keine Kontakte</div>';
+                }
+
+                html += '</div>';
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+            bindPipelineDragDrop(container);
+        });
+    }
+
+    function bindPipelineDragDrop(container) {
+        var draggedId = null;
+
+        container.addEventListener('dragstart', function(e) {
+            var card = e.target.closest('.crm-pipeline__card');
+            if (!card) return;
+            draggedId = card.getAttribute('data-contact-id');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedId);
+            card.classList.add('crm-pipeline__card--dragging');
+        });
+
+        container.addEventListener('dragend', function(e) {
+            var card = e.target.closest('.crm-pipeline__card');
+            if (card) card.classList.remove('crm-pipeline__card--dragging');
+            // Remove all drag-over classes
+            container.querySelectorAll('.crm-pipeline__col--drag-over').forEach(function(col) {
+                col.classList.remove('crm-pipeline__col--drag-over');
+            });
+        });
+
+        container.addEventListener('dragover', function(e) {
+            var col = e.target.closest('.crm-pipeline__col');
+            if (!col) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            // Remove from all, add to current
+            container.querySelectorAll('.crm-pipeline__col--drag-over').forEach(function(c) {
+                c.classList.remove('crm-pipeline__col--drag-over');
+            });
+            col.classList.add('crm-pipeline__col--drag-over');
+        });
+
+        container.addEventListener('dragleave', function(e) {
+            var col = e.target.closest('.crm-pipeline__col');
+            if (col && !col.contains(e.relatedTarget)) {
+                col.classList.remove('crm-pipeline__col--drag-over');
+            }
+        });
+
+        container.addEventListener('drop', function(e) {
+            e.preventDefault();
+            var col = e.target.closest('.crm-pipeline__col');
+            if (!col) return;
+            col.classList.remove('crm-pipeline__col--drag-over');
+
+            var contactId = e.dataTransfer.getData('text/plain');
+            var newStage = col.getAttribute('data-stage');
+            if (!contactId || !newStage) return;
+
+            api().updateCrmContact(contactId, { pipeline_stage: newStage }).then(function() {
+                renderPipeline(container);
+            });
+        });
+
+        // Click on card to show detail
+        container.addEventListener('click', function(e) {
+            var card = e.target.closest('.crm-pipeline__card');
+            if (!card) return;
+            var contactId = card.getAttribute('data-contact-id');
+            if (contactId) showContactDetail(contactId);
+        });
+    }
+
+    // ---- Partner Activation ----
+
+    function renderActivation(container) {
+        container.innerHTML = '<div class="crm-loading">Partner-Aktivierung wird geladen...</div>';
+
+        safe(api().getCrmPartners()).then(function(data) {
+            var partners = data ? (data.partners || []) : [];
+
+            // Classify partners into activation stages
+            var columns = {};
+            ACTIVATION_STAGES.forEach(function(s) { columns[s.key] = []; });
+
+            partners.forEach(function(p) {
+                var stage = determineActivationStage(p);
+                if (stage && columns[stage]) {
+                    columns[stage].push(p);
+                }
+            });
+
+            var html = '<div class="crm-activation">';
+            ACTIVATION_STAGES.forEach(function(stage) {
+                var cards = columns[stage.key] || [];
+                html += '<div class="crm-activation__col">';
+                html += '<div class="crm-activation__header" style="border-bottom-color:' + stage.color + '">';
+                html += '<span>' + esc(stage.label) + '</span>';
+                html += '<span class="crm-daily-section__count">' + cards.length + '</span>';
+                html += '</div>';
+
+                cards.forEach(function(p) {
+                    html += '<div class="crm-activation__card" data-partner-id="' + esc(p.id) + '">';
+                    html += '<div style="font-weight:600;font-size:13px;margin-bottom:4px">' + esc(p.name || p.organization || 'Partner') + '</div>';
+
+                    if (p.registered_at) {
+                        html += '<div class="crm-activation__timestamp crm-activation__timestamp--done">Registriert: ' + formatDate(p.registered_at) + '</div>';
+                    }
+                    if (p.verified_at) {
+                        html += '<div class="crm-activation__timestamp crm-activation__timestamp--done">Verifiziert: ' + formatDate(p.verified_at) + '</div>';
+                    }
+                    if (p.test_order_at) {
+                        html += '<div class="crm-activation__timestamp crm-activation__timestamp--done">Testschaden: ' + formatDate(p.test_order_at) + '</div>';
+                    }
+
+                    html += '<button class="dgd-btn dgd-btn--xs dgd-btn--outline crm-btn-create-order" data-partner-id="' + esc(p.id) + '" style="margin-top:6px">Auftrag anlegen</button>';
+                    html += '</div>';
+                });
+
+                if (cards.length === 0) {
+                    html += '<div class="crm-empty-state" style="padding:16px;font-size:12px">Keine Partner</div>';
+                }
+
+                html += '</div>';
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Bind events
+            container.addEventListener('click', function(e) {
+                var btn = e.target.closest('.crm-btn-create-order');
+                if (btn) {
+                    var partnerId = btn.getAttribute('data-partner-id');
+                    if (partnerId) showOrderModal(partnerId);
+                }
             });
         });
     }
 
-    // ---- Modals ----
+    function determineActivationStage(partner) {
+        if (partner.first_real_order_at) return null; // fully activated, skip
+        if (partner.test_order_at) return 'testschaden';
+        if (partner.verified_at) return 'verifiziert';
+        if (partner.registered_at) return 'registriert';
+        return 'registriert'; // default
+    }
+
+    // ---- Contact Modal (Create/Edit) ----
 
     function showContactModal(contact) {
-        var esc = DGD.helpers.escapeHtml;
         var isEdit = !!contact;
         var title = isEdit ? 'Kontakt bearbeiten' : 'Neuer Kontakt';
+        var c = contact || {};
 
         var html = '<div class="dgd-modal-overlay crm-modal-overlay" id="crm-modal">';
-        html += '<div class="dgd-modal crm-modal">';
+        html += '<div class="dgd-modal crm-modal crm-modal--wide">';
         html += '<div class="dgd-modal__header"><h3>' + title + '</h3><button class="dgd-modal__close" id="crm-modal-close">&times;</button></div>';
         html += '<form id="crm-contact-form" class="dgd-form">';
 
+        // Section 1: Lead-Daten
+        html += '<h4 style="margin:0 0 12px;font-size:14px;color:var(--dgd-gray-600)">Lead-Daten</h4>';
         html += '<div class="crm-form-grid">';
-        html += formField('Name *', 'text', 'crm-f-name', contact ? contact.name : '');
-        html += formField('E-Mail', 'email', 'crm-f-email', contact ? contact.email : '');
-        html += formField('Telefon', 'text', 'crm-f-phone', contact ? contact.phone : '');
-        html += formField('Organisation', 'text', 'crm-f-org', contact ? contact.organization : '');
-        html += formField('Position', 'text', 'crm-f-jobtitle', contact ? contact.job_title : '');
-        html += formField('Betriebsart', 'text', 'crm-f-biztype', contact ? contact.business_type : '');
-        html += formField('Webseite', 'url', 'crm-f-website', contact ? contact.website : '');
-        html += formField('Zustaendig', 'text', 'crm-f-assigned', contact ? contact.assigned_to : '');
+        html += formField('Name *', 'text', 'crm-f-name', c.name, 'required');
+        html += formField('E-Mail', 'email', 'crm-f-email', c.email);
+        html += formField('Telefon', 'text', 'crm-f-phone', c.phone);
+        html += formField('Organisation', 'text', 'crm-f-org', c.organization);
 
+        // Leadquelle
+        html += formSelect('Leadquelle *', 'crm-f-leadsource', [''].concat(LEADQUELLEN), c.lead_source || '');
+
+        // Partnertyp radio
         html += '<div class="dgd-form__group">';
-        html += '<label class="dgd-form__label">Pipeline Stage</label>';
-        html += '<select class="dgd-form__input" id="crm-f-stage">';
-        STAGES.forEach(function(s) {
-            var sel = (contact && contact.pipeline_stage === s.key) ? ' selected' : (!contact && s.key === 'lead' ? ' selected' : '');
-            html += '<option value="' + s.key + '"' + sel + '>' + s.label + '</option>';
-        });
-        html += '</select></div>';
+        html += '<label class="dgd-form__label">Partnertyp *</label>';
+        html += '<div style="display:flex;gap:16px">';
+        html += '<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="crm-f-partnertype" value="sv"' + (c.partner_type === 'sv' ? ' checked' : '') + '> SV</label>';
+        html += '<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="crm-f-partnertype" value="profi"' + (c.partner_type === 'profi' ? ' checked' : '') + '> Profi</label>';
+        html += '</div></div>';
 
-        html += formField('GA-Anzahl', 'number', 'crm-f-gacount', contact ? contact.ga_count : '0');
-        html += formField('Naechster Follow-up', 'date', 'crm-f-followup', contact && contact.next_followup ? contact.next_followup.substring(0, 10) : '');
+        html += formField('Umsatzpotenzial', 'number', 'crm-f-potential', c.revenue_potential);
+
+        // Pipeline-Liste
+        html += formSelect('Pipeline-Liste *', 'crm-f-stage', LEAD_STAGES, c.pipeline_stage || 'neu');
+
+        html += formField('Next Step *', 'text', 'crm-f-nextstep', c.next_step);
+        html += formField('Next Step Datum *', 'datetime-local', 'crm-f-nextstepdate', c.next_step_date ? c.next_step_date.substring(0, 16) : '');
+        html += formField('Zust\u00e4ndig', 'text', 'crm-f-assigned', c.assigned_to);
         html += '</div>';
 
-        html += '<fieldset style="border:1px solid #334155;border-radius:8px;padding:12px;margin:8px 0"><legend style="color:#94a3b8;font-size:0.85rem">Adresse</legend>';
-        html += '<div class="crm-form-grid">';
-        html += formField('Stra\u00dfe + Nr.', 'text', 'crm-f-street', contact ? contact.street : '');
-        html += formField('PLZ', 'text', 'crm-f-zip', contact ? contact.zip : '');
-        html += formField('Ort', 'text', 'crm-f-city', contact ? contact.city : '');
-        html += formField('Bundesland', 'text', 'crm-f-state', contact ? contact.state : '');
-        html += '</div></fieldset>';
+        // Section 2: Zusatzinfos (collapsible)
+        html += '<fieldset style="border:1px solid var(--dgd-gray-300);border-radius:8px;padding:12px;margin:12px 0">';
+        html += '<legend style="color:var(--dgd-gray-500);font-size:0.85rem;cursor:pointer" id="crm-toggle-extra">Zusatzinfos \u25BC</legend>';
+        html += '<div id="crm-extra-fields" class="crm-form-grid">';
+        html += formField('Position', 'text', 'crm-f-jobtitle', c.job_title);
+        html += formField('Betriebsart', 'text', 'crm-f-biztype', c.business_type);
+        html += formField('Webseite', 'url', 'crm-f-website', c.website);
+        html += formField('GA-Anzahl', 'number', 'crm-f-gacount', c.ga_count || '0');
 
-        html += '<div class="dgd-form__group">';
-        html += '<label class="dgd-form__label">Notizen</label>';
-        html += '<textarea class="dgd-form__input" id="crm-f-notes" rows="3">' + esc(contact ? contact.notes || '' : '') + '</textarea>';
-        html += '</div>';
+        // Address
+        html += formField('Stra\u00dfe', 'text', 'crm-f-street', c.street);
+        html += formField('PLZ', 'text', 'crm-f-zip', c.zip);
+        html += formField('Ort', 'text', 'crm-f-city', c.city);
+        html += formField('Bundesland', 'text', 'crm-f-state', c.state);
+
+        html += formField('Gesch\u00e4ftsf\u00fchrer', 'text', 'crm-f-gf', c.geschaeftsfuehrer);
+        html += formCheckbox('GF-Match', 'crm-f-gfmatch', c.gf_match);
+        html += formCheckbox('Onboarding-Mail versendet', 'crm-f-onboardingmail', c.onboarding_mail_sent);
+
+        html += '</div>'; // crm-form-grid inside fieldset
+
+        // Full-width fields after grid
+        html += formTextarea('AI-Research', 'crm-f-airesearch', c.ai_research, 'readonly style="background:var(--dgd-gray-50);color:var(--dgd-gray-600)"');
+        html += formTextarea('Firmeninfos', 'crm-f-companyinfo', c.company_info);
+        html += formTextarea('Notizen', 'crm-f-notes', c.notes);
+        html += '</fieldset>';
 
         html += '<div class="dgd-form__actions">';
         html += '<button type="submit" class="dgd-btn dgd-btn--primary">' + (isEdit ? 'Speichern' : 'Erstellen') + '</button>';
@@ -335,247 +709,397 @@
         var mc = document.getElementById('modal-container');
         mc.innerHTML = html;
 
-        mc.querySelector('#crm-modal-close').onclick = function() { mc.innerHTML = ''; };
-        mc.querySelector('#crm-modal-cancel').onclick = function() { mc.innerHTML = ''; };
+        // Collapse toggle
+        var toggleBtn = mc.querySelector('#crm-toggle-extra');
+        var extraFields = mc.querySelector('#crm-extra-fields');
+        if (toggleBtn && extraFields) {
+            toggleBtn.addEventListener('click', function() {
+                var hidden = extraFields.style.display === 'none';
+                extraFields.style.display = hidden ? '' : 'none';
+                // Also toggle textareas after the grid
+                var textareas = extraFields.parentElement.querySelectorAll('.dgd-form__group');
+                // The textareas after crm-extra-fields need special handling - they are siblings
+            });
+        }
+
+        mc.querySelector('#crm-modal-close').onclick = closeModal;
+        mc.querySelector('#crm-modal-cancel').onclick = closeModal;
 
         mc.querySelector('#crm-contact-form').addEventListener('submit', function(e) {
             e.preventDefault();
+            var partnerRadio = mc.querySelector('input[name="crm-f-partnertype"]:checked');
             var data = {
                 name: mc.querySelector('#crm-f-name').value,
                 email: mc.querySelector('#crm-f-email').value,
                 phone: mc.querySelector('#crm-f-phone').value,
                 organization: mc.querySelector('#crm-f-org').value,
+                lead_source: mc.querySelector('#crm-f-leadsource').value,
+                partner_type: partnerRadio ? partnerRadio.value : '',
+                revenue_potential: parseFloat(mc.querySelector('#crm-f-potential').value) || 0,
+                pipeline_stage: mc.querySelector('#crm-f-stage').value,
+                next_step: mc.querySelector('#crm-f-nextstep').value,
+                next_step_date: mc.querySelector('#crm-f-nextstepdate').value || null,
+                assigned_to: mc.querySelector('#crm-f-assigned').value,
                 job_title: mc.querySelector('#crm-f-jobtitle').value,
                 business_type: mc.querySelector('#crm-f-biztype').value,
                 website: mc.querySelector('#crm-f-website').value,
-                assigned_to: mc.querySelector('#crm-f-assigned').value,
-                pipeline_stage: mc.querySelector('#crm-f-stage').value,
                 ga_count: parseInt(mc.querySelector('#crm-f-gacount').value) || 0,
-                next_followup: mc.querySelector('#crm-f-followup').value || null,
-                notes: mc.querySelector('#crm-f-notes').value,
                 street: mc.querySelector('#crm-f-street').value,
                 zip: mc.querySelector('#crm-f-zip').value,
                 city: mc.querySelector('#crm-f-city').value,
                 state: mc.querySelector('#crm-f-state').value,
+                geschaeftsfuehrer: mc.querySelector('#crm-f-gf').value,
+                gf_match: mc.querySelector('#crm-f-gfmatch').checked,
+                onboarding_mail_sent: mc.querySelector('#crm-f-onboardingmail').checked,
+                ai_research: mc.querySelector('#crm-f-airesearch').value,
+                company_info: mc.querySelector('#crm-f-companyinfo').value,
+                notes: mc.querySelector('#crm-f-notes').value,
             };
 
             var promise = isEdit
-                ? dashboardApi.updateCrmContact(contact.id, data)
-                : dashboardApi.createCrmContact(data);
+                ? api().updateCrmContact(contact.id, data)
+                : api().createCrmContact(data);
 
             promise.then(function() {
-                mc.innerHTML = '';
-                DGD.views.crm($('#main-content'));
+                closeModal();
+                refreshView();
             });
         });
     }
 
-    function showDealModal(deal) {
-        var esc = DGD.helpers.escapeHtml;
-        var isEdit = !!deal;
-
-        var html = '<div class="dgd-modal-overlay crm-modal-overlay" id="crm-modal">';
-        html += '<div class="dgd-modal crm-modal">';
-        html += '<div class="dgd-modal__header"><h3>' + (isEdit ? 'Deal bearbeiten' : 'Neuer Deal') + '</h3><button class="dgd-modal__close" id="crm-modal-close">&times;</button></div>';
-        html += '<form id="crm-deal-form" class="dgd-form">';
-
-        // Load contacts for dropdown
-        html += '<div class="crm-form-grid">';
-        html += formField('Titel *', 'text', 'crm-d-title', deal ? deal.title : '');
-        html += '<div class="dgd-form__group"><label class="dgd-form__label">Kontakt *</label>';
-        html += '<select class="dgd-form__input" id="crm-d-contact"><option value="">Laden...</option></select></div>';
-
-        html += '<div class="dgd-form__group"><label class="dgd-form__label">Stage</label>';
-        html += '<select class="dgd-form__input" id="crm-d-stage">';
-        STAGES.forEach(function(s) {
-            var sel = (deal && deal.stage === s.key) ? ' selected' : (!deal && s.key === 'lead' ? ' selected' : '');
-            html += '<option value="' + s.key + '"' + sel + '>' + s.label + '</option>';
-        });
-        html += '</select></div>';
-
-        html += formField('Wert (EUR)', 'number', 'crm-d-value', deal ? deal.value : '0');
-        html += formField('Wahrscheinlichkeit (%)', 'number', 'crm-d-prob', deal ? deal.probability : '10');
-        html += formField('Erwarteter Abschluss', 'date', 'crm-d-close', deal && deal.expected_close ? deal.expected_close.substring(0, 10) : '');
-        html += formField('Zustaendig', 'text', 'crm-d-assigned', deal ? deal.assigned_to : '');
-        html += '</div>';
-
-        html += '<div class="dgd-form__group"><label class="dgd-form__label">Notizen</label>';
-        html += '<textarea class="dgd-form__input" id="crm-d-notes" rows="3">' + esc(deal ? deal.notes || '' : '') + '</textarea></div>';
-
-        html += '<div class="dgd-form__actions">';
-        html += '<button type="submit" class="dgd-btn dgd-btn--primary">' + (isEdit ? 'Speichern' : 'Erstellen') + '</button>';
-        html += '<button type="button" class="dgd-btn dgd-btn--outline" id="crm-modal-cancel">Abbrechen</button>';
-        html += '</div></form></div></div>';
-
-        var mc = document.getElementById('modal-container');
-        mc.innerHTML = html;
-
-        // Load contacts into dropdown
-        dashboardApi.getCrmContacts().then(function(data) {
-            var sel = mc.querySelector('#crm-d-contact');
-            if (!sel || !data) return;
-            sel.innerHTML = '<option value="">-- Kontakt waehlen --</option>';
-            (data.contacts || []).forEach(function(c) {
-                var opt = document.createElement('option');
-                opt.value = c.id;
-                opt.textContent = c.name + (c.organization ? ' (' + c.organization + ')' : '');
-                if (deal && deal.contact_id === c.id) opt.selected = true;
-                sel.appendChild(opt);
-            });
-        });
-
-        mc.querySelector('#crm-modal-close').onclick = function() { mc.innerHTML = ''; };
-        mc.querySelector('#crm-modal-cancel').onclick = function() { mc.innerHTML = ''; };
-
-        mc.querySelector('#crm-deal-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            var data = {
-                title: mc.querySelector('#crm-d-title').value,
-                contact_id: mc.querySelector('#crm-d-contact').value,
-                stage: mc.querySelector('#crm-d-stage').value,
-                value: parseFloat(mc.querySelector('#crm-d-value').value) || 0,
-                probability: parseInt(mc.querySelector('#crm-d-prob').value) || 10,
-                expected_close: mc.querySelector('#crm-d-close').value || null,
-                assigned_to: mc.querySelector('#crm-d-assigned').value,
-                notes: mc.querySelector('#crm-d-notes').value,
-            };
-
-            if (!data.contact_id) { alert('Bitte Kontakt auswaehlen'); return; }
-
-            var promise = isEdit
-                ? dashboardApi.updateCrmDeal(deal.id, data)
-                : dashboardApi.createCrmDeal(data);
-
-            promise.then(function() {
-                mc.innerHTML = '';
-                DGD.views.crm($('#main-content'));
-            });
-        });
-    }
+    // ---- Contact Detail ----
 
     function showContactDetail(contactId) {
         var mc = document.getElementById('modal-container');
         mc.innerHTML = '<div class="dgd-modal-overlay crm-modal-overlay"><div class="dgd-modal crm-modal crm-modal--wide"><div class="crm-loading">Laden...</div></div></div>';
 
         Promise.all([
-            dashboardApi.getCrmContacts({ search: '' }).then(function(d) {
-                return d ? d.contacts.find(function(c) { return c.id === contactId; }) : null;
+            safe(api().getCrmContacts({ search: '' })).then(function(d) {
+                return d ? (d.contacts || []).find(function(c) { return c.id === contactId; }) : null;
             }),
-            dashboardApi.getCrmContactInteractions(contactId),
-            dashboardApi.getCrmDeals({ contact_id: contactId }),
+            safe(api().getCrmActivityLog(contactId)),
+            safe(api().getCrmTasks({ contact_id: contactId })),
+            safe(api().getCrmOrders({ contact_id: contactId })),
         ]).then(function(results) {
             var contact = results[0];
-            var interactions = results[1] ? results[1].interactions : [];
-            var deals = results[2] ? results[2].deals : [];
+            var activityData = results[1];
+            var tasksData = results[2];
+            var ordersData = results[3];
+
             if (!contact) { mc.innerHTML = ''; return; }
 
-            var esc = DGD.helpers.escapeHtml;
+            var activities = activityData ? (activityData.activities || []) : [];
+            var tasks = tasksData ? (tasksData.tasks || []) : [];
+            var orders = ordersData ? (ordersData.orders || []) : [];
+
+            var pendingTasks = tasks.filter(function(t) { return t.status !== 'completed'; });
+            var completedTasks = tasks.filter(function(t) { return t.status === 'completed'; });
+
             var html = '<div class="dgd-modal-overlay crm-modal-overlay" id="crm-modal">';
-            html += '<div class="dgd-modal crm-modal crm-modal--wide">';
-            html += '<div class="dgd-modal__header"><h3>' + esc(contact.name) + '</h3><button class="dgd-modal__close" id="crm-modal-close">&times;</button></div>';
+            html += '<div class="dgd-modal crm-modal crm-modal--wide" style="max-height:90vh;overflow-y:auto">';
+
+            // Header
+            html += '<div class="dgd-modal__header">';
+            html += '<h3>' + esc(contact.name) + ' ';
+            html += partnerBadge(contact.partner_type, contact.ga_count);
+            html += '</h3>';
+            html += '<button class="dgd-modal__close" id="crm-modal-close">&times;</button>';
+            html += '</div>';
 
             html += '<div class="crm-detail">';
 
-            // Contact Info
-            html += '<div class="crm-detail__info">';
+            // Info grid
             html += '<div class="crm-detail__grid">';
-            html += '<div class="crm-detail__field"><strong>E-Mail:</strong> ' + esc(contact.email || '-') + '</div>';
-            html += '<div class="crm-detail__field"><strong>Telefon:</strong> ' + esc(contact.phone || '-') + '</div>';
-            html += '<div class="crm-detail__field"><strong>Organisation:</strong> ' + esc(contact.organization || '-') + '</div>';
-            html += '<div class="crm-detail__field"><strong>Position:</strong> ' + esc(contact.job_title || '-') + '</div>';
-            html += '<div class="crm-detail__field"><strong>Betriebsart:</strong> ' + esc(contact.business_type || '-') + '</div>';
-            if (contact.website) html += '<div class="crm-detail__field"><strong>Website:</strong> <a href="' + esc(contact.website) + '" target="_blank" style="color:#60a5fa">' + esc(contact.website) + '</a></div>';
-            html += '<div class="crm-detail__field"><strong>Stage:</strong> <span class="crm-stage-badge" style="background:' + stageColor(contact.pipeline_stage) + '">' + stageLabel(contact.pipeline_stage) + '</span></div>';
-            if (contact.ga_count > 0) html += '<div class="crm-detail__field"><strong>GA-Stufe:</strong> ' + contact.ga_count + ' GAs</div>';
-            html += '<div class="crm-detail__field"><strong>Zustaendig:</strong> ' + esc(contact.assigned_to || '-') + '</div>';
+            html += detailField('E-Mail', contact.email);
+            html += detailField('Telefon', contact.phone);
+            html += detailField('Organisation', contact.organization);
+            html += detailField('Position', contact.job_title);
+            html += detailField('Betriebsart', contact.business_type);
+            html += detailField('Webseite', contact.website, true);
+            html += detailField('Liste', '<span class="crm-stage-badge" style="background:' + stageColor(contact.pipeline_stage) + '">' + stageLabel(contact.pipeline_stage) + '</span>', false, true);
+            html += detailField('Leadquelle', contact.lead_source);
+            html += detailField('Next Step', contact.next_step);
+            html += detailField('Next Step Datum', formatDate(contact.next_step_date));
+            html += detailField('Zust\u00e4ndig', contact.assigned_to);
+            html += detailField('GA-Anzahl', contact.ga_count);
+            html += detailField('Umsatzpotenzial', contact.revenue_potential ? formatCurrency(contact.revenue_potential) : null);
+            html += detailField('Gesch\u00e4ftsf\u00fchrer', contact.geschaeftsfuehrer);
+            html += detailField('GF-Match', contact.gf_match ? 'Ja' : 'Nein');
+
+            // Address
+            var addr = [contact.street, (contact.zip || '') + ' ' + (contact.city || ''), contact.state].filter(Boolean).join(', ');
+            if (addr.trim()) html += detailField('Adresse', addr);
+
             html += '</div>';
 
-            // Address block
-            var hasAddr = contact.street || contact.zip || contact.city;
-            if (hasAddr) {
-                html += '<div class="crm-detail__address" style="margin:12px 0;padding:8px 12px;background:#1e293b;border-radius:6px;border-left:3px solid #60a5fa">';
-                html += '<strong style="color:#94a3b8;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em">Adresse</strong><br>';
-                if (contact.street) html += esc(contact.street) + '<br>';
-                if (contact.zip || contact.city) html += esc((contact.zip || '') + ' ' + (contact.city || '')) + '<br>';
-                if (contact.state) html += esc(contact.state);
+            if (contact.notes) {
+                html += '<div style="margin:12px 0;padding:8px 12px;background:var(--dgd-gray-50);border-radius:6px;border-left:3px solid var(--dgd-gray-300)">';
+                html += '<strong style="font-size:12px;color:var(--dgd-gray-500)">Notizen</strong><br>';
+                html += '<span style="white-space:pre-wrap;font-size:13px">' + esc(contact.notes) + '</span>';
                 html += '</div>';
             }
 
-            if (contact.notes) {
-                html += '<div class="crm-detail__field" style="margin-top:8px"><strong>Notizen:</strong><br><span style="white-space:pre-wrap;color:#cbd5e1;font-size:0.9rem">' + esc(contact.notes) + '</span></div>';
+            if (contact.ai_research) {
+                html += '<div style="margin:12px 0;padding:8px 12px;background:var(--dgd-gray-50);border-radius:6px;border-left:3px solid #60a5fa">';
+                html += '<strong style="font-size:12px;color:var(--dgd-gray-500)">AI-Research</strong><br>';
+                html += '<span style="white-space:pre-wrap;font-size:13px">' + esc(contact.ai_research) + '</span>';
+                html += '</div>';
             }
-            html += '<div class="crm-detail__actions">';
-            html += '<button class="dgd-btn dgd-btn--sm dgd-btn--primary" id="crm-edit-contact">Bearbeiten</button>';
-            html += '<button class="dgd-btn dgd-btn--sm dgd-btn--outline" id="crm-add-interaction">+ Interaktion</button>';
-            html += '</div></div>';
 
-            // Deals
-            if (deals.length > 0) {
-                html += '<div class="crm-detail__section"><h4>Deals (' + deals.length + ')</h4>';
-                deals.forEach(function(d) {
-                    html += '<div class="crm-detail__deal">';
-                    html += '<span class="crm-stage-badge" style="background:' + stageColor(d.stage) + '">' + stageLabel(d.stage) + '</span> ';
-                    html += '<strong>' + esc(d.title) + '</strong> - ' + formatCurrency(d.value);
+            // Action buttons
+            html += '<div class="crm-detail__actions" style="margin:16px 0;display:flex;gap:8px">';
+            html += '<button class="dgd-btn dgd-btn--sm dgd-btn--primary" id="crm-edit-contact">Bearbeiten</button>';
+            html += '<button class="dgd-btn dgd-btn--sm dgd-btn--outline" id="crm-add-task">Task anlegen</button>';
+            html += '<button class="dgd-btn dgd-btn--sm dgd-btn--outline" id="crm-add-interaction">Interaktion hinzuf\u00fcgen</button>';
+            html += '</div>';
+
+            // Aufgaben section
+            html += '<div class="crm-detail__section"><h4>Aufgaben (' + pendingTasks.length + ' offen)</h4>';
+            if (pendingTasks.length > 0) {
+                pendingTasks.forEach(function(t) {
+                    html += '<div class="crm-task-row">';
+                    html += '<span class="crm-task-time">' + formatDate(t.due_date) + '</span>';
+                    html += '<span class="crm-task-title">' + esc(t.title) + '</span>';
+                    html += '<div class="crm-task-actions">';
+                    html += '<button class="dgd-btn dgd-btn--xs crm-complete-task" data-task-id="' + esc(t.id) + '">\u2713</button>';
+                    html += '<button class="dgd-btn dgd-btn--xs crm-reschedule-task" data-task-id="' + esc(t.id) + '">\u21BB</button>';
+                    html += '</div></div>';
+                });
+            } else {
+                html += '<div class="crm-empty" style="padding:8px;font-size:13px">Keine offenen Aufgaben</div>';
+            }
+
+            if (completedTasks.length > 0) {
+                html += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--dgd-gray-500)">' + completedTasks.length + ' erledigte Aufgaben</summary>';
+                completedTasks.forEach(function(t) {
+                    html += '<div class="crm-task-row" style="opacity:0.5;text-decoration:line-through">';
+                    html += '<span class="crm-task-time">' + formatDate(t.due_date) + '</span>';
+                    html += '<span class="crm-task-title">' + esc(t.title) + '</span>';
                     html += '</div>';
                 });
-                html += '</div>';
+                html += '</details>';
             }
+            html += '</div>';
 
-            // Interactions Timeline
-            html += '<div class="crm-detail__section"><h4>Interaktionen (' + interactions.length + ')</h4>';
-            if (interactions.length === 0) {
-                html += '<p class="crm-empty">Noch keine Interaktionen</p>';
+            // Activity Log
+            html += '<div class="crm-detail__section"><h4>Aktivit\u00e4ten (' + activities.length + ')</h4>';
+            html += '<div class="crm-activity-log">';
+            if (activities.length === 0) {
+                html += '<div class="crm-empty" style="padding:8px;font-size:13px">Keine Aktivit\u00e4ten</div>';
             } else {
-                interactions.forEach(function(i) {
-                    var typeInfo = INTERACTION_TYPES.find(function(t) { return t.key === i.type; }) || { icon: '?', label: i.type };
-                    html += '<div class="crm-interaction">';
-                    html += '<span class="crm-interaction__icon">' + typeInfo.icon + '</span>';
-                    html += '<div class="crm-interaction__content">';
-                    html += '<strong>' + typeInfo.label + '</strong> - ' + esc(i.summary);
-                    html += '<div class="crm-interaction__date">' + formatDate(i.created_at) + '</div>';
+                activities.forEach(function(a) {
+                    var iconClass = 'crm-activity-entry__icon';
+                    if (a.type === 'stage_change') iconClass += ' crm-activity-entry__icon--stage';
+                    else if (a.type === 'task') iconClass += ' crm-activity-entry__icon--task';
+                    else iconClass += ' crm-activity-entry__icon--interaction';
+
+                    var icon = '\u2022';
+                    if (a.type === 'stage_change') icon = '\u2192';
+                    else if (a.type === 'task') icon = '\u2713';
+                    else if (a.type === 'email') icon = '@';
+                    else if (a.type === 'call') icon = '\u260E';
+                    else if (a.type === 'meeting') icon = '\u25CB';
+                    else if (a.type === 'note') icon = '\u270E';
+
+                    html += '<div class="crm-activity-entry">';
+                    html += '<div class="' + iconClass + '">' + icon + '</div>';
+                    html += '<div class="crm-activity-entry__content">';
+                    html += '<div>' + esc(a.summary || a.description || '') + '</div>';
+                    html += '<div class="crm-activity-entry__time">' + formatDateTime(a.created_at) + '</div>';
                     html += '</div></div>';
                 });
             }
-            html += '</div>';
+            html += '</div></div>';
+
+            // Orders (if partner)
+            if (contact.is_partner || orders.length > 0) {
+                html += '<div class="crm-detail__section"><h4>Auftr\u00e4ge (' + orders.length + ')</h4>';
+                if (orders.length > 0) {
+                    html += '<table class="crm-table" style="font-size:13px"><thead><tr>';
+                    html += '<th>Typ</th><th>Datum</th><th>Status</th><th>Ergebnis</th>';
+                    html += '</tr></thead><tbody>';
+                    orders.forEach(function(o) {
+                        html += '<tr>';
+                        html += '<td>' + esc(o.type || '-') + '</td>';
+                        html += '<td>' + formatDate(o.submitted_at) + '</td>';
+                        html += '<td>' + esc(o.status || '-') + '</td>';
+                        html += '<td>' + esc(o.result || '-') + '</td>';
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<div class="crm-empty" style="padding:8px;font-size:13px">Keine Auftr\u00e4ge</div>';
+                }
+                html += '</div>';
+            }
 
             html += '</div></div></div>';
             mc.innerHTML = html;
 
-            mc.querySelector('#crm-modal-close').onclick = function() { mc.innerHTML = ''; };
+            // Bind events
+            mc.querySelector('#crm-modal-close').onclick = closeModal;
+
             mc.querySelector('#crm-edit-contact').onclick = function() {
-                mc.innerHTML = '';
+                closeModal();
                 showContactModal(contact);
             };
+
+            mc.querySelector('#crm-add-task').onclick = function() {
+                showTaskModal(contactId);
+            };
+
             mc.querySelector('#crm-add-interaction').onclick = function() {
                 showInteractionModal(contact);
             };
+
+            // Task complete/reschedule buttons
+            mc.querySelectorAll('.crm-complete-task').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    api().updateCrmTask(btn.getAttribute('data-task-id'), { status: 'completed' }).then(function() {
+                        showContactDetail(contactId);
+                    });
+                });
+            });
+
+            mc.querySelectorAll('.crm-reschedule-task').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(9, 0, 0, 0);
+                    api().updateCrmTask(btn.getAttribute('data-task-id'), { due_date: tomorrow.toISOString() }).then(function() {
+                        showContactDetail(contactId);
+                    });
+                });
+            });
         });
     }
 
-    function showDealDetail(dealId) {
-        dashboardApi.getCrmDeals().then(function(data) {
-            if (!data) return;
-            var deal = data.deals.find(function(d) { return d.id === dealId; });
-            if (deal) showDealModal(deal);
+    function detailField(label, value, isLink, isHtml) {
+        if (value === null || value === undefined || value === '') value = '-';
+        var display;
+        if (isHtml) {
+            display = value;
+        } else if (isLink && value !== '-') {
+            display = '<a href="' + esc(String(value)) + '" target="_blank" style="color:#60a5fa">' + esc(String(value)) + '</a>';
+        } else {
+            display = esc(String(value));
+        }
+        return '<div class="crm-detail__field"><strong>' + label + ':</strong> ' + display + '</div>';
+    }
+
+    // ---- Task Modal ----
+
+    function showTaskModal(contactId) {
+        var html = '<div class="dgd-modal-overlay crm-modal-overlay" id="crm-task-modal">';
+        html += '<div class="dgd-modal crm-modal">';
+        html += '<div class="dgd-modal__header"><h3>Neue Aufgabe</h3><button class="dgd-modal__close" id="crm-task-close">&times;</button></div>';
+        html += '<form id="crm-task-form" class="dgd-form">';
+
+        html += formField('Titel *', 'text', 'crm-t-title', '', 'required');
+        html += formTextarea('Beschreibung', 'crm-t-desc', '');
+        html += formField('F\u00e4llig am *', 'datetime-local', 'crm-t-due', '', 'required');
+
+        html += formSelect('Erinnerungs-Intervall', 'crm-t-reminder', [
+            { key: 'none',     label: 'Keine Erinnerung' },
+            { key: 'daily',    label: 'T\u00e4glich' },
+            { key: '3days',    label: 'Alle 3 Tage' },
+            { key: 'weekly',   label: 'W\u00f6chentlich' },
+            { key: 'biweekly', label: 'Alle 2 Wochen' },
+            { key: 'monthly',  label: 'Monatlich' },
+        ], 'none');
+
+        html += '<div class="dgd-form__actions">';
+        html += '<button type="submit" class="dgd-btn dgd-btn--primary">Erstellen</button>';
+        html += '<button type="button" class="dgd-btn dgd-btn--outline" id="crm-task-cancel">Abbrechen</button>';
+        html += '</div></form></div></div>';
+
+        var mc = document.getElementById('modal-container');
+        mc.innerHTML = html;
+
+        mc.querySelector('#crm-task-close').onclick = function() { closeModal(); showContactDetail(contactId); };
+        mc.querySelector('#crm-task-cancel').onclick = function() { closeModal(); showContactDetail(contactId); };
+
+        mc.querySelector('#crm-task-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var reminder = mc.querySelector('#crm-t-reminder').value;
+            api().createCrmTask({
+                contact_id: contactId,
+                title: mc.querySelector('#crm-t-title').value,
+                description: mc.querySelector('#crm-t-desc').value,
+                due_date: mc.querySelector('#crm-t-due').value || null,
+                reminder_interval: reminder !== 'none' ? reminder : null,
+            }).then(function() {
+                closeModal();
+                showContactDetail(contactId);
+            });
         });
     }
+
+    // ---- Order Modal ----
+
+    function showOrderModal(partnerId) {
+        var html = '<div class="dgd-modal-overlay crm-modal-overlay" id="crm-order-modal">';
+        html += '<div class="dgd-modal crm-modal">';
+        html += '<div class="dgd-modal__header"><h3>Neuer Auftrag</h3><button class="dgd-modal__close" id="crm-order-close">&times;</button></div>';
+        html += '<form id="crm-order-form" class="dgd-form">';
+
+        // Type radio
+        html += '<div class="dgd-form__group">';
+        html += '<label class="dgd-form__label">Auftragstyp</label>';
+        html += '<div style="display:flex;gap:16px">';
+        html += '<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="crm-o-type" value="test" checked> Test</label>';
+        html += '<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="crm-o-type" value="real"> Real</label>';
+        html += '</div></div>';
+
+        html += formField('Eingereicht am', 'date', 'crm-o-submitted', new Date().toISOString().substring(0, 10));
+
+        html += formSelect('Status', 'crm-o-status', [
+            { key: 'submitted', label: 'Eingereicht' },
+            { key: 'in_progress', label: 'In Bearbeitung' },
+            { key: 'completed', label: 'Abgeschlossen' },
+            { key: 'rejected', label: 'Abgelehnt' },
+        ], 'submitted');
+
+        html += formField('Ergebnis', 'text', 'crm-o-result', '');
+
+        html += '<div class="dgd-form__actions">';
+        html += '<button type="submit" class="dgd-btn dgd-btn--primary">Erstellen</button>';
+        html += '<button type="button" class="dgd-btn dgd-btn--outline" id="crm-order-cancel">Abbrechen</button>';
+        html += '</div></form></div></div>';
+
+        var mc = document.getElementById('modal-container');
+        mc.innerHTML = html;
+
+        mc.querySelector('#crm-order-close').onclick = closeModal;
+        mc.querySelector('#crm-order-cancel').onclick = closeModal;
+
+        mc.querySelector('#crm-order-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var typeRadio = mc.querySelector('input[name="crm-o-type"]:checked');
+            api().createCrmOrder({
+                partner_id: partnerId,
+                type: typeRadio ? typeRadio.value : 'test',
+                submitted_at: mc.querySelector('#crm-o-submitted').value || null,
+                status: mc.querySelector('#crm-o-status').value,
+                result: mc.querySelector('#crm-o-result').value,
+            }).then(function() {
+                closeModal();
+                refreshView();
+            });
+        });
+    }
+
+    // ---- Interaction Modal ----
 
     function showInteractionModal(contact) {
         var html = '<div class="dgd-modal-overlay crm-modal-overlay" id="crm-interaction-modal">';
         html += '<div class="dgd-modal crm-modal">';
-        html += '<div class="dgd-modal__header"><h3>Neue Interaktion - ' + DGD.helpers.escapeHtml(contact.name) + '</h3><button class="dgd-modal__close" id="crm-int-close">&times;</button></div>';
+        html += '<div class="dgd-modal__header"><h3>Neue Interaktion - ' + esc(contact.name) + '</h3><button class="dgd-modal__close" id="crm-int-close">&times;</button></div>';
         html += '<form id="crm-int-form" class="dgd-form">';
 
-        html += '<div class="dgd-form__group"><label class="dgd-form__label">Typ</label>';
-        html += '<select class="dgd-form__input" id="crm-int-type">';
-        INTERACTION_TYPES.forEach(function(t) {
-            html += '<option value="' + t.key + '">' + t.label + '</option>';
-        });
-        html += '</select></div>';
-
-        html += formField('Zusammenfassung *', 'text', 'crm-int-summary', '');
-        html += '<div class="dgd-form__group"><label class="dgd-form__label">Details</label>';
-        html += '<textarea class="dgd-form__input" id="crm-int-details" rows="3"></textarea></div>';
+        html += formSelect('Typ', 'crm-int-type', INTERACTION_TYPES, 'email');
+        html += formField('Zusammenfassung *', 'text', 'crm-int-summary', '', 'required');
+        html += formTextarea('Details', 'crm-int-details', '');
 
         html += '<div class="dgd-form__actions">';
         html += '<button type="submit" class="dgd-btn dgd-btn--primary">Erstellen</button>';
@@ -585,129 +1109,72 @@
         var mc = document.getElementById('modal-container');
         mc.innerHTML = html;
 
-        mc.querySelector('#crm-int-close').onclick = function() { mc.innerHTML = ''; showContactDetail(contact.id); };
-        mc.querySelector('#crm-int-cancel').onclick = function() { mc.innerHTML = ''; showContactDetail(contact.id); };
+        mc.querySelector('#crm-int-close').onclick = function() { closeModal(); showContactDetail(contact.id); };
+        mc.querySelector('#crm-int-cancel').onclick = function() { closeModal(); showContactDetail(contact.id); };
 
         mc.querySelector('#crm-int-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            dashboardApi.createCrmInteraction({
+            api().createCrmInteraction({
                 contact_id: contact.id,
                 type: mc.querySelector('#crm-int-type').value,
                 summary: mc.querySelector('#crm-int-summary').value,
                 details: mc.querySelector('#crm-int-details').value,
             }).then(function() {
-                mc.innerHTML = '';
+                closeModal();
                 showContactDetail(contact.id);
             });
         });
     }
 
-    function showTrelloImportModal() {
-        var html = '<div class="dgd-modal-overlay crm-modal-overlay" id="crm-modal">';
-        html += '<div class="dgd-modal crm-modal">';
-        html += '<div class="dgd-modal__header"><h3>Trello CRM Import</h3><button class="dgd-modal__close" id="crm-modal-close">&times;</button></div>';
-        html += '<div class="crm-import">';
-        html += '<p>Exportiere dein Trello-Board als JSON und lade es hier hoch.</p>';
-        html += '<p><small>Trello &rarr; Board &rarr; Menu &rarr; More &rarr; Print and Export &rarr; Export as JSON</small></p>';
-        html += '<div class="crm-import__dropzone" id="crm-dropzone">';
-        html += '<p>JSON-Datei hierher ziehen oder klicken</p>';
-        html += '<input type="file" accept=".json" id="crm-import-file" style="display:none">';
-        html += '</div>';
-        html += '<div id="crm-import-preview" style="display:none"></div>';
-        html += '<div id="crm-import-result" style="display:none"></div>';
-        html += '</div></div></div>';
-
-        var mc = document.getElementById('modal-container');
-        mc.innerHTML = html;
-
-        mc.querySelector('#crm-modal-close').onclick = function() { mc.innerHTML = ''; };
-
-        var dropzone = mc.querySelector('#crm-dropzone');
-        var fileInput = mc.querySelector('#crm-import-file');
-
-        dropzone.onclick = function() { fileInput.click(); };
-
-        dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('crm-import__dropzone--hover'); });
-        dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('crm-import__dropzone--hover'); });
-        dropzone.addEventListener('drop', function(e) {
-            e.preventDefault();
-            dropzone.classList.remove('crm-import__dropzone--hover');
-            if (e.dataTransfer.files.length) processImportFile(e.dataTransfer.files[0], mc);
-        });
-
-        fileInput.addEventListener('change', function() {
-            if (fileInput.files.length) processImportFile(fileInput.files[0], mc);
-        });
-    }
-
-    function processImportFile(file, mc) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                var data = JSON.parse(e.target.result);
-                var cards = data.cards || [];
-                var lists = data.lists || [];
-                var openCards = cards.filter(function(c) { return !c.closed; });
-
-                var preview = mc.querySelector('#crm-import-preview');
-                preview.style.display = '';
-                preview.innerHTML = '<h4>Board: ' + DGD.helpers.escapeHtml(data.name || 'Unbenannt') + '</h4>'
-                    + '<p>' + openCards.length + ' Karten in ' + lists.length + ' Listen</p>'
-                    + '<ul>' + lists.filter(function(l) { return !l.closed; }).map(function(l) {
-                        var count = cards.filter(function(c) { return c.idList === l.id && !c.closed; }).length;
-                        return '<li>' + DGD.helpers.escapeHtml(l.name) + ' (' + count + ')</li>';
-                    }).join('') + '</ul>'
-                    + '<button class="dgd-btn dgd-btn--primary" id="crm-do-import">Importieren</button>';
-
-                mc.querySelector('#crm-do-import').onclick = function() {
-                    this.disabled = true;
-                    this.textContent = 'Importiere...';
-                    dashboardApi.importCrmTrello({ board: data }).then(function(res) {
-                        var result = mc.querySelector('#crm-import-result');
-                        if (result && res) {
-                            result.style.display = '';
-                            result.innerHTML = '<div class="dgd-alert dgd-alert--success">'
-                                + res.imported + ' Kontakte importiert, ' + res.skipped + ' uebersprungen.</div>'
-                                + '<button class="dgd-btn dgd-btn--primary" id="crm-import-done">Fertig</button>';
-                            mc.querySelector('#crm-import-done').onclick = function() {
-                                mc.innerHTML = '';
-                                DGD.views.crm($('#main-content'));
-                            };
-                        }
-                    });
-                };
-            } catch (err) {
-                alert('Ungueltige JSON-Datei: ' + err.message);
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    function formField(label, type, id, value) {
-        return '<div class="dgd-form__group">'
-            + '<label class="dgd-form__label" for="' + id + '">' + label + '</label>'
-            + '<input type="' + type + '" class="dgd-form__input" id="' + id + '" value="' + DGD.helpers.escapeHtml(String(value || '')) + '">'
-            + '</div>';
-    }
-
     // ---- Entry Point ----
 
-    var EMPTY_STATS = { total_contacts: 0, pipeline_value: 0, open_deals: 0, won_value: 0, won_count: 0, lost_count: 0, conversion_rate: 0, overdue_followups: 0 };
-
-    function safe(promise) { return promise.catch(function() { return null; }); }
-
     DGD.views.crm = function(container) {
+        _container = container;
         container.innerHTML = '<div class="crm-loading">CRM wird geladen...</div>';
 
-        Promise.all([
-            safe(dashboardApi.getCrmStats()),
-            safe(dashboardApi.getCrmContacts()),
-            safe(dashboardApi.getCrmPipeline()),
-        ]).then(function(results) {
-            var stats = results[0] || EMPTY_STATS;
-            var contacts = results[1] ? results[1].contacts : [];
-            var pipeline = results[2] ? results[2].pipeline : [];
-            render(container, stats, contacts, pipeline);
+        safe(api().getCrmStats()).then(function(stats) {
+            var s = stats || {};
+
+            var html = '<div class="crm-view">';
+            html += renderKpiBar(s);
+            html += renderTabs();
+            html += '<div id="crm-tab-content"></div>';
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Tab switching
+            container.querySelectorAll('.crm-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    container.querySelectorAll('.crm-tab').forEach(function(t) { t.classList.remove('crm-tab--active'); });
+                    tab.classList.add('crm-tab--active');
+                    _activeTab = tab.getAttribute('data-tab');
+                    loadActiveTab(container);
+                });
+            });
+
+            loadActiveTab(container);
         });
     };
+
+    function loadActiveTab(container) {
+        var tabContent = container.querySelector('#crm-tab-content');
+        if (!tabContent) return;
+
+        switch (_activeTab) {
+            case 'daily':
+                renderDailyView(tabContent);
+                break;
+            case 'contacts':
+                renderContactsTable(tabContent);
+                break;
+            case 'pipeline':
+                renderPipeline(tabContent);
+                break;
+            case 'activation':
+                renderActivation(tabContent);
+                break;
+        }
+    }
+
 })();

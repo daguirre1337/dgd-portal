@@ -766,7 +766,7 @@ function create_crm_lead(array $data): void
                 role TEXT,
                 tags TEXT DEFAULT '[]',
                 notes TEXT DEFAULT '',
-                pipeline_stage TEXT DEFAULT 'lead',
+                pipeline_stage TEXT DEFAULT 'neu',
                 deal_value REAL DEFAULT 0,
                 source TEXT DEFAULT 'manual',
                 assigned_to TEXT DEFAULT '',
@@ -776,55 +776,115 @@ function create_crm_lead(array $data): void
                 created_by TEXT,
                 created_at TEXT,
                 updated_at TEXT,
-                street TEXT,
-                zip TEXT,
-                city TEXT,
-                state TEXT,
-                website TEXT,
-                job_title TEXT,
-                business_type TEXT,
-                ga_count INTEGER DEFAULT 0,
-                trello_card_id TEXT
+                street TEXT, zip TEXT, city TEXT, state TEXT,
+                website TEXT, job_title TEXT, business_type TEXT,
+                ga_count INTEGER DEFAULT 0, trello_card_id TEXT,
+                leadquelle TEXT DEFAULT '', umsatzpotenzial REAL DEFAULT 0,
+                prioritaet TEXT DEFAULT 'normal', next_step TEXT DEFAULT '',
+                next_step_date TEXT, onboarding_email_sent INTEGER DEFAULT 0,
+                ai_research TEXT DEFAULT '', firmeninfos TEXT DEFAULT '',
+                geschaeftsfuehrer TEXT DEFAULT '', gf_match INTEGER DEFAULT 0,
+                partner_type TEXT DEFAULT '', is_partner INTEGER DEFAULT 0,
+                registered_at TEXT, verified_at TEXT, test_order_at TEXT, first_real_order_at TEXT
+            )
+        ");
+
+        // Ensure crm_tasks table exists
+        $crm_db->exec("
+            CREATE TABLE IF NOT EXISTS crm_tasks (
+                id TEXT PRIMARY KEY, contact_id TEXT NOT NULL, title TEXT NOT NULL,
+                description TEXT DEFAULT '', due_date TEXT NOT NULL, reminder_interval TEXT DEFAULT '',
+                status TEXT DEFAULT 'pending', type TEXT DEFAULT 'manual',
+                created_by TEXT DEFAULT 'system', created_at TEXT, completed_at TEXT,
+                FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+            )
+        ");
+
+        // Ensure crm_activity_log table exists
+        $crm_db->exec("
+            CREATE TABLE IF NOT EXISTS crm_activity_log (
+                id TEXT PRIMARY KEY, contact_id TEXT NOT NULL, action TEXT NOT NULL,
+                details TEXT DEFAULT '{}', user TEXT DEFAULT 'system', created_at TEXT,
+                FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
             )
         ");
 
         $id  = generate_uuid();
         $now = now_iso();
+        $source = $data['source'] ?? 'website';
+
+        // Map source to leadquelle
+        $leadquelleMap = [
+            'website-partner' => 'Website-Partner',
+            'website-rente'   => 'Website-Rente',
+        ];
+        $leadquelle = $leadquelleMap[$source] ?? 'Sonstige';
+
+        // Next step: contact within 1 hour
+        $nextStepDate = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
         $crm_db->prepare("
             INSERT INTO crm_contacts
                 (id, name, email, phone, organization, role, tags, notes,
                  pipeline_stage, deal_value, source, assigned_to, health_score,
                  created_by, created_at, updated_at,
-                 street, zip, city, state, website, job_title, business_type, ga_count)
+                 street, zip, city, state, website, job_title, business_type, ga_count,
+                 leadquelle, next_step, next_step_date)
             VALUES
                 (:id, :name, :email, :phone, :org, :role, :tags, :notes,
-                 'lead', 0, :source, '', 100,
+                 'neu', 0, :source, '', 100,
                  'system-portal', :now, :now2,
-                 :street, :zip, :city, :state, :website, :job_title, :business_type, :ga_count)
+                 :street, :zip, :city, :state, :website, :job_title, :business_type, :ga_count,
+                 :leadquelle, 'Erstkontakt herstellen', :next_step_date)
         ")->execute([
-            ':id'            => $id,
-            ':name'          => $data['name'] ?? '',
-            ':email'         => $data['email'] ?? '',
-            ':phone'         => $data['phone'] ?? '',
-            ':org'           => $data['organization'] ?? '',
-            ':role'          => $data['role'] ?? '',
-            ':tags'          => $data['tags'] ?? '[]',
-            ':notes'         => $data['notes'] ?? '',
-            ':source'        => $data['source'] ?? 'website',
-            ':now'           => $now,
-            ':now2'          => $now,
-            ':street'        => $data['street'] ?? '',
-            ':zip'           => $data['zip'] ?? '',
-            ':city'          => $data['city'] ?? '',
-            ':state'         => $data['state'] ?? '',
-            ':website'       => $data['website'] ?? '',
-            ':job_title'     => $data['job_title'] ?? '',
-            ':business_type' => $data['business_type'] ?? '',
-            ':ga_count'      => (int)($data['ga_count'] ?? 0),
+            ':id'             => $id,
+            ':name'           => $data['name'] ?? '',
+            ':email'          => $data['email'] ?? '',
+            ':phone'          => $data['phone'] ?? '',
+            ':org'            => $data['organization'] ?? '',
+            ':role'           => $data['role'] ?? '',
+            ':tags'           => $data['tags'] ?? '[]',
+            ':notes'          => $data['notes'] ?? '',
+            ':source'         => $source,
+            ':now'            => $now,
+            ':now2'           => $now,
+            ':street'         => $data['street'] ?? '',
+            ':zip'            => $data['zip'] ?? '',
+            ':city'           => $data['city'] ?? '',
+            ':state'          => $data['state'] ?? '',
+            ':website'        => $data['website'] ?? '',
+            ':job_title'      => $data['job_title'] ?? '',
+            ':business_type'  => $data['business_type'] ?? '',
+            ':ga_count'       => (int)($data['ga_count'] ?? 0),
+            ':leadquelle'     => $leadquelle,
+            ':next_step_date' => $nextStepDate,
         ]);
 
-        error_log("DGD CRM: Lead created - {$data['name']} (source: {$data['source']}, id: {$id})");
+        // Create auto-task: "Neuen Lead kontaktieren" in 1 hour
+        $taskId = generate_uuid();
+        $crm_db->prepare("
+            INSERT INTO crm_tasks (id, contact_id, title, description, due_date, status, type, created_by, created_at)
+            VALUES (:id, :cid, 'Neuen Lead kontaktieren', :desc, :due, 'pending', 'system', 'system', :at)
+        ")->execute([
+            ':id'   => $taskId,
+            ':cid'  => $id,
+            ':desc' => 'Automatisch erstellt bei Lead-Eingang von ' . $leadquelle,
+            ':due'  => $nextStepDate,
+            ':at'   => $now,
+        ]);
+
+        // Log to activity log
+        $crm_db->prepare("
+            INSERT INTO crm_activity_log (id, contact_id, action, details, user, created_at)
+            VALUES (:id, :cid, 'lead_created', :details, 'system-portal', :at)
+        ")->execute([
+            ':id'      => generate_uuid(),
+            ':cid'     => $id,
+            ':details' => json_encode(['source' => $source, 'leadquelle' => $leadquelle]),
+            ':at'      => $now,
+        ]);
+
+        error_log("DGD CRM: Lead created - {$data['name']} (source: {$source}, id: {$id})");
     } catch (Exception $e) {
         // Don't fail the main form submission if CRM insert fails
         error_log("DGD CRM Error: Failed to create lead - " . $e->getMessage());

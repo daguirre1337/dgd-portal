@@ -62,10 +62,11 @@ function crm_ensure_tables(): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_stage ON crm_contacts(pipeline_stage)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_contacts_org ON crm_contacts(organization)");
 
-    // Migration: add new columns for Trello/Crmble compatibility
+    // Migration: add columns idempotently
     $cols = $db->query("PRAGMA table_info(crm_contacts)")->fetchAll();
     $colNames = array_column($cols, 'name');
     $newCols = [
+        // Trello/Crmble fields
         'street'          => 'TEXT',
         'zip'             => 'TEXT',
         'city'            => 'TEXT',
@@ -75,11 +76,113 @@ function crm_ensure_tables(): void
         'business_type'   => 'TEXT',
         'ga_count'        => 'INTEGER DEFAULT 0',
         'trello_card_id'  => 'TEXT',
+        // Lead-Prozess fields
+        'leadquelle'           => 'TEXT DEFAULT \'\'',
+        'umsatzpotenzial'      => 'REAL DEFAULT 0',
+        'prioritaet'           => 'TEXT DEFAULT \'normal\'',
+        'next_step'            => 'TEXT DEFAULT \'\'',
+        'next_step_date'       => 'TEXT',
+        'onboarding_email_sent'=> 'INTEGER DEFAULT 0',
+        'ai_research'          => 'TEXT DEFAULT \'\'',
+        'firmeninfos'          => 'TEXT DEFAULT \'\'',
+        'geschaeftsfuehrer'    => 'TEXT DEFAULT \'\'',
+        'gf_match'             => 'INTEGER DEFAULT 0',
+        'partner_type'         => 'TEXT DEFAULT \'\'',
+        'is_partner'           => 'INTEGER DEFAULT 0',
+        'registered_at'        => 'TEXT',
+        'verified_at'          => 'TEXT',
+        'test_order_at'        => 'TEXT',
+        'first_real_order_at'  => 'TEXT',
     ];
     foreach ($newCols as $col => $type) {
         if (!in_array($col, $colNames)) {
             $db->exec("ALTER TABLE crm_contacts ADD COLUMN {$col} {$type}");
         }
+    }
+
+    // CRM tasks
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_tasks (
+            id TEXT PRIMARY KEY,
+            contact_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            due_date TEXT NOT NULL,
+            reminder_interval TEXT DEFAULT '',
+            status TEXT DEFAULT 'pending',
+            type TEXT DEFAULT 'manual',
+            created_by TEXT DEFAULT 'system',
+            created_at TEXT DEFAULT (datetime('now')),
+            completed_at TEXT,
+            FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_tasks_status ON crm_tasks(status)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_tasks_due ON crm_tasks(due_date)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_tasks_contact ON crm_tasks(contact_id)");
+
+    // CRM activity log
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_activity_log (
+            id TEXT PRIMARY KEY,
+            contact_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            details TEXT DEFAULT '{}',
+            user TEXT DEFAULT 'system',
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_activity_contact ON crm_activity_log(contact_id)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_activity_created ON crm_activity_log(created_at)");
+
+    // CRM orders (partner orders)
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_orders (
+            id TEXT PRIMARY KEY,
+            partner_id TEXT NOT NULL,
+            type TEXT DEFAULT 'real',
+            submitted_at TEXT,
+            status TEXT DEFAULT 'pending',
+            result TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (partner_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_orders_partner ON crm_orders(partner_id)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_crm_orders_type ON crm_orders(type)");
+
+    // CRM reminder config (interval per stage)
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS crm_reminder_config (
+            stage TEXT PRIMARY KEY,
+            interval_days INTEGER DEFAULT 1,
+            auto_create INTEGER DEFAULT 1,
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ");
+    // Seed default intervals
+    $defaultIntervals = [
+        'neu' => 0, 'nicht_erreicht' => 1, 'quali_terminiert' => 0,
+        'no_show_quali' => 1, 'quali_gefuehrt' => 1, 'abschluss_terminiert' => 0,
+        'no_show_abschluss' => 1, 'abschluss_gefuehrt' => 1, 'entscheidung' => 3,
+        'gewonnen' => 7, 'verloren' => 0, 'stillgelegt' => 30,
+    ];
+    foreach ($defaultIntervals as $stage => $days) {
+        $db->exec("INSERT OR IGNORE INTO crm_reminder_config (stage, interval_days) VALUES ('{$stage}', {$days})");
+    }
+
+    // Stage migration: old 9 stages → new 12 stages (one-time, idempotent)
+    $hasOldStages = (int) $db->query("SELECT COUNT(*) FROM crm_contacts WHERE pipeline_stage = 'lead'")->fetchColumn();
+    if ($hasOldStages > 0) {
+        $db->exec("UPDATE crm_contacts SET pipeline_stage = 'neu' WHERE pipeline_stage = 'lead'");
+        $db->exec("UPDATE crm_contacts SET pipeline_stage = 'nicht_erreicht' WHERE pipeline_stage = 'kontakt'");
+        $db->exec("UPDATE crm_contacts SET pipeline_stage = 'gewonnen', is_partner = 1, registered_at = COALESCE(created_at, datetime('now')) WHERE pipeline_stage = 'registriert'");
+        $db->exec("UPDATE crm_contacts SET pipeline_stage = 'gewonnen', is_partner = 1, registered_at = COALESCE(created_at, datetime('now')), verified_at = COALESCE(updated_at, datetime('now')) WHERE pipeline_stage = 'verifiziert'");
+        $db->exec("UPDATE crm_contacts SET pipeline_stage = 'gewonnen', is_partner = 1, registered_at = COALESCE(created_at, datetime('now')), verified_at = COALESCE(updated_at, datetime('now')), test_order_at = COALESCE(updated_at, datetime('now')) WHERE pipeline_stage = 'geprueft'");
+        $db->exec("UPDATE crm_contacts SET pipeline_stage = 'gewonnen', is_partner = 1, registered_at = COALESCE(created_at, datetime('now')), verified_at = COALESCE(updated_at, datetime('now')), test_order_at = COALESCE(updated_at, datetime('now')), first_real_order_at = COALESCE(updated_at, datetime('now')) WHERE pipeline_stage = 'aktiviert'");
+        $db->exec("UPDATE crm_contacts SET pipeline_stage = 'stillgelegt' WHERE pipeline_stage IN ('plan_b', 'reaktivieren')");
+        // 'verloren' stays as-is
     }
 
     // CRM interactions

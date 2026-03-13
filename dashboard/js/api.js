@@ -139,6 +139,23 @@ var dashboardApi = {
         return this._fetch('/crm/pipeline');
     },
 
+    // CRM - Tasks
+    getCrmTasksToday: function() { return this._fetch('/crm/tasks/today'); },
+    getCrmTasks: function(params) { return this._fetch('/crm/tasks' + (params ? '?' + new URLSearchParams(params) : '')); },
+    createCrmTask: function(data) { return this._fetch('/crm/tasks', { method: 'POST', body: JSON.stringify(data) }); },
+    updateCrmTask: function(id, data) { return this._fetch('/crm/tasks/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
+
+    // CRM - Activity Log
+    getCrmActivityLog: function(contactId) { return this._fetch('/crm/contacts/' + contactId + '/activity'); },
+
+    // CRM - Partners
+    getCrmPartners: function() { return this._fetch('/crm/partners'); },
+    updateCrmPartner: function(id, data) { return this._fetch('/crm/partners/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
+
+    // CRM - Orders
+    getCrmOrders: function(params) { return this._fetch('/crm/orders' + (params ? '?' + new URLSearchParams(params) : '')); },
+    createCrmOrder: function(data) { return this._fetch('/crm/orders', { method: 'POST', body: JSON.stringify(data) }); },
+
     // CRM - Import
     importCrmTrello: function(data) {
         return this._fetch('/crm/import/trello', { method: 'POST', body: JSON.stringify(data) });

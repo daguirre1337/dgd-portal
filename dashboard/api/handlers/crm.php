@@ -8,6 +8,7 @@
  *   PUT    /api/crm/contacts/{id}               - Update contact
  *   DELETE /api/crm/contacts/{id}               - Delete contact
  *   GET    /api/crm/contacts/{id}/interactions   - Contact interactions
+ *   GET    /api/crm/contacts/{id}/activity       - Activity log
  *
  * Deals:
  *   GET    /api/crm/deals                       - List deals
@@ -18,6 +19,27 @@
  * Interactions:
  *   POST   /api/crm/interactions                - Create interaction
  *
+ * Tasks:
+ *   GET    /api/crm/tasks/today                 - Today's tasks grouped by category
+ *   GET    /api/crm/tasks                       - List tasks (filterable)
+ *   POST   /api/crm/tasks                       - Create task
+ *   PUT    /api/crm/tasks/{id}                  - Update task
+ *
+ * Partners:
+ *   GET    /api/crm/partners                    - Partners in activation
+ *   PUT    /api/crm/partners/{id}               - Update partner timestamps
+ *
+ * Orders:
+ *   GET    /api/crm/orders                      - List orders
+ *   POST   /api/crm/orders                      - Create order
+ *
+ * Reminders:
+ *   POST   /api/crm/reminders/process           - Process reminders (Cortex trigger)
+ *
+ * Reminder Config:
+ *   GET    /api/crm/reminder-config             - Get reminder config
+ *   PUT    /api/crm/reminder-config/{stage}     - Update reminder config
+ *
  * Dashboard:
  *   GET    /api/crm/stats                       - CRM KPIs
  *   GET    /api/crm/pipeline                    - Pipeline overview
@@ -25,6 +47,101 @@
  * Import:
  *   POST   /api/crm/import/trello               - Import from Trello JSON
  */
+
+// ---- Internal Helper Functions ----
+
+function crm_log_activity(string $contactId, string $action, array $details, string $user = ''): void
+{
+    $db = get_db();
+    $db->prepare("INSERT INTO crm_activity_log (id, contact_id, action, details, user, created_at) VALUES (:id, :cid, :action, :details, :user, :at)")
+       ->execute([':id' => generate_uuid(), ':cid' => $contactId, ':action' => $action, ':details' => json_encode($details), ':user' => $user ?: ($_SESSION['display_name'] ?? 'system'), ':at' => now_iso()]);
+}
+
+function crm_create_auto_task(string $contactId, string $title, string $dueDate, string $description = ''): string
+{
+    $db = get_db();
+    $id = generate_uuid();
+    $db->prepare("INSERT INTO crm_tasks (id, contact_id, title, description, due_date, status, type, created_by, created_at) VALUES (:id, :cid, :title, :desc, :due, 'pending', 'system', 'system', :at)")
+       ->execute([':id' => $id, ':cid' => $contactId, ':title' => $title, ':desc' => $description, ':due' => $dueDate, ':at' => now_iso()]);
+    crm_log_activity($contactId, 'task_created', ['task_id' => $id, 'title' => $title, 'due_date' => $dueDate], 'system');
+    return $id;
+}
+
+function crm_handle_stage_transition(string $contactId, string $oldStage, string $newStage, string $user): void
+{
+    $db = get_db();
+    crm_log_activity($contactId, 'stage_change', ['from' => $oldStage, 'to' => $newStage], $user);
+
+    // Close pending system tasks when stage changes
+    $db->prepare("UPDATE crm_tasks SET status = 'done', completed_at = :at WHERE contact_id = :cid AND type = 'system' AND status = 'pending'")
+       ->execute([':at' => now_iso(), ':cid' => $contactId]);
+
+    // Get reminder config for new stage
+    $config = $db->prepare("SELECT interval_days FROM crm_reminder_config WHERE stage = :s");
+    $config->execute([':s' => $newStage]);
+    $intervalDays = (int)($config->fetchColumn() ?: 1);
+
+    // Get next_step_date from contact
+    $contact = $db->prepare("SELECT next_step_date FROM crm_contacts WHERE id = :id");
+    $contact->execute([':id' => $contactId]);
+    $nextStepDate = $contact->fetchColumn();
+
+    $now = new DateTime();
+
+    switch ($newStage) {
+        case 'neu':
+            crm_create_auto_task($contactId, 'Neuen Lead kontaktieren', (clone $now)->modify('+1 hour')->format('Y-m-d H:i:s'));
+            break;
+        case 'nicht_erreicht':
+            crm_create_auto_task($contactId, 'Erneut anrufen', (clone $now)->modify("+{$intervalDays} day")->format('Y-m-d'));
+            break;
+        case 'quali_terminiert':
+            $due = $nextStepDate ?: (clone $now)->modify('+1 day')->format('Y-m-d');
+            crm_create_auto_task($contactId, 'Qualigespräch durchführen', $due);
+            break;
+        case 'no_show_quali':
+            crm_create_auto_task($contactId, 'No-Show Follow-up Quali', (clone $now)->modify("+{$intervalDays} day")->format('Y-m-d'));
+            break;
+        case 'quali_gefuehrt':
+            crm_create_auto_task($contactId, 'Abschlussgespräch terminieren', (clone $now)->modify('+1 day')->format('Y-m-d'));
+            break;
+        case 'abschluss_terminiert':
+            $due = $nextStepDate ?: (clone $now)->modify('+1 day')->format('Y-m-d');
+            crm_create_auto_task($contactId, 'Abschlussgespräch durchführen', $due);
+            break;
+        case 'no_show_abschluss':
+            crm_create_auto_task($contactId, 'No-Show Follow-up Abschluss', (clone $now)->modify("+{$intervalDays} day")->format('Y-m-d'));
+            break;
+        case 'abschluss_gefuehrt':
+            crm_create_auto_task($contactId, 'Entscheidung einholen', (clone $now)->modify('+1 day')->format('Y-m-d'));
+            break;
+        case 'entscheidung':
+            crm_create_auto_task($contactId, 'Nachfassen Entscheidung', (clone $now)->modify("+{$intervalDays} day")->format('Y-m-d'));
+            break;
+        case 'gewonnen':
+            $db->prepare("UPDATE crm_contacts SET is_partner = 1 WHERE id = :id")->execute([':id' => $contactId]);
+            crm_create_auto_task($contactId, 'Onboarding starten', (clone $now)->modify('+1 day')->format('Y-m-d'));
+            break;
+        case 'verloren':
+            // Close all pending tasks
+            $db->prepare("UPDATE crm_tasks SET status = 'done', completed_at = :at WHERE contact_id = :cid AND status = 'pending'")
+               ->execute([':at' => now_iso(), ':cid' => $contactId]);
+            break;
+        case 'stillgelegt':
+            $due = $nextStepDate ?: (clone $now)->modify("+{$intervalDays} day")->format('Y-m-d');
+            crm_create_auto_task($contactId, 'Wiedervorlage', $due);
+            break;
+    }
+}
+
+function process_overdue_tasks(): void
+{
+    $db = get_db();
+    $now = now_iso();
+    // Mark overdue tasks
+    $db->prepare("UPDATE crm_tasks SET status = 'overdue' WHERE status = 'pending' AND due_date < :now")
+       ->execute([':now' => substr($now, 0, 10)]);
+}
 
 // ---- Contacts ----
 
@@ -51,10 +168,22 @@ function handle_list_crm_contacts(): void
         $where[] = "assigned_to = :assigned";
         $params[':assigned'] = $_GET['assigned_to'];
     }
+    if (!empty($_GET['partner_type'])) {
+        $where[] = "partner_type = :partner_type";
+        $params[':partner_type'] = $_GET['partner_type'];
+    }
+    if (!empty($_GET['leadquelle'])) {
+        $where[] = "leadquelle = :leadquelle";
+        $params[':leadquelle'] = $_GET['leadquelle'];
+    }
+    if (isset($_GET['is_partner'])) {
+        $where[] = "is_partner = :is_partner";
+        $params[':is_partner'] = (int)$_GET['is_partner'];
+    }
 
     $whereStr = implode(' AND ', $where);
     $order = $_GET['sort'] ?? 'updated_at';
-    $allowed_sorts = ['name', 'updated_at', 'created_at', 'health_score', 'deal_value', 'pipeline_stage'];
+    $allowed_sorts = ['name', 'updated_at', 'created_at', 'health_score', 'deal_value', 'pipeline_stage', 'prioritaet', 'umsatzpotenzial', 'next_step_date'];
     if (!in_array($order, $allowed_sorts)) $order = 'updated_at';
     $dir = ($_GET['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
 
@@ -66,6 +195,10 @@ function handle_list_crm_contacts(): void
     foreach ($contacts as &$c) {
         $c['deal_value'] = (float)($c['deal_value'] ?? 0);
         $c['health_score'] = (int)($c['health_score'] ?? 100);
+        $c['ga_count'] = (int)($c['ga_count'] ?? 0);
+        $c['umsatzpotenzial'] = (float)($c['umsatzpotenzial'] ?? 0);
+        $c['is_partner'] = (int)($c['is_partner'] ?? 0);
+        $c['onboarding_email_sent'] = (int)($c['onboarding_email_sent'] ?? 0);
     }
 
     json_response(['contacts' => $contacts, 'total' => count($contacts)]);
@@ -86,40 +219,81 @@ function handle_create_crm_contact(): void
     $tags = $body['tags'] ?? '[]';
     if (is_array($tags)) $tags = json_encode($tags);
 
+    // Auto-compute: if partner_type = 'profi' AND ga_count > 10, add 'Top-Potential' to tags
+    $partnerType = trim($body['partner_type'] ?? '');
+    $gaCount = (int)($body['ga_count'] ?? 0);
+    if ($partnerType === 'profi' && $gaCount > 10) {
+        $tagsArr = json_decode($tags, true) ?: [];
+        if (!in_array('Top-Potential', $tagsArr)) {
+            $tagsArr[] = 'Top-Potential';
+        }
+        $tags = json_encode($tagsArr);
+    }
+
+    $initialStage = trim($body['pipeline_stage'] ?? 'neu');
+
     $db->prepare("
         INSERT INTO crm_contacts (id, name, email, phone, organization, role, tags, notes,
             pipeline_stage, deal_value, source, assigned_to, next_followup, created_by, created_at, updated_at,
-            street, zip, city, state, website, job_title, business_type, ga_count, trello_card_id)
+            street, zip, city, state, website, job_title, business_type, ga_count, trello_card_id,
+            leadquelle, umsatzpotenzial, prioritaet, next_step, next_step_date,
+            onboarding_email_sent, ai_research, firmeninfos, geschaeftsfuehrer, gf_match,
+            partner_type, is_partner, registered_at, verified_at, test_order_at, first_real_order_at)
         VALUES (:id, :name, :email, :phone, :org, :role, :tags, :notes,
             :stage, :deal_value, :source, :assigned, :followup, :created_by, :now, :now2,
-            :street, :zip, :city, :state, :website, :job_title, :business_type, :ga_count, :trello_card_id)
+            :street, :zip, :city, :state, :website, :job_title, :business_type, :ga_count, :trello_card_id,
+            :leadquelle, :umsatzpotenzial, :prioritaet, :next_step, :next_step_date,
+            :onboarding_email_sent, :ai_research, :firmeninfos, :geschaeftsfuehrer, :gf_match,
+            :partner_type, :is_partner, :registered_at, :verified_at, :test_order_at, :first_real_order_at)
     ")->execute([
-        ':id'             => $id,
-        ':name'           => trim($body['name']),
-        ':email'          => trim($body['email'] ?? ''),
-        ':phone'          => trim($body['phone'] ?? ''),
-        ':org'            => trim($body['organization'] ?? ''),
-        ':role'           => trim($body['role'] ?? ''),
-        ':tags'           => $tags,
-        ':notes'          => trim($body['notes'] ?? ''),
-        ':stage'          => trim($body['pipeline_stage'] ?? 'lead'),
-        ':deal_value'     => (float)($body['deal_value'] ?? 0),
-        ':source'         => trim($body['source'] ?? 'manual'),
-        ':assigned'       => trim($body['assigned_to'] ?? ''),
-        ':followup'       => $body['next_followup'] ?? null,
-        ':created_by'     => $_SESSION['user_id'],
-        ':now'            => $now,
-        ':now2'           => $now,
-        ':street'         => trim($body['street'] ?? ''),
-        ':zip'            => trim($body['zip'] ?? ''),
-        ':city'           => trim($body['city'] ?? ''),
-        ':state'          => trim($body['state'] ?? ''),
-        ':website'        => trim($body['website'] ?? ''),
-        ':job_title'      => trim($body['job_title'] ?? ''),
-        ':business_type'  => trim($body['business_type'] ?? ''),
-        ':ga_count'       => (int)($body['ga_count'] ?? 0),
-        ':trello_card_id' => trim($body['trello_card_id'] ?? ''),
+        ':id'                    => $id,
+        ':name'                  => trim($body['name']),
+        ':email'                 => trim($body['email'] ?? ''),
+        ':phone'                 => trim($body['phone'] ?? ''),
+        ':org'                   => trim($body['organization'] ?? ''),
+        ':role'                  => trim($body['role'] ?? ''),
+        ':tags'                  => $tags,
+        ':notes'                 => trim($body['notes'] ?? ''),
+        ':stage'                 => $initialStage,
+        ':deal_value'            => (float)($body['deal_value'] ?? 0),
+        ':source'                => trim($body['source'] ?? 'manual'),
+        ':assigned'              => trim($body['assigned_to'] ?? ''),
+        ':followup'              => $body['next_followup'] ?? null,
+        ':created_by'            => $_SESSION['user_id'],
+        ':now'                   => $now,
+        ':now2'                  => $now,
+        ':street'                => trim($body['street'] ?? ''),
+        ':zip'                   => trim($body['zip'] ?? ''),
+        ':city'                  => trim($body['city'] ?? ''),
+        ':state'                 => trim($body['state'] ?? ''),
+        ':website'               => trim($body['website'] ?? ''),
+        ':job_title'             => trim($body['job_title'] ?? ''),
+        ':business_type'         => trim($body['business_type'] ?? ''),
+        ':ga_count'              => $gaCount,
+        ':trello_card_id'        => trim($body['trello_card_id'] ?? ''),
+        ':leadquelle'            => trim($body['leadquelle'] ?? ''),
+        ':umsatzpotenzial'       => (float)($body['umsatzpotenzial'] ?? 0),
+        ':prioritaet'            => trim($body['prioritaet'] ?? ''),
+        ':next_step'             => trim($body['next_step'] ?? ''),
+        ':next_step_date'        => $body['next_step_date'] ?? null,
+        ':onboarding_email_sent' => (int)($body['onboarding_email_sent'] ?? 0),
+        ':ai_research'           => trim($body['ai_research'] ?? ''),
+        ':firmeninfos'           => trim($body['firmeninfos'] ?? ''),
+        ':geschaeftsfuehrer'     => trim($body['geschaeftsfuehrer'] ?? ''),
+        ':gf_match'              => trim($body['gf_match'] ?? ''),
+        ':partner_type'          => $partnerType,
+        ':is_partner'            => (int)($body['is_partner'] ?? 0),
+        ':registered_at'         => $body['registered_at'] ?? null,
+        ':verified_at'           => $body['verified_at'] ?? null,
+        ':test_order_at'         => $body['test_order_at'] ?? null,
+        ':first_real_order_at'   => $body['first_real_order_at'] ?? null,
     ]);
+
+    // Log creation
+    crm_log_activity($id, 'contact_created', ['name' => trim($body['name']), 'stage' => $initialStage]);
+
+    // Handle initial stage transition (create auto tasks)
+    crm_handle_stage_transition($id, '', $initialStage, $_SESSION['display_name'] ?? 'system');
 
     json_success('Kontakt erstellt', ['id' => $id]);
 }
@@ -129,40 +303,86 @@ function handle_update_crm_contact(string $id): void
     $body = get_json_body();
     $db   = get_db();
 
-    $existing = $db->prepare("SELECT id FROM crm_contacts WHERE id = :id");
+    $existing = $db->prepare("SELECT id, pipeline_stage FROM crm_contacts WHERE id = :id");
     $existing->execute([':id' => $id]);
-    if (!$existing->fetch()) {
+    $row = $existing->fetch();
+    if (!$row) {
         json_error('Kontakt nicht gefunden', 404);
     }
+    $oldStage = $row['pipeline_stage'] ?? '';
 
     $fields = [];
     $params = [':id' => $id, ':now' => now_iso()];
 
     $allowed = ['name', 'email', 'phone', 'organization', 'role', 'notes',
                 'pipeline_stage', 'source', 'assigned_to', 'next_followup', 'last_contacted',
-                'street', 'zip', 'city', 'state', 'website', 'job_title', 'business_type', 'trello_card_id'];
+                'street', 'zip', 'city', 'state', 'website', 'job_title', 'business_type', 'trello_card_id',
+                'leadquelle', 'prioritaet', 'next_step', 'next_step_date',
+                'ai_research', 'firmeninfos', 'geschaeftsfuehrer', 'gf_match',
+                'partner_type'];
+    $changedFields = [];
     foreach ($allowed as $f) {
         if (isset($body[$f])) {
             $fields[] = "{$f} = :{$f}";
             $params[":{$f}"] = trim($body[$f]);
+            $changedFields[$f] = trim($body[$f]);
         }
     }
     if (isset($body['tags'])) {
         $tags = is_array($body['tags']) ? json_encode($body['tags']) : $body['tags'];
         $fields[] = "tags = :tags";
         $params[':tags'] = $tags;
+        $changedFields['tags'] = $tags;
     }
     if (isset($body['deal_value'])) {
         $fields[] = "deal_value = :deal_value";
         $params[':deal_value'] = (float)$body['deal_value'];
+        $changedFields['deal_value'] = (float)$body['deal_value'];
     }
     if (isset($body['health_score'])) {
         $fields[] = "health_score = :health_score";
         $params[':health_score'] = (int)$body['health_score'];
+        $changedFields['health_score'] = (int)$body['health_score'];
     }
     if (isset($body['ga_count'])) {
         $fields[] = "ga_count = :ga_count";
         $params[':ga_count'] = (int)$body['ga_count'];
+        $changedFields['ga_count'] = (int)$body['ga_count'];
+    }
+    if (isset($body['umsatzpotenzial'])) {
+        $fields[] = "umsatzpotenzial = :umsatzpotenzial";
+        $params[':umsatzpotenzial'] = (float)$body['umsatzpotenzial'];
+        $changedFields['umsatzpotenzial'] = (float)$body['umsatzpotenzial'];
+    }
+    if (isset($body['onboarding_email_sent'])) {
+        $fields[] = "onboarding_email_sent = :onboarding_email_sent";
+        $params[':onboarding_email_sent'] = (int)$body['onboarding_email_sent'];
+        $changedFields['onboarding_email_sent'] = (int)$body['onboarding_email_sent'];
+    }
+    if (isset($body['is_partner'])) {
+        $fields[] = "is_partner = :is_partner";
+        $params[':is_partner'] = (int)$body['is_partner'];
+        $changedFields['is_partner'] = (int)$body['is_partner'];
+    }
+    if (isset($body['registered_at'])) {
+        $fields[] = "registered_at = :registered_at";
+        $params[':registered_at'] = $body['registered_at'];
+        $changedFields['registered_at'] = $body['registered_at'];
+    }
+    if (isset($body['verified_at'])) {
+        $fields[] = "verified_at = :verified_at";
+        $params[':verified_at'] = $body['verified_at'];
+        $changedFields['verified_at'] = $body['verified_at'];
+    }
+    if (isset($body['test_order_at'])) {
+        $fields[] = "test_order_at = :test_order_at";
+        $params[':test_order_at'] = $body['test_order_at'];
+        $changedFields['test_order_at'] = $body['test_order_at'];
+    }
+    if (isset($body['first_real_order_at'])) {
+        $fields[] = "first_real_order_at = :first_real_order_at";
+        $params[':first_real_order_at'] = $body['first_real_order_at'];
+        $changedFields['first_real_order_at'] = $body['first_real_order_at'];
     }
 
     if (empty($fields)) {
@@ -173,6 +393,17 @@ function handle_update_crm_contact(string $id): void
     $setStr = implode(', ', $fields);
 
     $db->prepare("UPDATE crm_contacts SET {$setStr} WHERE id = :id")->execute($params);
+
+    // Log field changes
+    if (!empty($changedFields)) {
+        crm_log_activity($id, 'contact_updated', $changedFields);
+    }
+
+    // Detect stage change
+    $newStage = $changedFields['pipeline_stage'] ?? null;
+    if ($newStage !== null && $newStage !== $oldStage) {
+        crm_handle_stage_transition($id, $oldStage, $newStage, $_SESSION['display_name'] ?? 'system');
+    }
 
     json_success('Kontakt aktualisiert');
 }
@@ -370,6 +601,467 @@ function handle_create_crm_interaction(): void
     json_success('Interaktion erstellt', ['id' => $id]);
 }
 
+// ---- Tasks ----
+
+function handle_crm_tasks_today(): void
+{
+    $db = get_db();
+
+    // Process overdue tasks first
+    process_overdue_tasks();
+
+    $today = substr(now_iso(), 0, 10);
+
+    $stmt = $db->prepare("
+        SELECT t.*, c.name AS contact_name, c.organization AS contact_org, c.pipeline_stage AS contact_stage
+        FROM crm_tasks t
+        LEFT JOIN crm_contacts c ON t.contact_id = c.id
+        WHERE (t.due_date LIKE :today OR t.status = 'overdue')
+          AND t.status != 'done'
+        ORDER BY t.status DESC, t.due_date ASC
+    ");
+    $stmt->execute([':today' => $today . '%']);
+    $tasks = $stmt->fetchAll();
+
+    // Define categories
+    $categories = [
+        'overdue'       => ['label' => 'Überfällig',     'color' => '#e53e3e', 'tasks' => []],
+        'quali'         => ['label' => 'Qualigespräche',  'color' => '#3182ce', 'tasks' => []],
+        'abschluss'     => ['label' => 'Abschlüsse',      'color' => '#38a169', 'tasks' => []],
+        'erstkontakt'   => ['label' => 'Erstkontakt',     'color' => '#d69e2e', 'tasks' => []],
+        'aktivierung'   => ['label' => 'Aktivierung',     'color' => '#805ad5', 'tasks' => []],
+        'sonstige'      => ['label' => 'Sonstige',        'color' => '#718096', 'tasks' => []],
+    ];
+
+    foreach ($tasks as $task) {
+        $title = strtolower($task['title'] ?? '');
+        if ($task['status'] === 'overdue') {
+            $categories['overdue']['tasks'][] = $task;
+        } elseif (strpos($title, 'qualigespräch') !== false || strpos($title, 'qualigespr') !== false) {
+            $categories['quali']['tasks'][] = $task;
+        } elseif (strpos($title, 'abschluss') !== false || strpos($title, 'abschlussgespräch') !== false || strpos($title, 'abschlussgespr') !== false) {
+            $categories['abschluss']['tasks'][] = $task;
+        } elseif (strpos($title, 'kontaktieren') !== false || strpos($title, 'anrufen') !== false) {
+            $categories['erstkontakt']['tasks'][] = $task;
+        } elseif (strpos($title, 'onboarding') !== false || strpos($title, 'wiedervorlage') !== false) {
+            $categories['aktivierung']['tasks'][] = $task;
+        } else {
+            $categories['sonstige']['tasks'][] = $task;
+        }
+    }
+
+    // Build response array
+    $result = [];
+    foreach ($categories as $key => $cat) {
+        $result[] = [
+            'key'   => $key,
+            'label' => $cat['label'],
+            'color' => $cat['color'],
+            'tasks' => $cat['tasks'],
+        ];
+    }
+
+    json_response(['categories' => $result]);
+}
+
+function handle_list_crm_tasks(): void
+{
+    $db = get_db();
+
+    $where = ['1=1'];
+    $params = [];
+
+    if (!empty($_GET['status'])) {
+        $where[] = "t.status = :status";
+        $params[':status'] = $_GET['status'];
+    }
+    if (!empty($_GET['contact_id'])) {
+        $where[] = "t.contact_id = :cid";
+        $params[':cid'] = $_GET['contact_id'];
+    }
+    if (!empty($_GET['overdue'])) {
+        process_overdue_tasks();
+        $where[] = "t.status = 'overdue'";
+    }
+
+    $whereStr = implode(' AND ', $where);
+
+    $stmt = $db->prepare("
+        SELECT t.*, c.name AS contact_name, c.organization AS contact_org
+        FROM crm_tasks t
+        LEFT JOIN crm_contacts c ON t.contact_id = c.id
+        WHERE {$whereStr}
+        ORDER BY t.due_date ASC
+    ");
+    $stmt->execute($params);
+    $tasks = $stmt->fetchAll();
+
+    json_response(['tasks' => $tasks, 'total' => count($tasks)]);
+}
+
+function handle_create_crm_task(): void
+{
+    $body = get_json_body();
+
+    if (empty($body['contact_id'] ?? '') || empty(trim($body['title'] ?? '')) || empty($body['due_date'] ?? '')) {
+        json_error('contact_id, title und due_date sind erforderlich', 400);
+    }
+
+    $db  = get_db();
+    $id  = generate_uuid();
+    $now = now_iso();
+
+    $db->prepare("
+        INSERT INTO crm_tasks (id, contact_id, title, description, due_date, status, type, created_by, created_at)
+        VALUES (:id, :cid, :title, :desc, :due, 'pending', 'manual', :created_by, :at)
+    ")->execute([
+        ':id'         => $id,
+        ':cid'        => $body['contact_id'],
+        ':title'      => trim($body['title']),
+        ':desc'       => trim($body['description'] ?? ''),
+        ':due'        => $body['due_date'],
+        ':created_by' => $_SESSION['user_id'] ?? 'system',
+        ':at'         => $now,
+    ]);
+
+    crm_log_activity($body['contact_id'], 'task_created', [
+        'task_id'  => $id,
+        'title'    => trim($body['title']),
+        'due_date' => $body['due_date'],
+    ]);
+
+    json_success('Aufgabe erstellt', ['id' => $id]);
+}
+
+function handle_update_crm_task(string $taskId): void
+{
+    $body = get_json_body();
+    $db   = get_db();
+
+    $existing = $db->prepare("SELECT id, contact_id, status FROM crm_tasks WHERE id = :id");
+    $existing->execute([':id' => $taskId]);
+    $task = $existing->fetch();
+    if (!$task) {
+        json_error('Aufgabe nicht gefunden', 404);
+    }
+
+    $fields = [];
+    $params = [':id' => $taskId];
+    $changes = [];
+
+    if (isset($body['status'])) {
+        $fields[] = "status = :status";
+        $params[':status'] = $body['status'];
+        $changes['status'] = $body['status'];
+
+        if ($body['status'] === 'done') {
+            $fields[] = "completed_at = :completed_at";
+            $params[':completed_at'] = now_iso();
+        }
+    }
+    if (isset($body['due_date'])) {
+        $fields[] = "due_date = :due_date";
+        $params[':due_date'] = $body['due_date'];
+        $changes['due_date'] = $body['due_date'];
+    }
+
+    if (empty($fields)) {
+        json_error('Keine Felder zum Aktualisieren', 400);
+    }
+
+    $setStr = implode(', ', $fields);
+    $db->prepare("UPDATE crm_tasks SET {$setStr} WHERE id = :id")->execute($params);
+
+    crm_log_activity($task['contact_id'], 'task_updated', array_merge(['task_id' => $taskId], $changes));
+
+    json_success('Aufgabe aktualisiert');
+}
+
+// ---- Activity Log ----
+
+function handle_crm_activity_log(string $contactId): void
+{
+    $db = get_db();
+
+    $stmt = $db->prepare("
+        SELECT * FROM crm_activity_log
+        WHERE contact_id = :cid
+        ORDER BY created_at DESC
+    ");
+    $stmt->execute([':cid' => $contactId]);
+
+    json_response(['activities' => $stmt->fetchAll()]);
+}
+
+// ---- Partners ----
+
+function handle_crm_partners(): void
+{
+    $db = get_db();
+
+    $stmt = $db->prepare("
+        SELECT * FROM crm_contacts
+        WHERE is_partner = 1 AND first_real_order_at IS NULL
+        ORDER BY updated_at DESC
+    ");
+    $stmt->execute();
+    $partners = $stmt->fetchAll();
+
+    // Group by activation stage based on timestamps
+    $stages = [
+        'registered'  => ['label' => 'Registriert',       'partners' => []],
+        'verified'    => ['label' => 'Verifiziert',        'partners' => []],
+        'test_order'  => ['label' => 'Testauftrag',        'partners' => []],
+        'pending'     => ['label' => 'Noch nicht gestartet', 'partners' => []],
+    ];
+
+    foreach ($partners as $p) {
+        $p['deal_value'] = (float)($p['deal_value'] ?? 0);
+        $p['ga_count'] = (int)($p['ga_count'] ?? 0);
+        $p['is_partner'] = (int)($p['is_partner'] ?? 0);
+
+        if (!empty($p['test_order_at'])) {
+            $stages['test_order']['partners'][] = $p;
+        } elseif (!empty($p['verified_at'])) {
+            $stages['verified']['partners'][] = $p;
+        } elseif (!empty($p['registered_at'])) {
+            $stages['registered']['partners'][] = $p;
+        } else {
+            $stages['pending']['partners'][] = $p;
+        }
+    }
+
+    $result = [];
+    foreach ($stages as $key => $stage) {
+        $result[] = [
+            'key'      => $key,
+            'label'    => $stage['label'],
+            'partners' => $stage['partners'],
+        ];
+    }
+
+    json_response(['stages' => $result]);
+}
+
+function handle_update_crm_partner(string $partnerId): void
+{
+    $body = get_json_body();
+    $db   = get_db();
+
+    $existing = $db->prepare("SELECT id FROM crm_contacts WHERE id = :id");
+    $existing->execute([':id' => $partnerId]);
+    if (!$existing->fetch()) {
+        json_error('Partner nicht gefunden', 404);
+    }
+
+    $fields = [];
+    $params = [':id' => $partnerId, ':now' => now_iso()];
+    $changes = [];
+
+    $timestampFields = ['registered_at', 'verified_at', 'test_order_at', 'first_real_order_at'];
+    foreach ($timestampFields as $f) {
+        if (isset($body[$f])) {
+            $fields[] = "{$f} = :{$f}";
+            $params[":{$f}"] = $body[$f];
+            $changes[$f] = $body[$f];
+        }
+    }
+
+    if (empty($fields)) {
+        json_error('Keine Felder zum Aktualisieren', 400);
+    }
+
+    $fields[] = "updated_at = :now";
+    $setStr = implode(', ', $fields);
+
+    $db->prepare("UPDATE crm_contacts SET {$setStr} WHERE id = :id")->execute($params);
+
+    crm_log_activity($partnerId, 'partner_updated', $changes);
+
+    json_success('Partner aktualisiert');
+}
+
+// ---- Orders ----
+
+function handle_list_crm_orders(): void
+{
+    $db = get_db();
+
+    $where = ['1=1'];
+    $params = [];
+
+    if (!empty($_GET['partner_id'])) {
+        $where[] = "o.partner_id = :pid";
+        $params[':pid'] = $_GET['partner_id'];
+    }
+    if (!empty($_GET['type'])) {
+        $where[] = "o.type = :type";
+        $params[':type'] = $_GET['type'];
+    }
+
+    $whereStr = implode(' AND ', $where);
+
+    $stmt = $db->prepare("
+        SELECT o.*, c.name AS partner_name, c.organization AS partner_org
+        FROM crm_orders o
+        LEFT JOIN crm_contacts c ON o.partner_id = c.id
+        WHERE {$whereStr}
+        ORDER BY o.created_at DESC
+    ");
+    $stmt->execute($params);
+    $orders = $stmt->fetchAll();
+
+    json_response(['orders' => $orders, 'total' => count($orders)]);
+}
+
+function handle_create_crm_order(): void
+{
+    $body = get_json_body();
+
+    if (empty($body['partner_id'] ?? '')) {
+        json_error('partner_id ist erforderlich', 400);
+    }
+
+    $db  = get_db();
+    $id  = generate_uuid();
+    $now = now_iso();
+
+    $type = trim($body['type'] ?? 'test');
+
+    $db->prepare("
+        INSERT INTO crm_orders (id, partner_id, type, submitted_at, status, result, created_by, created_at)
+        VALUES (:id, :pid, :type, :submitted, :status, :result, :created_by, :at)
+    ")->execute([
+        ':id'         => $id,
+        ':pid'        => $body['partner_id'],
+        ':type'       => $type,
+        ':submitted'  => $body['submitted_at'] ?? $now,
+        ':status'     => trim($body['status'] ?? 'pending'),
+        ':result'     => trim($body['result'] ?? ''),
+        ':created_by' => $_SESSION['user_id'] ?? 'system',
+        ':at'         => $now,
+    ]);
+
+    // If type = 'real' and first real order for this partner: set first_real_order_at
+    if ($type === 'real') {
+        $check = $db->prepare("SELECT first_real_order_at FROM crm_contacts WHERE id = :pid");
+        $check->execute([':pid' => $body['partner_id']]);
+        $existingDate = $check->fetchColumn();
+        if (empty($existingDate)) {
+            $db->prepare("UPDATE crm_contacts SET first_real_order_at = :at, updated_at = :now WHERE id = :pid")
+               ->execute([':at' => $body['submitted_at'] ?? $now, ':now' => $now, ':pid' => $body['partner_id']]);
+        }
+    }
+
+    crm_log_activity($body['partner_id'], 'order_created', [
+        'order_id' => $id,
+        'type'     => $type,
+        'status'   => trim($body['status'] ?? 'pending'),
+    ]);
+
+    json_success('Auftrag erstellt', ['id' => $id]);
+}
+
+// ---- Reminders (Cortex trigger) ----
+
+function handle_crm_process_reminders(): void
+{
+    // Auth via token
+    $token = $_GET['token'] ?? '';
+    if ($token !== 'dgd-cortex-reminder-2026') {
+        json_error('Unauthorized', 401);
+    }
+
+    $db = get_db();
+
+    // Process overdue tasks
+    process_overdue_tasks();
+
+    $processed = 0;
+    $remindersCreated = 0;
+
+    // For partners (is_partner=1, first_real_order_at IS NULL): check if they have pending tasks
+    $stmt = $db->prepare("
+        SELECT c.id, c.name FROM crm_contacts c
+        WHERE c.is_partner = 1 AND c.first_real_order_at IS NULL
+    ");
+    $stmt->execute();
+    $partners = $stmt->fetchAll();
+
+    foreach ($partners as $partner) {
+        $processed++;
+
+        // Check if partner has any pending/overdue tasks
+        $taskCheck = $db->prepare("
+            SELECT COUNT(*) FROM crm_tasks
+            WHERE contact_id = :cid AND status IN ('pending', 'overdue')
+        ");
+        $taskCheck->execute([':cid' => $partner['id']]);
+        $pendingCount = (int)$taskCheck->fetchColumn();
+
+        if ($pendingCount === 0) {
+            // Create a recurring reminder
+            $now = new DateTime();
+            crm_create_auto_task(
+                $partner['id'],
+                'Aktivierung nachfassen: ' . $partner['name'],
+                (clone $now)->modify('+1 day')->format('Y-m-d'),
+                'Automatischer Reminder: Partner hat keine offenen Aufgaben.'
+            );
+            $remindersCreated++;
+        }
+    }
+
+    json_response([
+        'processed'         => $processed,
+        'reminders_created' => $remindersCreated,
+    ]);
+}
+
+// ---- Reminder Config ----
+
+function handle_crm_reminder_config(): void
+{
+    $db = get_db();
+
+    $stmt = $db->query("SELECT * FROM crm_reminder_config ORDER BY stage");
+    $config = $stmt->fetchAll();
+
+    json_response(['config' => $config]);
+}
+
+function handle_update_reminder_config(string $stage): void
+{
+    $body = get_json_body();
+    $db   = get_db();
+
+    $fields = [];
+    $params = [':stage' => $stage];
+
+    if (isset($body['interval_days'])) {
+        $fields[] = "interval_days = :interval_days";
+        $params[':interval_days'] = (int)$body['interval_days'];
+    }
+    if (isset($body['auto_create'])) {
+        $fields[] = "auto_create = :auto_create";
+        $params[':auto_create'] = (int)$body['auto_create'];
+    }
+
+    if (empty($fields)) {
+        json_error('Keine Felder zum Aktualisieren', 400);
+    }
+
+    $setStr = implode(', ', $fields);
+    $stmt = $db->prepare("UPDATE crm_reminder_config SET {$setStr} WHERE stage = :stage");
+    $stmt->execute($params);
+
+    if ($stmt->rowCount() === 0) {
+        json_error('Stage nicht gefunden', 404);
+    }
+
+    json_success('Reminder-Konfiguration aktualisiert');
+}
+
 // ---- Stats & Pipeline ----
 
 function handle_crm_stats(): void
@@ -396,21 +1088,30 @@ function handle_crm_stats(): void
         WHERE next_followup IS NOT NULL AND next_followup < datetime('now') AND pipeline_stage NOT IN ('gewonnen','verloren')
     ")->fetchColumn();
 
+    // New stats: overdue tasks, today's tasks, partners in activation
+    $today = substr(now_iso(), 0, 10);
+    $overdueTasks = (int) $db->query("SELECT COUNT(*) FROM crm_tasks WHERE status = 'overdue' OR (status = 'pending' AND due_date < '{$today}')")->fetchColumn();
+    $todayTasks = (int) $db->query("SELECT COUNT(*) FROM crm_tasks WHERE due_date LIKE '{$today}%' AND status != 'done'")->fetchColumn();
+    $partnersInActivation = (int) $db->query("SELECT COUNT(*) FROM crm_contacts WHERE is_partner = 1 AND first_real_order_at IS NULL")->fetchColumn();
+
     $stageMap = [];
     foreach ($byStage as $s) {
         $stageMap[$s['pipeline_stage']] = (int) $s['count'];
     }
 
     json_response([
-        'total_contacts'  => $total,
-        'contacts_by_stage' => $stageMap,
-        'open_deals'      => $totalDeals,
-        'pipeline_value'  => $pipelineValue,
-        'won_value'       => $wonValue,
-        'won_count'       => $wonCount,
-        'lost_count'      => $lostCount,
-        'conversion_rate' => $conversionRate,
-        'overdue_followups' => $overdueCount,
+        'total_contacts'        => $total,
+        'contacts_by_stage'     => $stageMap,
+        'open_deals'            => $totalDeals,
+        'pipeline_value'        => $pipelineValue,
+        'won_value'             => $wonValue,
+        'won_count'             => $wonCount,
+        'lost_count'            => $lostCount,
+        'conversion_rate'       => $conversionRate,
+        'overdue_followups'     => $overdueCount,
+        'overdue_tasks'         => $overdueTasks,
+        'today_tasks'           => $todayTasks,
+        'partners_in_activation' => $partnersInActivation,
     ]);
 }
 
@@ -418,32 +1119,31 @@ function handle_crm_pipeline(): void
 {
     $db = get_db();
 
-    $stages = ['lead', 'kontakt', 'registriert', 'verifiziert', 'geprueft', 'aktiviert', 'plan_b', 'reaktivieren', 'verloren'];
+    $stages = ['neu', 'nicht_erreicht', 'quali_terminiert', 'no_show_quali', 'quali_gefuehrt', 'abschluss_terminiert', 'no_show_abschluss', 'abschluss_gefuehrt', 'entscheidung', 'gewonnen', 'verloren', 'stillgelegt'];
     $pipeline = [];
 
     foreach ($stages as $stage) {
         $stmt = $db->prepare("
-            SELECT d.*, c.name AS contact_name, c.organization AS contact_org
-            FROM crm_deals d
-            LEFT JOIN crm_contacts c ON d.contact_id = c.id
-            WHERE d.stage = :stage
-            ORDER BY d.updated_at DESC
+            SELECT * FROM crm_contacts
+            WHERE pipeline_stage = :stage
+            ORDER BY updated_at DESC
         ");
         $stmt->execute([':stage' => $stage]);
-        $deals = $stmt->fetchAll();
+        $contacts = $stmt->fetchAll();
 
-        foreach ($deals as &$d) {
-            $d['value'] = (float)($d['value'] ?? 0);
-            $d['probability'] = (int)($d['probability'] ?? 10);
+        foreach ($contacts as &$c) {
+            $c['deal_value'] = (float)($c['deal_value'] ?? 0);
+            $c['ga_count'] = (int)($c['ga_count'] ?? 0);
+            $c['is_partner'] = (int)($c['is_partner'] ?? 0);
         }
 
-        $total = array_sum(array_column($deals, 'value'));
+        $totalValue = array_sum(array_column($contacts, 'deal_value'));
 
         $pipeline[] = [
-            'stage' => $stage,
-            'deals' => $deals,
-            'count' => count($deals),
-            'total_value' => $total,
+            'stage'       => $stage,
+            'contacts'    => $contacts,
+            'count'       => count($contacts),
+            'total_value' => $totalValue,
         ];
     }
 
@@ -472,19 +1172,18 @@ function handle_crm_import_trello(): void
         }
     }
 
-    // Stage mapping: Trello list name keywords -> CRM stages
+    // Stage mapping: Trello list name keywords -> CRM stages (updated to new stages)
     $stageMapping = $body['stage_mapping'] ?? [];
     if (empty($stageMapping)) {
         $stageMapping = [
-            'lead'         => ['lead', 'leads', 'neue leads', 'new', 'neu', 'eingang', 'backlog', 'zukunft', 'adyoucate'],
-            'kontakt'      => ['anrufen', 'wiedervorlage', 'wv', 'setting', 'kontakt', 'kontaktiert', 'vor-ort'],
-            'registriert'  => ['registriert'],
-            'verifiziert'  => ['verifiziert'],
-            'geprueft'     => ['geprueft', 'geprüft', 'mustergutachten'],
-            'aktiviert'    => ['aktiviert', ' ga'],
-            'plan_b'       => ['plan b'],
-            'reaktivieren' => ['reaktivieren'],
-            'verloren'     => ['verloren', 'lost', 'ungeeignet', 'abgelehnt', 'kein interesse'],
+            'neu'                  => ['lead', 'leads', 'neue leads', 'new', 'neu', 'eingang', 'backlog', 'zukunft', 'adyoucate'],
+            'nicht_erreicht'       => ['anrufen', 'wiedervorlage', 'wv', 'setting', 'kontakt', 'kontaktiert', 'vor-ort'],
+            'quali_terminiert'     => ['registriert', 'quali'],
+            'quali_gefuehrt'       => ['verifiziert', 'geprueft', 'geprüft', 'mustergutachten'],
+            'abschluss_terminiert' => ['abschluss'],
+            'gewonnen'             => ['aktiviert', ' ga'],
+            'stillgelegt'          => ['plan b', 'reaktivieren'],
+            'verloren'             => ['verloren', 'lost', 'ungeeignet', 'abgelehnt', 'kein interesse'],
         ];
     }
 
@@ -595,7 +1294,7 @@ function handle_crm_import_trello(): void
         // Determine stage from list name
         $listName = $listMap[$card['idList'] ?? ''] ?? '';
         $listNameLower = strtolower($listName);
-        $stage = 'lead';
+        $stage = 'neu';
         foreach ($stageMapping as $stageKey => $keywords) {
             foreach ($keywords as $kw) {
                 if (strpos($listNameLower, strtolower($kw)) !== false) {
@@ -609,7 +1308,7 @@ function handle_crm_import_trello(): void
         $gaCount = 0;
         if (preg_match($gaPattern, $listName, $gaMatch)) {
             $gaCount = (int)$gaMatch[1];
-            if ($stage === 'lead') $stage = 'aktiviert'; // GA lists = aktiviert
+            if ($stage === 'neu') $stage = 'gewonnen'; // GA lists = gewonnen (active partners)
         }
 
         // Labels -> tags

@@ -129,6 +129,7 @@ $routes = [
     ['POST',   '#/api/crm/cleanup-dupes$#',                        'handle_crm_cleanup_dupes',       'admin'],
     ['POST',   '#/api/crm/interactions$#',                         'handle_create_crm_interaction',  'auth'],
     ['GET',    "#/api/crm/contacts/({$UUID})/interactions$#i",     'handle_crm_contact_interactions', 'auth'],
+    ['GET',    "#/api/crm/contacts/({$UUID})/activity$#i",         'handle_crm_activity_log',        'auth'],
     ['GET',    '#/api/crm/contacts$#',                             'handle_list_crm_contacts',       'auth'],
     ['POST',   '#/api/crm/contacts$#',                             'handle_create_crm_contact',      'auth'],
     ['PUT',    "#/api/crm/contacts/({$UUID})$#i",                  'handle_update_crm_contact',      'auth'],
@@ -137,6 +138,22 @@ $routes = [
     ['POST',   '#/api/crm/deals$#',                                'handle_create_crm_deal',         'auth'],
     ['PUT',    "#/api/crm/deals/({$UUID})$#i",                     'handle_update_crm_deal',         'auth'],
     ['DELETE', "#/api/crm/deals/({$UUID})$#i",                     'handle_delete_crm_deal',         'auth'],
+    // CRM Tasks
+    ['GET',    '#/api/crm/tasks/today$#',                          'handle_crm_tasks_today',         'auth'],
+    ['GET',    '#/api/crm/tasks$#',                                'handle_list_crm_tasks',          'auth'],
+    ['POST',   '#/api/crm/tasks$#',                                'handle_create_crm_task',         'auth'],
+    ['PUT',    "#/api/crm/tasks/({$UUID})$#i",                     'handle_update_crm_task',         'auth'],
+    // CRM Partners (activation dashboard)
+    ['GET',    '#/api/crm/partners$#',                             'handle_crm_partners',            'auth'],
+    ['PUT',    "#/api/crm/partners/({$UUID})$#i",                  'handle_update_crm_partner',      'auth'],
+    // CRM Orders
+    ['GET',    '#/api/crm/orders$#',                               'handle_list_crm_orders',         'auth'],
+    ['POST',   '#/api/crm/orders$#',                               'handle_create_crm_order',        'auth'],
+    // CRM Reminders (external trigger by Cortex)
+    ['GET',    '#/api/crm/process-reminders$#',                    'handle_crm_process_reminders',   'none'],
+    // CRM Reminder Config
+    ['GET',    '#/api/crm/reminder-config$#',                      'handle_crm_reminder_config',     'admin'],
+    ['PUT',    '#/api/crm/reminder-config/([a-z_]+)$#',            'handle_update_reminder_config',  'admin'],
 
     // Admin
     ['GET',  '#/api/admin/users$#',            'handle_list_users',          'admin'],
