@@ -811,11 +811,22 @@ const ShowcaseBuilder = (() => {
 
         const parent = strip.parentElement;
         const maxH = parent.clientHeight - 40;
+        const gap = 12;
+        const padding = 40; // 20px padding each side
 
-        // Each slide: height fills container, width from 9:16 ratio
-        const ratio = DW / DH;
-        const h = Math.max(200, maxH);
-        const w = h * ratio;
+        // Calculate slide width so all 6 fit horizontally
+        const availableWidth = parent.clientWidth - (5 * gap) - padding;
+        let w = Math.floor(availableWidth / 6);
+        let h = w * (DH / DW); // 16:9 portrait ratio
+
+        // Clamp height to container
+        if (h > maxH) {
+            h = maxH;
+            w = Math.floor(h * (DW / DH));
+        }
+
+        w = Math.max(80, w);
+        h = Math.max(142, h);
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
