@@ -854,10 +854,7 @@ const ShowcaseBuilder = (() => {
 
         const parent = strip.parentElement;
         const availableWidth = parent.clientWidth;
-        // Use offsetHeight for reliable height (clientHeight can be 0 in flex)
-        const maxH = (parent.offsetHeight || parent.getBoundingClientRect().height) - 24;
-
-        console.log('[ShowcaseBuilder] resize:', { parentW: availableWidth, parentH: maxH, parentEl: parent.className });
+        const maxH = parent.getBoundingClientRect().height - 24;
 
         // Height-first: maximize slide height, derive width from aspect ratio
         let h = Math.max(maxH, 200); // at least 200px

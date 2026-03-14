@@ -7,7 +7,7 @@
 .showcase-builder {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - var(--dgd-header-height));
+    height: 100%;
     background: var(--dgd-gray-50);
     overflow: hidden;
 }
@@ -43,6 +43,7 @@
     display: flex;
     flex: 1;
     overflow: hidden;
+    min-height: 0; /* critical: allows flex children to shrink below content size */
 }
 
 /* ---- Canvas Area: All 6 Slides Side by Side ---- */
@@ -54,8 +55,8 @@
     justify-content: center;
     overflow: hidden;
     background: var(--dgd-gray-100);
+    position: relative;   /* for progress overlay */
     min-height: 0;        /* allow flex shrink */
-    align-self: stretch;  /* fill parent height */
 }
 
 .showcase-canvas__strip {
@@ -485,12 +486,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-}
-
-/* ---- Canvas relative for overlay ---- */
-
-.showcase-canvas {
-    position: relative;
 }
 
 /* ---- Export Bar (Bottom) ---- */
