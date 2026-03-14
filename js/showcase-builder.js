@@ -810,16 +810,14 @@ const ShowcaseBuilder = (() => {
         if (!strip) return;
 
         const parent = strip.parentElement;
-        const maxH = parent.clientHeight - 40;
-        const gap = 12;
-        const padding = 40; // 20px padding each side
+        const maxH = parent.clientHeight - 24; // subtract strip padding (12px top+bottom)
+        const availableWidth = parent.clientWidth;
 
-        // Calculate slide width so all 6 fit horizontally
-        const availableWidth = parent.clientWidth - (5 * gap) - padding;
+        // Calculate slide width so all 6 fit side-by-side as one panorama
         let w = Math.floor(availableWidth / 6);
-        let h = w * (DH / DW); // 16:9 portrait ratio
+        let h = Math.floor(w * (DH / DW));
 
-        // Clamp height to container
+        // If height exceeds container, scale down from height
         if (h > maxH) {
             h = maxH;
             w = Math.floor(h * (DW / DH));
