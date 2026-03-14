@@ -23,6 +23,9 @@ const ShowcaseBuilder = (() => {
     let previewScale = 1;     // Scale from design -> preview pixels
     let screenshotImages = {}; // Cache: elementId -> HTMLImageElement
     let container = null;     // Root DOM element
+    let panoramaCanvas = null; // Panorama background canvas (6480x1920)
+    let panoramaImage = null;  // AI-generated panorama Image element
+    let isGenerating = false;  // Lock during auto-generation
 
     // =========================================================================
     // Project Management
@@ -106,7 +109,7 @@ const ShowcaseBuilder = (() => {
             const canvas = slideCanvases[i];
             const ctx = slideCtxs[i];
             if (!canvas || !ctx || !project.slides[i]) continue;
-            _renderSlide(ctx, project.slides[i], canvas.width, canvas.height);
+            _renderSlide(ctx, project.slides[i], canvas.width, canvas.height, i);
         }
 
         // Selection overlay only on active slide
@@ -114,7 +117,7 @@ const ShowcaseBuilder = (() => {
         if (activeCtx) _renderSelection(activeCtx);
     }
 
-    function _renderSlide(ctx, slide, canvasW, canvasH) {
+    function _renderSlide(ctx, slide, canvasW, canvasH, slideIndex) {
         const scaleX = canvasW / DW;
         const scaleY = canvasH / DH;
         const scale = Math.min(scaleX, scaleY);
@@ -122,11 +125,18 @@ const ShowcaseBuilder = (() => {
         ctx.clearRect(0, 0, canvasW, canvasH);
 
         ctx.save();
-        // Don't scale - render at canvas resolution
-        // Elements store coordinates in design space, we scale them
 
-        // Background
-        _drawBackground(ctx, slide.background, canvasW, canvasH);
+        // Background: Panorama if available, otherwise template background
+        const pano = panoramaImage || panoramaCanvas;
+        if (pano && typeof slideIndex === 'number') {
+            if (typeof ShowcasePanorama !== 'undefined') {
+                ShowcasePanorama.drawSlideBackground(ctx, pano, slideIndex, canvasW, canvasH);
+            } else {
+                _drawBackground(ctx, slide.background, canvasW, canvasH);
+            }
+        } else {
+            _drawBackground(ctx, slide.background, canvasW, canvasH);
+        }
 
         // Elements (draw in order)
         for (const el of slide.elements) {
@@ -593,7 +603,7 @@ const ShowcaseBuilder = (() => {
         offCanvas.height = size.height;
         const offCtx = offCanvas.getContext('2d');
 
-        _renderSlide(offCtx, project.slides[slideIndex], size.width, size.height);
+        _renderSlide(offCtx, project.slides[slideIndex], size.width, size.height, slideIndex);
 
         offCanvas.toBlob((blob) => {
             if (!blob) return;
@@ -681,9 +691,13 @@ const ShowcaseBuilder = (() => {
                 </div>
                 <div class="showcase-builder__toolbar-spacer"></div>
                 <div class="showcase-builder__toolbar-group">
+                    <button class="showcase-btn showcase-btn--accent" id="sc-auto-generate" title="Komplettes Showcase automatisch generieren">
+                        \u2728 Auto-Generate
+                    </button>
                     <button class="showcase-btn showcase-btn--cortex" id="sc-cortex-gen" title="KI-Texte generieren">
                         \uD83E\uDD16 Cortex Texte
                     </button>
+                    <button class="showcase-btn" id="sc-api-settings" title="OpenAI API Key">\u2699\uFE0F</button>
                     <button class="showcase-btn" id="sc-new-project" title="Neues Projekt">\u2795 Neu</button>
                 </div>
             </div>
@@ -692,6 +706,17 @@ const ShowcaseBuilder = (() => {
             <div class="showcase-builder__body">
                 <!-- Center: All 6 Slides Side by Side -->
                 <div class="showcase-canvas">
+                    <!-- Progress Overlay -->
+                    <div class="showcase-progress" id="sc-progress" style="display:none;">
+                        <div class="showcase-progress__content">
+                            <div class="showcase-progress__spinner"></div>
+                            <div class="showcase-progress__text" id="sc-progress-text">Generiere...</div>
+                            <div class="showcase-progress__bar-wrap">
+                                <div class="showcase-progress__bar" id="sc-progress-bar" style="width:0%"></div>
+                            </div>
+                            <div class="showcase-progress__step" id="sc-progress-step">Step 1/4</div>
+                        </div>
+                    </div>
                     <div class="showcase-canvas__strip" id="sc-canvas-strip">
                         ${_buildSlideCanvases()}
                     </div>
@@ -758,6 +783,24 @@ const ShowcaseBuilder = (() => {
                             Bild hochladen oder hierher ziehen
                             <input type="file" accept="image/*" id="sc-upload-input" style="display:none;">
                         </label>
+                    </div>
+
+                    <!-- AI Feedback -->
+                    <div class="showcase-props__section">
+                        <h3>\uD83D\uDCAC Feedback</h3>
+                        <div class="showcase-feedback">
+                            <div class="showcase-feedback__chips">
+                                <button class="showcase-btn showcase-btn--sm" data-feedback="Heller und freundlicher">Heller</button>
+                                <button class="showcase-btn showcase-btn--sm" data-feedback="Dunkler und serioeser">Dunkler</button>
+                                <button class="showcase-btn showcase-btn--sm" data-feedback="Professioneller und business-tauglich">Pro</button>
+                                <button class="showcase-btn showcase-btn--sm" data-feedback="Moderner und trendiger">Modern</button>
+                            </div>
+                            <textarea id="sc-feedback-text" rows="2" placeholder="z.B. 'Slide 3 braucht mehr Kontrast...'" style="width:100%;margin-top:6px;padding:8px;border:1px solid var(--dgd-gray-300);border-radius:6px;font-family:Inter,sans-serif;font-size:12px;resize:vertical;"></textarea>
+                            <button class="showcase-btn showcase-btn--cortex showcase-btn--sm" id="sc-feedback-send" style="margin-top:4px;width:100%;">
+                                \uD83E\uDD16 Feedback senden
+                            </button>
+                            <div id="sc-feedback-log" style="margin-top:6px;font-size:11px;color:var(--dgd-gray-500);max-height:80px;overflow-y:auto;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -932,6 +975,33 @@ const ShowcaseBuilder = (() => {
         if (cortexBtn) {
             cortexBtn.addEventListener('click', _onCortexGenerate);
         }
+
+        // Auto-Generate button
+        const autoGenBtn = document.getElementById('sc-auto-generate');
+        if (autoGenBtn) {
+            autoGenBtn.addEventListener('click', _onAutoGenerate);
+        }
+
+        // API Settings button
+        const apiBtn = document.getElementById('sc-api-settings');
+        if (apiBtn) {
+            apiBtn.addEventListener('click', _showApiKeyDialog);
+        }
+
+        // Feedback send button
+        const feedbackBtn = document.getElementById('sc-feedback-send');
+        if (feedbackBtn) {
+            feedbackBtn.addEventListener('click', _onFeedbackSend);
+        }
+
+        // Feedback quick-chips
+        container.querySelectorAll('[data-feedback]').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const textArea = document.getElementById('sc-feedback-text');
+                if (textArea) textArea.value = chip.dataset.feedback;
+                _onFeedbackSend();
+            });
+        });
 
         // New project button
         const newBtn = document.getElementById('sc-new-project');
@@ -1361,6 +1431,262 @@ const ShowcaseBuilder = (() => {
     }
 
     // =========================================================================
+    // Auto-Generate (One-Click Pipeline)
+    // =========================================================================
+
+    async function _onAutoGenerate() {
+        if (isGenerating) return;
+        if (!project) return;
+
+        const hasOrchestrator = typeof ShowcaseOrchestrator !== 'undefined';
+        if (!hasOrchestrator) {
+            alert('ShowcaseOrchestrator module not loaded.');
+            return;
+        }
+
+        isGenerating = true;
+        const btn = document.getElementById('sc-auto-generate');
+        if (btn) { btn.disabled = true; btn.textContent = '\u23F3 Generiere...'; }
+
+        // Show progress overlay
+        const progressEl = document.getElementById('sc-progress');
+        if (progressEl) progressEl.style.display = 'flex';
+
+        // Listen to progress events
+        ShowcaseOrchestrator.onProgress((info) => {
+            const textEl = document.getElementById('sc-progress-text');
+            const barEl = document.getElementById('sc-progress-bar');
+            const stepEl = document.getElementById('sc-progress-step');
+            if (textEl) textEl.textContent = info.message || 'Generiere...';
+            if (barEl) barEl.style.width = (info.percent || 0) + '%';
+            if (stepEl) stepEl.textContent = `Step ${info.step || 1}/${info.totalSteps || 4}`;
+        });
+
+        try {
+            const appName = project.appName || 'My App';
+            const features = document.getElementById('sc-app-name')?.value || appName;
+
+            const result = await ShowcaseOrchestrator.autoGenerate(appName, '', {});
+
+            if (result) {
+                // Apply generated brief to project
+                if (result.brief) {
+                    project.brandColors = {
+                        primary: result.brief.primaryColor || '#1a3a5c',
+                        accent: result.brief.accentColor || '#D4A843',
+                    };
+                }
+
+                // Apply panorama
+                if (result.panorama) {
+                    if (result.panorama instanceof HTMLCanvasElement) {
+                        panoramaCanvas = result.panorama;
+                    } else if (result.panorama instanceof HTMLImageElement) {
+                        panoramaImage = result.panorama;
+                    }
+                }
+
+                // Apply texts + templates to slides
+                if (result.slides && result.slides.length) {
+                    const templateOrder = ['hero', 'feature', 'split', 'fullscreen', 'feature', 'comparison'];
+                    for (let i = 0; i < Math.min(result.slides.length, 6); i++) {
+                        const slideData = result.slides[i];
+                        const tplId = slideData.template || templateOrder[i];
+                        const tpl = ShowcaseTemplates.getTemplate(tplId);
+                        if (tpl) {
+                            project.slides[i].template = tpl.id;
+                            // Update background colors from brief
+                            if (result.brief) {
+                                project.slides[i].background = {
+                                    type: 'gradient',
+                                    from: result.brief.primaryColor || '#1a3a5c',
+                                    to: result.brief.accentColor || '#2c5282',
+                                    angle: 135 + i * 15,
+                                };
+                            }
+                            // Apply text content
+                            project.slides[i].elements = tpl.elements.map((el, idx) => {
+                                const newEl = { ...el, _id: `el_${i}_${idx}` };
+                                if (el.id === 'headline' && slideData.headline) newEl.content = slideData.headline;
+                                if (el.id === 'subline' && slideData.subline) newEl.content = slideData.subline;
+                                // Apply brand colors to text
+                                if (result.brief && el.type === 'text') {
+                                    if (el.id === 'headline') newEl.color = '#ffffff';
+                                    if (el.color === '#D4A843') newEl.color = result.brief.accentColor || '#D4A843';
+                                }
+                                return newEl;
+                            });
+                        }
+                    }
+                }
+
+                _saveProject();
+                _updateUI();
+                render();
+            }
+        } catch (err) {
+            console.error('[ShowcaseBuilder] Auto-generate error:', err);
+            const textEl = document.getElementById('sc-progress-text');
+            if (textEl) textEl.textContent = 'Fehler: ' + err.message;
+        }
+
+        // Hide progress after delay
+        setTimeout(() => {
+            if (progressEl) progressEl.style.display = 'none';
+        }, 800);
+
+        isGenerating = false;
+        if (btn) { btn.disabled = false; btn.textContent = '\u2728 Auto-Generate'; }
+    }
+
+    // =========================================================================
+    // Feedback System
+    // =========================================================================
+
+    async function _onFeedbackSend() {
+        const textArea = document.getElementById('sc-feedback-text');
+        const feedbackLog = document.getElementById('sc-feedback-log');
+        const btn = document.getElementById('sc-feedback-send');
+        if (!textArea || !textArea.value.trim() || !project) return;
+
+        const feedbackText = textArea.value.trim();
+        if (btn) { btn.disabled = true; btn.textContent = '\u23F3 Verarbeite...'; }
+
+        try {
+            if (typeof ShowcaseOrchestrator !== 'undefined') {
+                const changes = await ShowcaseOrchestrator.submitFeedback(feedbackText, project);
+                if (changes && changes.slides) {
+                    for (const slideChange of changes.slides) {
+                        const idx = slideChange.index;
+                        if (idx >= 0 && idx < project.slides.length) {
+                            const slide = project.slides[idx];
+                            if (slideChange.changes) {
+                                const c = slideChange.changes;
+                                if (c.headline) {
+                                    const el = slide.elements.find(e => e.id === 'headline');
+                                    if (el) el.content = c.headline;
+                                }
+                                if (c.subline) {
+                                    const el = slide.elements.find(e => e.id === 'subline');
+                                    if (el) el.content = c.subline;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (changes && changes.colors) {
+                    if (changes.colors.primary) {
+                        for (const slide of project.slides) {
+                            if (slide.background.type === 'gradient') {
+                                slide.background.from = changes.colors.primary;
+                            }
+                        }
+                    }
+                }
+                // Regenerate panorama with new colors if needed
+                if (changes && changes.colors && typeof ShowcasePanorama !== 'undefined') {
+                    const brief = {
+                        primaryColor: changes.colors.primary || project.brandColors.primary,
+                        accentColor: changes.colors.accent || project.brandColors.accent,
+                        mood: 'professional',
+                    };
+                    panoramaCanvas = ShowcasePanorama.generate(brief);
+                }
+
+                _saveProject();
+                _updateUI();
+                render();
+
+                if (feedbackLog) {
+                    feedbackLog.innerHTML += `<div style="margin-bottom:4px;">\u2713 <strong>${feedbackText}</strong> - angewendet</div>`;
+                    feedbackLog.scrollTop = feedbackLog.scrollHeight;
+                }
+            }
+        } catch (err) {
+            console.error('[ShowcaseBuilder] Feedback error:', err);
+            if (feedbackLog) {
+                feedbackLog.innerHTML += `<div style="color:var(--dgd-danger);">\u2717 Fehler: ${err.message}</div>`;
+            }
+        }
+
+        textArea.value = '';
+        if (btn) { btn.disabled = false; btn.textContent = '\uD83E\uDD16 Feedback senden'; }
+    }
+
+    // =========================================================================
+    // API Key Dialog
+    // =========================================================================
+
+    function _showApiKeyDialog() {
+        const currentKey = typeof ShowcaseOrchestrator !== 'undefined'
+            ? ShowcaseOrchestrator.getApiKey() || '' : localStorage.getItem('showcase_openai_key') || '';
+        const masked = currentKey ? currentKey.slice(0, 7) + '...' + currentKey.slice(-4) : '';
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        overlay.innerHTML = `
+            <div style="background:#fff;border-radius:12px;padding:32px;max-width:450px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <h3 style="margin:0 0 8px;color:#1a3a5c;">\u2699\uFE0F OpenAI API Key</h3>
+                <p style="margin:0 0 4px;color:#6c757d;font-size:13px;">Fuer AI-Bildgenerierung (DALL-E 3) und intelligente Texte (GPT-4o-mini).</p>
+                <p style="margin:0 0 16px;color:#6c757d;font-size:12px;">${masked ? 'Aktuell: ' + masked : 'Noch kein Key gespeichert.'}</p>
+                <input type="password" id="sc-api-key-input" value="${currentKey}"
+                    style="width:100%;padding:10px 14px;border:2px solid #dee2e6;border-radius:8px;font-size:14px;font-family:monospace;outline:none;"
+                    placeholder="sk-...">
+                <p style="margin:8px 0 0;font-size:11px;color:#aaa;">Wird lokal im Browser gespeichert. Nie an Server gesendet.</p>
+                <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+                    <button id="sc-api-cancel" class="showcase-btn">Abbrechen</button>
+                    <button id="sc-api-clear" class="showcase-btn" style="color:var(--dgd-danger);">Loeschen</button>
+                    <button id="sc-api-save" class="showcase-btn showcase-btn--primary">Speichern</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        const input = document.getElementById('sc-api-key-input');
+        input.focus();
+
+        document.getElementById('sc-api-save').addEventListener('click', () => {
+            const key = input.value.trim();
+            if (key) {
+                if (typeof ShowcaseOrchestrator !== 'undefined') {
+                    ShowcaseOrchestrator.setApiKey(key);
+                } else {
+                    localStorage.setItem('showcase_openai_key', key);
+                }
+            }
+            overlay.remove();
+        });
+        document.getElementById('sc-api-clear').addEventListener('click', () => {
+            if (typeof ShowcaseOrchestrator !== 'undefined') {
+                ShowcaseOrchestrator.setApiKey('');
+            }
+            localStorage.removeItem('showcase_openai_key');
+            overlay.remove();
+        });
+        document.getElementById('sc-api-cancel').addEventListener('click', () => overlay.remove());
+    }
+
+    // =========================================================================
+    // Panorama Management
+    // =========================================================================
+
+    function setPanorama(canvasOrImage) {
+        if (canvasOrImage instanceof HTMLCanvasElement) {
+            panoramaCanvas = canvasOrImage;
+            panoramaImage = null;
+        } else if (canvasOrImage instanceof HTMLImageElement) {
+            panoramaImage = canvasOrImage;
+            panoramaCanvas = null;
+        }
+        render();
+    }
+
+    function clearPanorama() {
+        panoramaCanvas = null;
+        panoramaImage = null;
+        render();
+    }
+
+    // =========================================================================
     // New Project Dialog
     // =========================================================================
 
@@ -1442,6 +1768,8 @@ const ShowcaseBuilder = (() => {
         exportSlide,
         exportAll,
         render,
+        setPanorama,
+        clearPanorama,
         get project() { return project; },
         get currentSlide() { return currentSlide; },
     };

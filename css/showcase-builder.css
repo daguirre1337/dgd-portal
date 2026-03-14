@@ -419,6 +419,80 @@
     margin-bottom: 4px;
 }
 
+/* ---- Progress Overlay ---- */
+
+.showcase-progress {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+}
+
+.showcase-progress__content {
+    text-align: center;
+    color: #fff;
+    max-width: 320px;
+    width: 90%;
+}
+
+.showcase-progress__spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top-color: var(--dgd-accent, #D4A843);
+    border-radius: 50%;
+    animation: sc-spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes sc-spin {
+    to { transform: rotate(360deg); }
+}
+
+.showcase-progress__text {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.showcase-progress__bar-wrap {
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.showcase-progress__bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--dgd-accent, #D4A843), #f0c040);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.showcase-progress__step {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+}
+
+/* ---- Feedback Panel ---- */
+
+.showcase-feedback__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* ---- Canvas relative for overlay ---- */
+
+.showcase-canvas {
+    position: relative;
+}
+
 /* ---- Export Bar (Bottom) ---- */
 
 .showcase-builder__export-bar {
