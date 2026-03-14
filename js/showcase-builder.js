@@ -810,17 +810,17 @@ const ShowcaseBuilder = (() => {
         if (!strip) return;
 
         const parent = strip.parentElement;
-        const maxH = parent.clientHeight - 24; // subtract strip padding (12px top+bottom)
+        const maxH = parent.clientHeight - 24; // subtract strip padding
         const availableWidth = parent.clientWidth;
 
-        // Calculate slide width so all 6 fit side-by-side as one panorama
-        let w = Math.floor(availableWidth / 6);
-        let h = Math.floor(w * (DH / DW));
+        // Height-first: maximize slide height, derive width from aspect ratio
+        let h = maxH;
+        let w = Math.floor(h * (DW / DH)); // DW/DH = 1080/1920 = 0.5625
 
-        // If height exceeds container, scale down from height
-        if (h > maxH) {
-            h = maxH;
-            w = Math.floor(h * (DW / DH));
+        // If 6 slides exceed available width, scale down from width
+        if (w * 6 > availableWidth) {
+            w = Math.floor(availableWidth / 6);
+            h = Math.floor(w * (DH / DW));
         }
 
         w = Math.max(80, w);
