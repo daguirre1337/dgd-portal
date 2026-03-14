@@ -2,7 +2,7 @@
    Showcase Builder - App Store / Play Store Screenshot Builder
    ========================================================================== */
 
-/* ---- Layout: 3-Column Editor ---- */
+/* ---- Layout: 2-Column Editor (6 Slides + Properties) ---- */
 
 .showcase-builder {
     display: flex;
@@ -45,102 +45,74 @@
     overflow: hidden;
 }
 
-/* ---- Slide Panel (Left) ---- */
-
-.showcase-slides {
-    width: 180px;
-    min-width: 180px;
-    background: var(--dgd-white);
-    border-right: 1px solid var(--dgd-gray-200);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    padding: var(--dgd-space-sm);
-    gap: var(--dgd-space-sm);
-}
-
-.showcase-slides__item {
-    position: relative;
-    border: 2px solid var(--dgd-gray-200);
-    border-radius: var(--dgd-radius-md);
-    cursor: pointer;
-    overflow: hidden;
-    transition: border-color var(--dgd-transition-fast);
-    aspect-ratio: 9 / 16;
-    background: var(--dgd-gray-100);
-}
-
-.showcase-slides__item:hover {
-    border-color: var(--dgd-secondary-light);
-}
-
-.showcase-slides__item--active {
-    border-color: var(--dgd-secondary);
-    box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.25);
-}
-
-.showcase-slides__item canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.showcase-slides__label {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    background: rgba(0,0,0,0.5);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 1px 6px;
-    border-radius: var(--dgd-radius-sm);
-}
-
-.showcase-slides__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--dgd-font-size-xs);
-    color: var(--dgd-gray-500);
-    text-align: center;
-    padding: var(--dgd-space-sm);
-    height: 100%;
-}
-
-/* ---- Canvas Area (Center) ---- */
+/* ---- Canvas Area: All 6 Slides Side by Side ---- */
 
 .showcase-canvas {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: auto;
-    padding: var(--dgd-space-lg);
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
     background:
         repeating-conic-gradient(var(--dgd-gray-200) 0% 25%, transparent 0% 50%)
         50% / 20px 20px;
 }
 
-.showcase-canvas__wrapper {
-    position: relative;
-    box-shadow: var(--dgd-shadow-lg);
-    border-radius: var(--dgd-radius-md);
-    overflow: hidden;
-    background: #fff;
+.showcase-canvas__strip {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 16px 20px;
+    min-width: min-content;
+    margin: 0 auto;
 }
 
-.showcase-canvas__wrapper canvas {
+.showcase-canvas__slide {
+    position: relative;
+    flex-shrink: 0;
+    border: 3px solid transparent;
+    border-radius: var(--dgd-radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+}
+
+.showcase-canvas__slide:hover {
+    border-color: rgba(41, 128, 185, 0.3);
+}
+
+.showcase-canvas__slide--active {
+    border-color: var(--dgd-secondary);
+    box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.25), 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.showcase-canvas__slide canvas {
     display: block;
     cursor: default;
 }
 
-.showcase-canvas__wrapper canvas.dragging {
+.showcase-canvas__slide--active canvas.dragging {
     cursor: grabbing;
 }
 
-.showcase-canvas__wrapper canvas.hovering {
+.showcase-canvas__slide--active canvas.hovering {
     cursor: grab;
+}
+
+.showcase-canvas__slide-label {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--dgd-radius-sm);
+    z-index: 2;
+    pointer-events: none;
 }
 
 /* ---- Properties Panel (Right) ---- */
@@ -462,21 +434,12 @@
     .showcase-builder__body {
         flex-direction: column;
     }
-    .showcase-slides {
-        width: 100%;
-        min-width: 0;
-        flex-direction: row;
-        overflow-x: auto;
-        overflow-y: hidden;
-        border-right: none;
-        border-bottom: 1px solid var(--dgd-gray-200);
-        height: 80px;
-        min-height: 80px;
+    .showcase-canvas {
+        min-height: 300px;
     }
-    .showcase-slides__item {
-        min-width: 45px;
-        height: 100%;
-        aspect-ratio: auto;
+    .showcase-canvas__strip {
+        padding: 10px;
+        gap: 8px;
     }
     .showcase-props {
         width: 100%;
@@ -484,9 +447,6 @@
         max-height: 250px;
         border-left: none;
         border-top: 1px solid var(--dgd-gray-200);
-    }
-    .showcase-canvas {
-        min-height: 300px;
     }
 }
 

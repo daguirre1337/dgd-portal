@@ -18,8 +18,8 @@ const ShowcaseBuilder = (() => {
     let selectedElement = null; // Selected element ID
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
-    let mainCanvas = null;    // Main preview canvas
-    let mainCtx = null;
+    let slideCanvases = [];   // Array of 6 canvases
+    let slideCtxs = [];       // Array of 6 contexts
     let previewScale = 1;     // Scale from design -> preview pixels
     let screenshotImages = {}; // Cache: elementId -> HTMLImageElement
     let container = null;     // Root DOM element
@@ -99,13 +99,19 @@ const ShowcaseBuilder = (() => {
     // =========================================================================
 
     function render() {
-        if (!mainCanvas || !mainCtx || !project) return;
-        const slide = project.slides[currentSlide];
-        if (!slide) return;
+        if (!slideCanvases.length || !project) return;
 
-        _renderSlide(mainCtx, slide, mainCanvas.width, mainCanvas.height);
-        _renderSelection(mainCtx);
-        _renderAllThumbnails();
+        // Render all 6 slides
+        for (let i = 0; i < 6; i++) {
+            const canvas = slideCanvases[i];
+            const ctx = slideCtxs[i];
+            if (!canvas || !ctx || !project.slides[i]) continue;
+            _renderSlide(ctx, project.slides[i], canvas.width, canvas.height);
+        }
+
+        // Selection overlay only on active slide
+        const activeCtx = slideCtxs[currentSlide];
+        if (activeCtx) _renderSelection(activeCtx);
     }
 
     function _renderSlide(ctx, slide, canvasW, canvasH) {
@@ -312,7 +318,9 @@ const ShowcaseBuilder = (() => {
         const el = slide.elements.find(e => e._id === selectedElement);
         if (!el) return;
 
-        const bounds = _getElementBounds(el, previewScale);
+        const canvas = slideCanvases[currentSlide];
+        const scale = canvas ? (canvas.width / DW) : previewScale;
+        const bounds = _getElementBounds(el, scale);
         if (!bounds) return;
 
         ctx.save();
@@ -367,42 +375,23 @@ const ShowcaseBuilder = (() => {
     }
 
     // =========================================================================
-    // Thumbnail Rendering
-    // =========================================================================
-
-    function _renderAllThumbnails() {
-        if (!project) return;
-        const thumbCanvases = container.querySelectorAll('.showcase-slides__item canvas');
-        thumbCanvases.forEach((canvas, i) => {
-            if (i < project.slides.length) {
-                const ctx = canvas.getContext('2d');
-                _renderSlide(ctx, project.slides[i], canvas.width, canvas.height);
-            }
-        });
-    }
-
-    // =========================================================================
     // Drag & Drop
     // =========================================================================
 
     function _initDragDrop() {
-        if (!mainCanvas) return;
+        // Drag events are bound per-canvas in _bindSlideCanvasEvents
+    }
 
-        mainCanvas.addEventListener('mousedown', _onMouseDown);
-        mainCanvas.addEventListener('mousemove', _onMouseMove);
-        mainCanvas.addEventListener('mouseup', _onMouseUp);
-        mainCanvas.addEventListener('mouseleave', _onMouseUp);
-
-        // Touch support
-        mainCanvas.addEventListener('touchstart', _onTouchStart, { passive: false });
-        mainCanvas.addEventListener('touchmove', _onTouchMove, { passive: false });
-        mainCanvas.addEventListener('touchend', _onMouseUp);
+    function _getActiveCanvas() {
+        return slideCanvases[currentSlide] || null;
     }
 
     function _canvasCoords(e) {
-        const rect = mainCanvas.getBoundingClientRect();
-        const scaleX = mainCanvas.width / rect.width;
-        const scaleY = mainCanvas.height / rect.height;
+        const canvas = _getActiveCanvas();
+        if (!canvas) return { x: 0, y: 0 };
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
         return {
             x: (e.clientX - rect.left) * scaleX,
             y: (e.clientY - rect.top) * scaleY,
@@ -412,11 +401,13 @@ const ShowcaseBuilder = (() => {
     function _hitTest(px, py) {
         if (!project) return null;
         const slide = project.slides[currentSlide];
+        const canvas = slideCanvases[currentSlide];
+        const scale = canvas ? (canvas.width / DW) : previewScale;
 
         // Test in reverse order (top element first)
         for (let i = slide.elements.length - 1; i >= 0; i--) {
             const el = slide.elements[i];
-            const bounds = _getElementBounds(el, previewScale);
+            const bounds = _getElementBounds(el, scale);
             if (bounds &&
                 px >= bounds.x && px <= bounds.x + bounds.width &&
                 py >= bounds.y && py <= bounds.y + bounds.height) {
@@ -429,13 +420,15 @@ const ShowcaseBuilder = (() => {
     function _onMouseDown(e) {
         const pos = _canvasCoords(e);
         const hit = _hitTest(pos.x, pos.y);
+        const canvas = _getActiveCanvas();
 
         if (hit) {
+            const scale = canvas ? (canvas.width / DW) : previewScale;
             selectedElement = hit._id;
             isDragging = true;
-            dragOffset.x = pos.x - hit.x * previewScale;
-            dragOffset.y = pos.y - hit.y * previewScale;
-            mainCanvas.classList.add('dragging');
+            dragOffset.x = pos.x - hit.x * scale;
+            dragOffset.y = pos.y - hit.y * scale;
+            if (canvas) canvas.classList.add('dragging');
         } else {
             selectedElement = null;
         }
@@ -445,27 +438,30 @@ const ShowcaseBuilder = (() => {
     }
 
     function _onMouseMove(e) {
+        const canvas = _getActiveCanvas();
         const pos = _canvasCoords(e);
+        const scale = canvas ? (canvas.width / DW) : previewScale;
 
         if (isDragging && selectedElement && project) {
             const slide = project.slides[currentSlide];
             const el = slide.elements.find(e => e._id === selectedElement);
             if (el) {
-                el.x = Math.round((pos.x - dragOffset.x) / previewScale);
-                el.y = Math.round((pos.y - dragOffset.y) / previewScale);
+                el.x = Math.round((pos.x - dragOffset.x) / scale);
+                el.y = Math.round((pos.y - dragOffset.y) / scale);
                 render();
             }
         } else {
             // Hover cursor
             const hit = _hitTest(pos.x, pos.y);
-            mainCanvas.classList.toggle('hovering', !!hit);
+            if (canvas) canvas.classList.toggle('hovering', !!hit);
         }
     }
 
     function _onMouseUp() {
         if (isDragging) {
             isDragging = false;
-            mainCanvas.classList.remove('dragging');
+            const canvas = _getActiveCanvas();
+            if (canvas) canvas.classList.remove('dragging');
             _saveProject();
         }
     }
@@ -480,6 +476,16 @@ const ShowcaseBuilder = (() => {
         e.preventDefault();
         const touch = e.touches[0];
         _onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+    }
+
+    function _bindSlideCanvasEvents(canvas) {
+        canvas.addEventListener('mousedown', _onMouseDown);
+        canvas.addEventListener('mousemove', _onMouseMove);
+        canvas.addEventListener('mouseup', _onMouseUp);
+        canvas.addEventListener('mouseleave', _onMouseUp);
+        canvas.addEventListener('touchstart', _onTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', _onTouchMove, { passive: false });
+        canvas.addEventListener('touchend', _onMouseUp);
     }
 
     // =========================================================================
@@ -641,15 +647,17 @@ const ShowcaseBuilder = (() => {
     }
 
     function destroy() {
-        if (mainCanvas) {
-            mainCanvas.removeEventListener('mousedown', _onMouseDown);
-            mainCanvas.removeEventListener('mousemove', _onMouseMove);
-            mainCanvas.removeEventListener('mouseup', _onMouseUp);
-            mainCanvas.removeEventListener('mouseleave', _onMouseUp);
-        }
+        slideCanvases.forEach(canvas => {
+            if (canvas) {
+                canvas.removeEventListener('mousedown', _onMouseDown);
+                canvas.removeEventListener('mousemove', _onMouseMove);
+                canvas.removeEventListener('mouseup', _onMouseUp);
+                canvas.removeEventListener('mouseleave', _onMouseUp);
+            }
+        });
         container = null;
-        mainCanvas = null;
-        mainCtx = null;
+        slideCanvases = [];
+        slideCtxs = [];
         project = null;
         selectedElement = null;
         screenshotImages = {};
@@ -680,17 +688,12 @@ const ShowcaseBuilder = (() => {
                 </div>
             </div>
 
-            <!-- Body: 3-Column Layout -->
+            <!-- Body: 2-Column Layout (6 Slides + Properties) -->
             <div class="showcase-builder__body">
-                <!-- Left: Slide Thumbnails -->
-                <div class="showcase-slides" id="sc-slides-panel">
-                    ${_buildSlideSlots()}
-                </div>
-
-                <!-- Center: Canvas Preview -->
+                <!-- Center: All 6 Slides Side by Side -->
                 <div class="showcase-canvas">
-                    <div class="showcase-canvas__wrapper" id="sc-canvas-wrapper">
-                        <canvas id="sc-main-canvas"></canvas>
+                    <div class="showcase-canvas__strip" id="sc-canvas-strip">
+                        ${_buildSlideCanvases()}
                     </div>
                 </div>
 
@@ -769,13 +772,13 @@ const ShowcaseBuilder = (() => {
         </div>`;
     }
 
-    function _buildSlideSlots() {
+    function _buildSlideCanvases() {
         let html = '';
         for (let i = 0; i < 6; i++) {
             html += `
-            <div class="showcase-slides__item ${i === 0 ? 'showcase-slides__item--active' : ''}" data-slide="${i}">
-                <span class="showcase-slides__label">${i + 1}</span>
-                <canvas width="162" height="288"></canvas>
+            <div class="showcase-canvas__slide ${i === 0 ? 'showcase-canvas__slide--active' : ''}" data-slide="${i}">
+                <span class="showcase-canvas__slide-label">${i + 1}</span>
+                <canvas id="sc-slide-canvas-${i}"></canvas>
             </div>`;
         }
         return html;
@@ -786,41 +789,45 @@ const ShowcaseBuilder = (() => {
     // =========================================================================
 
     function _initCanvas() {
-        mainCanvas = document.getElementById('sc-main-canvas');
-        if (!mainCanvas) return;
-        mainCtx = mainCanvas.getContext('2d');
+        slideCanvases = [];
+        slideCtxs = [];
+
+        for (let i = 0; i < 6; i++) {
+            const canvas = document.getElementById(`sc-slide-canvas-${i}`);
+            if (!canvas) continue;
+            slideCanvases.push(canvas);
+            slideCtxs.push(canvas.getContext('2d'));
+            _bindSlideCanvasEvents(canvas);
+        }
 
         _resizeCanvas();
         window.addEventListener('resize', _resizeCanvas);
     }
 
     function _resizeCanvas() {
-        if (!mainCanvas) return;
-        const wrapper = document.getElementById('sc-canvas-wrapper');
-        if (!wrapper) return;
+        if (!slideCanvases.length) return;
+        const strip = document.getElementById('sc-canvas-strip');
+        if (!strip) return;
 
-        const parent = wrapper.parentElement;
-        const maxW = parent.clientWidth - 40;
+        const parent = strip.parentElement;
         const maxH = parent.clientHeight - 40;
 
-        // Maintain aspect ratio of design space
+        // Each slide: height fills container, width from 9:16 ratio
         const ratio = DW / DH;
-        let w = maxW;
-        let h = w / ratio;
+        const h = Math.max(200, maxH);
+        const w = h * ratio;
 
-        if (h > maxH) {
-            h = maxH;
-            w = h * ratio;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        for (let i = 0; i < slideCanvases.length; i++) {
+            const canvas = slideCanvases[i];
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+            canvas.style.width = `${Math.round(w)}px`;
+            canvas.style.height = `${Math.round(h)}px`;
         }
 
-        // Use 2x resolution for crisp rendering on HiDPI
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        mainCanvas.width = Math.round(w * dpr);
-        mainCanvas.height = Math.round(h * dpr);
-        mainCanvas.style.width = `${Math.round(w)}px`;
-        mainCanvas.style.height = `${Math.round(h)}px`;
-
-        previewScale = mainCanvas.width / DW;
+        previewScale = slideCanvases[0].width / DW;
 
         render();
     }
@@ -830,14 +837,17 @@ const ShowcaseBuilder = (() => {
     // =========================================================================
 
     function _bindEvents() {
-        // Slide selection
-        container.querySelectorAll('.showcase-slides__item').forEach((el) => {
-            el.addEventListener('click', () => {
-                currentSlide = parseInt(el.dataset.slide);
-                selectedElement = null;
-                _updateSlideSelection();
-                _updateUI();
-                render();
+        // Slide selection (click on slide wrapper to activate)
+        container.querySelectorAll('.showcase-canvas__slide').forEach((el) => {
+            el.addEventListener('click', (e) => {
+                const idx = parseInt(el.dataset.slide);
+                if (idx !== currentSlide) {
+                    currentSlide = idx;
+                    selectedElement = null;
+                    _updateSlideSelection();
+                    _updateUI();
+                    render();
+                }
             });
         });
 
@@ -977,8 +987,8 @@ const ShowcaseBuilder = (() => {
     }
 
     function _updateSlideSelection() {
-        container.querySelectorAll('.showcase-slides__item').forEach((el, i) => {
-            el.classList.toggle('showcase-slides__item--active', i === currentSlide);
+        container.querySelectorAll('.showcase-canvas__slide').forEach((el, i) => {
+            el.classList.toggle('showcase-canvas__slide--active', i === currentSlide);
         });
     }
 
