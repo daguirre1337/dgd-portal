@@ -187,6 +187,22 @@ var dashboardApi = {
         return this._fetch('/finance/projects');
     },
 
+    // Finance - Bank Transactions
+    importBankCSV: function(formData) {
+        return fetch('api/finance/import', {
+            method: 'POST', credentials: 'same-origin', body: formData
+        }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+    },
+    getBankTransactions: function(params) {
+        var qs = params ? '?' + new URLSearchParams(params).toString() : '';
+        return fetch('api/finance/transactions' + qs, { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+    },
+    getTransactionStats: function() {
+        return fetch('api/finance/transaction-stats', { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+    },
+
     // Files
     getFiles: function(params) {
         var q = params ? '?' + new URLSearchParams(params) : '';
