@@ -793,11 +793,11 @@ const ShowcaseBuilder = (() => {
         const strip = document.getElementById('sc-canvas-strip');
         if (!strip) return;
 
-        // Use the showcase-builder root or mount container for true available width
-        const root = container.querySelector('.showcase-builder') || container;
-        const availableWidth = root.clientWidth - 24; // minus padding
+        // Get actual visible area from the canvas container
         const canvasArea = strip.parentElement;
-        const maxH = canvasArea.getBoundingClientRect().height - 24;
+        const rect = canvasArea.getBoundingClientRect();
+        const availableWidth = Math.floor(rect.width) - 24; // minus padding
+        const maxH = Math.floor(rect.height) - 24;
 
         // Fit all 6 slides within available width
         const gapTotal = 3 * 5; // 3px gap × 5 gaps
@@ -805,8 +805,8 @@ const ShowcaseBuilder = (() => {
         let h = Math.floor(w * (DH / DW)); // maintain 9:16 aspect ratio
 
         // If too tall, scale down from height
-        if (h > maxH) {
-            h = Math.max(maxH, 200);
+        if (h > maxH && maxH > 100) {
+            h = maxH;
             w = Math.floor(h * (DW / DH));
         }
 
