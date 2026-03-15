@@ -138,6 +138,15 @@ const ShowcaseBuilder = (() => {
             _drawBackground(ctx, slide.background, canvasW, canvasH);
         }
 
+        // Scene layers (environment, midground, atmosphere, accents)
+        if (typeof ShowcaseSceneEngine !== 'undefined' && project?._scenes?.[slideIndex]) {
+            ShowcaseSceneEngine.renderScene(
+                ctx, project._scenes[slideIndex],
+                canvasW, canvasH,
+                project.brandColors
+            );
+        }
+
         // Elements (draw in order)
         for (const el of slide.elements) {
             _drawElement(ctx, el, scale);

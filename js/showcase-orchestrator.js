@@ -412,7 +412,8 @@ Rules:
      * @returns {Promise<Object>} Composed project object
      */
     async function autoGenerate(appName, features, options = {}) {
-        const totalSteps = 4;
+        const sceneIterations = options.sceneIterations || 5;
+        const totalSteps = 4 + sceneIterations;
 
         // Optionally set API key from options
         if (options.openaiKey) {
@@ -421,7 +422,7 @@ Rules:
 
         try {
             // ---- Step 1: Generate brief ----
-            _emitProgress(STATES.BRIEFING, 1, totalSteps, 'Generating design brief...');
+            _emitProgress(STATES.BRIEFING, 1, totalSteps, 'Design-Brief erstellen...');
             let brief;
             try {
                 brief = await generateBrief(appName, features);
@@ -431,7 +432,7 @@ Rules:
             }
 
             // ---- Step 2: Generate panorama ----
-            _emitProgress(STATES.GENERATING_PANORAMA, 2, totalSteps, 'Generating panorama background...');
+            _emitProgress(STATES.GENERATING_PANORAMA, 2, totalSteps, 'Panorama-Hintergrund generieren...');
             let panoramaImage = null;
             try {
                 panoramaImage = await generatePanoramaImage(brief);
@@ -441,7 +442,7 @@ Rules:
             }
 
             // ---- Step 3: Generate texts ----
-            _emitProgress(STATES.GENERATING_TEXTS, 3, totalSteps, 'Generating slide texts...');
+            _emitProgress(STATES.GENERATING_TEXTS, 3, totalSteps, 'Slide-Texte generieren...');
             let slideTexts;
             try {
                 slideTexts = await _generateTexts(appName, features, 6, options);
@@ -450,8 +451,8 @@ Rules:
                 slideTexts = _defaultSlideTexts(appName, features, 6);
             }
 
-            // ---- Step 4: Compose ----
-            _emitProgress(STATES.COMPOSING, 4, totalSteps, 'Composing final project...');
+            // ---- Step 4: Compose base project ----
+            _emitProgress(STATES.COMPOSING, 4, totalSteps, 'Basis-Projekt zusammenstellen...');
             let project;
             try {
                 project = _composeProject(appName, brief, panoramaImage, slideTexts);
@@ -461,10 +462,33 @@ Rules:
                 throw err;
             }
 
-            _emitProgress(STATES.DONE, totalSteps, totalSteps, 'Showcase ready!');
+            // ---- Steps 5-9: Scene Engine Iterative Composition ----
+            if (typeof ShowcaseSceneEngine !== 'undefined') {
+                try {
+                    await ShowcaseSceneEngine.iterateWithVision(project, {
+                        apiKey: getApiKey(),
+                        iterations: sceneIterations,
+                        targetAudience: options.targetAudience || 'Kfz-Betriebe, Autowerkstaetten, Gutachter',
+                        onProgress: (evt) => {
+                            const step = 4 + evt.iteration;
+                            const phase = evt.phase === 'done' ? 'DONE' : evt.phase;
+                            _emitProgress(
+                                phase === 'DONE' ? STATES.DONE : STATES.COMPOSING,
+                                step,
+                                totalSteps,
+                                evt.message || `Szene iterieren (${evt.iteration}/${evt.total})...`
+                            );
+                        },
+                    });
+                } catch (err) {
+                    console.warn('[Orchestrator] Scene iteration failed (non-fatal):', err.message);
+                }
+            }
+
+            _emitProgress(STATES.DONE, totalSteps, totalSteps, 'Showcase fertig!');
             return { brief, panorama: panoramaImage, slides: slideTexts, project };
         } catch (err) {
-            _emitProgress(STATES.ERROR, 0, totalSteps, 'Pipeline failed: ' + err.message);
+            _emitProgress(STATES.ERROR, 0, totalSteps, 'Pipeline fehlgeschlagen: ' + err.message);
             throw err;
         }
     }
