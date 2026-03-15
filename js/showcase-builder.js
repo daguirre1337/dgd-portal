@@ -1530,7 +1530,10 @@ const ShowcaseBuilder = (() => {
         try {
             if (typeof ShowcaseOrchestrator !== 'undefined') {
                 const changes = await ShowcaseOrchestrator.submitFeedback(feedbackText, project);
-                if (changes && changes.slides) {
+                if (!changes) throw new Error('Keine Antwort vom AI');
+
+                // 1. Apply text changes
+                if (changes.slides) {
                     for (const slideChange of changes.slides) {
                         const idx = slideChange.index;
                         if (idx >= 0 && idx < project.slides.length) {
@@ -1545,35 +1548,68 @@ const ShowcaseBuilder = (() => {
                                     const el = slide.elements.find(e => e.id === 'subline');
                                     if (el) el.content = c.subline;
                                 }
+                                if (c.templateId) {
+                                    slide.template = c.templateId;
+                                }
                             }
                         }
                     }
                 }
-                if (changes && changes.colors) {
+
+                // 2. Apply color changes
+                if (changes.colors) {
                     if (changes.colors.primary) {
+                        project.brandColors.primary = changes.colors.primary;
                         for (const slide of project.slides) {
                             if (slide.background.type === 'gradient') {
                                 slide.background.from = changes.colors.primary;
                             }
                         }
                     }
+                    if (changes.colors.accent) {
+                        project.brandColors.accent = changes.colors.accent;
+                    }
                 }
-                // Regenerate panorama with new colors if needed
-                if (changes && changes.colors && typeof ShowcasePanorama !== 'undefined') {
+
+                // 3. Regenerate DALL-E panorama if requested
+                if (changes.regeneratePanorama) {
+                    // Show progress
+                    if (feedbackLog) {
+                        feedbackLog.innerHTML += `<div class="showcase-chat__msg showcase-chat__msg--ai">\u23F3 Neues Panorama wird generiert...</div>`;
+                        feedbackLog.scrollTop = feedbackLog.scrollHeight;
+                    }
+
                     const brief = {
-                        primaryColor: changes.colors.primary || project.brandColors.primary,
-                        accentColor: changes.colors.accent || project.brandColors.accent,
+                        primaryColor: project.brandColors.primary,
+                        accentColor: project.brandColors.accent,
                         mood: 'professional',
+                        backgroundMood: changes.panoramaHint || 'professional automotive digital',
                     };
-                    panoramaCanvas = ShowcasePanorama.generate(brief);
+
+                    try {
+                        // generatePanoramaImage returns HTMLCanvasElement directly
+                        const panoResult = await ShowcaseOrchestrator.generatePanoramaImage(brief);
+                        if (panoResult instanceof HTMLCanvasElement) {
+                            panoramaCanvas = panoResult;
+                            panoramaImage = null;
+                            console.log('[Builder] New DALL-E panorama from feedback:', panoramaCanvas.width + 'x' + panoramaCanvas.height);
+                        }
+                    } catch (panoErr) {
+                        console.warn('[Builder] Panorama regeneration failed, using procedural:', panoErr.message);
+                        if (typeof ShowcasePanorama !== 'undefined') {
+                            panoramaCanvas = ShowcasePanorama.generate(brief);
+                        }
+                    }
                 }
 
                 _saveProject();
                 _updateUI();
                 render();
 
+                // Show AI response message
+                const aiMsg = changes.message || 'Aenderungen angewendet';
                 if (feedbackLog) {
-                    feedbackLog.innerHTML += `<div class="showcase-chat__msg showcase-chat__msg--ai">\u2713 Aenderungen angewendet</div>`;
+                    feedbackLog.innerHTML += `<div class="showcase-chat__msg showcase-chat__msg--ai">\u2713 ${_escHTML(aiMsg)}</div>`;
                     feedbackLog.scrollTop = feedbackLog.scrollHeight;
                 }
             }

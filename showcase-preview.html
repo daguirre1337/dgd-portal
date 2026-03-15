@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Showcase Builder - Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/showcase-builder.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            background: #0d1117;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        #showcase-builder-mount {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* Env-key loading indicator */
+        .env-status {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            z-index: 999;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .env-status--ok {
+            background: rgba(34,197,94,0.15);
+            color: #22c55e;
+        }
+        .env-status--missing {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div id="env-status" class="env-status"></div>
+    <div id="showcase-builder-mount"></div>
+
+    <!-- Showcase Builder Module Stack -->
+    <script src="js/showcase-devices.js"></script>
+    <script src="js/showcase-templates.js"></script>
+    <script src="js/showcase-cortex.js"></script>
+    <script src="js/showcase-panorama.js"></script>
+    <script src="js/showcase-scene-engine.js"></script>
+    <script src="js/showcase-orchestrator.js"></script>
+    <script src="js/showcase-builder.js"></script>
+
+    <script>
+    (async function() {
+        const statusEl = document.getElementById('env-status');
+
+        // ---- Load API key from .env file ----
+        try {
+            const resp = await fetch('.env');
+            if (resp.ok) {
+                const text = await resp.text();
+                const match = text.match(/OPENAI_API_KEY\s*=\s*(.+)/);
+                if (match) {
+                    const key = match[1].trim();
+                    if (key && key !== 'sk-DEIN-KEY-HIER') {
+                        ShowcaseOrchestrator.setEnvApiKey(key);
+                        statusEl.className = 'env-status env-status--ok';
+                        statusEl.textContent = 'API Key loaded from .env';
+                        console.log('[Preview] OpenAI API key loaded from .env');
+                    } else {
+                        statusEl.className = 'env-status env-status--missing';
+                        statusEl.textContent = '.env key is placeholder';
+                        console.warn('[Preview] .env has placeholder key - set your real key');
+                    }
+                } else {
+                    statusEl.className = 'env-status env-status--missing';
+                    statusEl.textContent = 'No OPENAI_API_KEY in .env';
+                }
+            } else {
+                statusEl.className = 'env-status env-status--missing';
+                statusEl.textContent = 'No .env file found';
+                console.info('[Preview] No .env file - use chat dialog to enter API key');
+            }
+        } catch (e) {
+            console.info('[Preview] Could not load .env:', e.message);
+        }
+
+        // Fade out status after 4s
+        setTimeout(() => { statusEl.style.opacity = '0'; }, 4000);
+
+        // ---- Mount Showcase Builder ----
+        if (typeof ShowcaseBuilder !== 'undefined') {
+            ShowcaseBuilder.mount('showcase-builder-mount');
+        } else {
+            document.getElementById('showcase-builder-mount').innerHTML =
+                '<div style="color:#ef4444;padding:2rem;text-align:center;">' +
+                '<h2>Showcase Builder konnte nicht geladen werden</h2>' +
+                '<p>Pruefe die Browser-Konsole auf Fehler.</p></div>';
+        }
+    })();
+    </script>
+</body>
+</html>

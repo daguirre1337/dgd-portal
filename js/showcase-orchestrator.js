@@ -65,6 +65,13 @@ const ShowcaseOrchestrator = (() => {
     // API Key Management
     // =========================================================================
 
+    // Injected key from .env (set by preview page or server-side rendering)
+    let _envApiKey = '';
+
+    function setEnvApiKey(key) {
+        _envApiKey = key || '';
+    }
+
     function setApiKey(key) {
         try {
             localStorage.setItem(STORAGE_KEY, key || '');
@@ -74,10 +81,11 @@ const ShowcaseOrchestrator = (() => {
     }
 
     function getApiKey() {
+        // Priority: localStorage > .env injected > empty
         try {
-            return localStorage.getItem(STORAGE_KEY) || '';
+            return localStorage.getItem(STORAGE_KEY) || _envApiKey || '';
         } catch (e) {
-            return '';
+            return _envApiKey || '';
         }
     }
 
@@ -757,17 +765,30 @@ Rules:
             const messages = [
                 {
                     role: 'system',
-                    content: `You are an App Store design expert reviewing a showcase project.
-The user will give you feedback about the current design. Analyze their feedback and respond with specific changes.
-Respond with JSON only:
+                    content: `You are an App Store design expert reviewing a showcase project for "${DGD_BRAND.company.name}" (${DGD_BRAND.company.industry}).
+The user will give you feedback about the current design. Analyze their feedback and decide what needs to change.
+
+IMPORTANT: You can change MULTIPLE things at once. Respond with JSON only:
 {
+  "action": "update",
+  "message": "Short description of what you changed (in user's language)",
   "slides": [
     {"index": 0, "changes": {"headline": "new text", "subline": "new text", "templateId": "hero"}}
   ],
-  "colors": {"primary": "#hex", "accent": "#hex"}
+  "colors": {"primary": "#hex", "accent": "#hex"},
+  "regeneratePanorama": false,
+  "panoramaHint": ""
 }
-Only include fields that should change. Omit unchanged slides and fields.
-Language: Match the user's language (German or English).`,
+
+Available template IDs: "hero", "feature", "split", "fullscreen", "comparison"
+
+Rules:
+- "regeneratePanorama": set to TRUE if the user wants visual/image/background changes (e.g. "mehr Baeume", "dunklerer Hintergrund", "andere Stimmung", "mehr Autos", "Natur", etc.)
+- "panoramaHint": when regeneratePanorama is true, write a short English keyword phrase describing the desired scene (e.g. "forest landscape with trees", "dark automotive workshop", "modern city skyline at night"). This is used as DALL-E prompt hint.
+- Only include fields that should change. Omit unchanged slides and fields.
+- "message": ALWAYS include a brief human-readable summary of what was changed
+- Language for "message": Match the user's language (German or English).
+- For color/mood changes, also set regeneratePanorama to true.`,
                 },
                 {
                     role: 'user',
@@ -781,7 +802,7 @@ Language: Match the user's language (German or English).`,
                 response_format: { type: 'json_object' },
             });
 
-            if (result && (result.slides || result.colors)) {
+            if (result && (result.slides || result.colors || result.regeneratePanorama || result.message)) {
                 return result;
             }
 
@@ -804,6 +825,7 @@ Language: Match the user's language (German or English).`,
         submitFeedback,
         onProgress,
         setApiKey,
+        setEnvApiKey,
         getApiKey,
         hasApiKey,
     };
