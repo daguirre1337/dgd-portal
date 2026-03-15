@@ -29,16 +29,17 @@ const ShowcaseSceneEngine = (() => {
             {
                 id: 'premium_sky',
                 draw: (ctx, w, h, opts) => {
-                    const grad = ctx.createLinearGradient(0, 0, 0, h * 0.65);
-                    const t = opts.theme || 0; // 0-1 shift across slides
-                    // Rich 5-stop sky gradient
-                    grad.addColorStop(0, opts.top || `rgba(${8 + t * 10},${18 + t * 8},${42 + t * 12},0.95)`);
-                    grad.addColorStop(0.25, opts.mid1 || `rgba(${14 + t * 15},${32 + t * 12},${62 + t * 15},0.85)`);
-                    grad.addColorStop(0.5, opts.mid2 || `rgba(${22 + t * 18},${48 + t * 15},${85 + t * 18},0.65)`);
-                    grad.addColorStop(0.75, opts.mid3 || `rgba(${32 + t * 20},${65 + t * 18},${110 + t * 20},0.45)`);
-                    grad.addColorStop(1, opts.bottom || `rgba(${45 + t * 22},${85 + t * 20},${140 + t * 22},0.2)`);
+                    // Full-height opaque sky gradient - REPLACES dark template background
+                    const grad = ctx.createLinearGradient(0, 0, 0, h);
+                    const t = opts.theme || 0; // 0-1 shift across slides for variety
+                    // Brighter, richer navy-to-blue gradient (fully opaque)
+                    grad.addColorStop(0, opts.top || `rgb(${12 + t * 8},${28 + t * 10},${58 + t * 12})`);
+                    grad.addColorStop(0.2, opts.mid1 || `rgb(${18 + t * 12},${42 + t * 14},${78 + t * 15})`);
+                    grad.addColorStop(0.45, opts.mid2 || `rgb(${26 + t * 16},${58 + t * 18},${105 + t * 18})`);
+                    grad.addColorStop(0.7, opts.mid3 || `rgb(${22 + t * 14},${48 + t * 15},${90 + t * 16})`);
+                    grad.addColorStop(1, opts.bottom || `rgb(${14 + t * 10},${32 + t * 12},${65 + t * 14})`);
                     ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, w, h * 0.65);
+                    ctx.fillRect(0, 0, w, h);
                 },
             },
             {
@@ -51,11 +52,11 @@ const ShowcaseSceneEngine = (() => {
                     const rand = _seeded(seed);
 
                     for (let layer = 0; layer < layers; layer++) {
-                        const layerAlpha = 0.15 + layer * 0.12;
+                        const layerAlpha = 0.3 + layer * 0.15;
                         const layerOffset = layer * amplitude * 0.4;
-                        const r = 10 + layer * 8;
-                        const g = 22 + layer * 12;
-                        const b = 48 + layer * 16;
+                        const r = 15 + layer * 12;
+                        const g = 35 + layer * 15;
+                        const b = 65 + layer * 20;
 
                         ctx.fillStyle = `rgba(${r},${g},${b},${layerAlpha})`;
                         ctx.beginPath();
@@ -91,11 +92,11 @@ const ShowcaseSceneEngine = (() => {
                     const rand = _seeded(seed);
                     const alpha = opts.alpha || 0.25;
 
-                    // Gradient fill for city
+                    // Gradient fill for city - darker than sky for contrast
                     const grad = ctx.createLinearGradient(0, baseY - 200, 0, baseY + 50);
-                    grad.addColorStop(0, `rgba(8,16,35,${alpha * 0.3})`);
-                    grad.addColorStop(0.5, `rgba(12,24,50,${alpha * 0.7})`);
-                    grad.addColorStop(1, `rgba(16,32,65,${alpha})`);
+                    grad.addColorStop(0, `rgba(5,10,25,${alpha * 0.5})`);
+                    grad.addColorStop(0.5, `rgba(8,16,38,${alpha * 0.85})`);
+                    grad.addColorStop(1, `rgba(10,20,45,${alpha * 1.2})`);
 
                     ctx.fillStyle = grad;
                     ctx.beginPath();
@@ -151,9 +152,9 @@ const ShowcaseSceneEngine = (() => {
                 draw: (ctx, w, h, opts) => {
                     const y = (opts.y || 0.5) * h;
                     const grad = ctx.createLinearGradient(0, y, 0, h);
-                    grad.addColorStop(0, opts.top || 'rgba(18,28,48,0.6)');
-                    grad.addColorStop(0.3, opts.mid || 'rgba(14,22,40,0.5)');
-                    grad.addColorStop(1, opts.bottom || 'rgba(10,18,35,0.35)');
+                    grad.addColorStop(0, opts.top || 'rgba(20,35,60,0.7)');
+                    grad.addColorStop(0.3, opts.mid || 'rgba(16,28,52,0.6)');
+                    grad.addColorStop(1, opts.bottom || 'rgba(12,22,45,0.45)');
                     ctx.fillStyle = grad;
                     ctx.fillRect(0, y, w, h - y);
 
@@ -366,8 +367,8 @@ const ShowcaseSceneEngine = (() => {
                     for (let i = 0; i < count; i++) {
                         const bx = rand() * w;
                         const by = rand() * maxY;
-                        const br = (8 + rand() * 45) * (w / DW);
-                        const alpha = 0.02 + rand() * 0.06;
+                        const br = (12 + rand() * 55) * (w / DW);
+                        const alpha = 0.04 + rand() * 0.1;
                         const isGold = rand() > 0.4;
                         const color = isGold
                             ? (opts.goldColor || '#D4A843')
@@ -494,15 +495,15 @@ const ShowcaseSceneEngine = (() => {
                     const cx = (opts.x || 0.5) * w;
                     const cy = (opts.y || 0.4) * h;
                     const size = (opts.size || 400) * (w / DW);
-                    const color = opts.color || '#1A365D';
-                    const alpha = opts.alpha || 0.15;
+                    const color = opts.color || '#3A6EA5';
+                    const alpha = opts.alpha || 0.2;
 
                     ctx.save();
                     ctx.globalCompositeOperation = 'screen';
 
                     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size);
-                    grad.addColorStop(0, _rgba(color, alpha));
-                    grad.addColorStop(0.5, _rgba(color, alpha * 0.4));
+                    grad.addColorStop(0, _rgba(color, alpha * 1.5));
+                    grad.addColorStop(0.4, _rgba(color, alpha * 0.7));
                     grad.addColorStop(1, _rgba(color, 0));
                     ctx.fillStyle = grad;
                     ctx.beginPath();
@@ -911,25 +912,37 @@ Regeln:
         const data = await response.json();
         let content = data.choices?.[0]?.message?.content || '';
 
-        // Clean up response - remove markdown fences if present
-        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        // Debug log raw response
+        console.log('[SceneEngine] GPT-4o raw response:', content.slice(0, 500));
 
-        // Parse JSON
+        // Clean up response - remove markdown fences, leading text
+        content = content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+        // Try multiple parsing strategies
+        // 1. Direct parse
         try {
             return JSON.parse(content);
-        } catch {
-            // Try extracting JSON object
-            const braceStart = content.indexOf('{');
-            const braceEnd = content.lastIndexOf('}');
-            if (braceStart !== -1 && braceEnd > braceStart) {
-                try {
-                    return JSON.parse(content.slice(braceStart, braceEnd + 1));
-                } catch (e2) {
-                    console.warn('[SceneEngine] JSON parse fallback failed:', content.slice(0, 200));
-                }
-            }
-            throw new Error('Could not parse vision critique response');
+        } catch { /* continue */ }
+
+        // 2. Extract JSON object between first { and last }
+        const braceStart = content.indexOf('{');
+        const braceEnd = content.lastIndexOf('}');
+        if (braceStart !== -1 && braceEnd > braceStart) {
+            try {
+                return JSON.parse(content.slice(braceStart, braceEnd + 1));
+            } catch { /* continue */ }
+
+            // 3. Try fixing common issues (trailing commas, etc.)
+            try {
+                let cleaned = content.slice(braceStart, braceEnd + 1);
+                cleaned = cleaned.replace(/,\s*([}\]])/g, '$1'); // remove trailing commas
+                cleaned = cleaned.replace(/'/g, '"'); // single to double quotes
+                return JSON.parse(cleaned);
+            } catch { /* continue */ }
         }
+
+        console.warn('[SceneEngine] Could not parse response:', content.slice(0, 300));
+        throw new Error('Could not parse vision critique response');
     }
 
     // =========================================================================
