@@ -7,6 +7,8 @@
  *   GET /api/export?type=projects&format=csv    - CSV of projects + milestones
  *   GET /api/export?type=goals&format=csv       - CSV of goals + key results
  *   GET /api/export?type=finance&format=csv     - CSV of revenue + expenses
+ *   GET /api/export?type=crm&format=csv          - CSV of CRM contacts + deals
+ *   GET /api/export?type=transactions&format=csv - CSV of bank transactions
  *   GET /api/export?type=full&format=csv        - Combined report (all data)
  *   GET /api/export?type=<any>&format=json      - JSON export
  */
@@ -20,7 +22,7 @@ function handle_export(): void
     $type   = $_GET['type']   ?? 'kpis';
     $format = $_GET['format'] ?? 'csv';
 
-    $allowed_types   = ['kpis', 'projects', 'goals', 'finance', 'full'];
+    $allowed_types   = ['kpis', 'projects', 'goals', 'finance', 'crm', 'transactions', 'full'];
     $allowed_formats = ['csv', 'json'];
 
     if (!in_array($type, $allowed_types, true)) {
@@ -33,10 +35,12 @@ function handle_export(): void
     $data = [];
 
     if ($type === 'full') {
-        $data['kpis']     = fetch_kpis_data();
-        $data['projects'] = fetch_projects_data();
-        $data['goals']    = fetch_goals_data();
-        $data['finance']  = fetch_finance_data();
+        $data['kpis']         = fetch_kpis_data();
+        $data['projects']     = fetch_projects_data();
+        $data['goals']        = fetch_goals_data();
+        $data['finance']      = fetch_finance_data();
+        $data['crm']          = fetch_crm_data();
+        $data['transactions'] = fetch_transactions_data();
     } else {
         $fetcher = 'fetch_' . $type . '_data';
         $data[$type] = $fetcher();
@@ -165,6 +169,10 @@ function send_csv_export(array $data, string $type): void
         write_csv_section($output, 'Ziele', $data['goals'] ?? []);
         fputcsv($output, [], ';');
         write_csv_finance_section($output, $data['finance'] ?? []);
+        fputcsv($output, [], ';');
+        write_csv_crm_section($output, $data['crm'] ?? []);
+        fputcsv($output, [], ';');
+        write_csv_transactions($output, $data['transactions'] ?? []);
     } elseif ($type === 'kpis') {
         write_csv_kpis($output, $data['kpis'] ?? []);
     } elseif ($type === 'projects') {
@@ -173,6 +181,10 @@ function send_csv_export(array $data, string $type): void
         write_csv_goals($output, $data['goals'] ?? []);
     } elseif ($type === 'finance') {
         write_csv_finance_section($output, $data['finance'] ?? []);
+    } elseif ($type === 'crm') {
+        write_csv_crm_section($output, $data['crm'] ?? []);
+    } elseif ($type === 'transactions') {
+        write_csv_transactions($output, $data['transactions'] ?? []);
     }
 
     fclose($output);
@@ -323,4 +335,152 @@ function write_csv_finance_section($output, array $finance): void
             $e['project_id']  ?? '',
         ], ';');
     }
+}
+
+// ============================================================
+//  CRM DATA FETCHER + CSV
+// ============================================================
+
+function fetch_crm_data(): array
+{
+    $db = get_db();
+    crm_ensure_tables();
+
+    $contacts = $db->query("
+        SELECT name, company, email, phone, type, status, source, tags, notes, created_at
+        FROM crm_contacts ORDER BY name
+    ")->fetchAll();
+
+    $deals = $db->query("
+        SELECT d.title, d.value, d.currency, d.stage, d.probability, d.expected_close,
+               c.name as contact_name, c.company as contact_company
+        FROM crm_deals d
+        LEFT JOIN crm_contacts c ON d.contact_id = c.id
+        ORDER BY d.stage, d.title
+    ")->fetchAll();
+
+    $tasks = $db->query("
+        SELECT t.title, t.type, t.priority, t.status, t.due_date, t.notes,
+               c.name as contact_name
+        FROM crm_tasks t
+        LEFT JOIN crm_contacts c ON t.contact_id = c.id
+        ORDER BY t.due_date
+    ")->fetchAll();
+
+    return [
+        'contacts' => $contacts,
+        'deals'    => $deals,
+        'tasks'    => $tasks,
+    ];
+}
+
+function write_csv_crm_section($output, array $crm): void
+{
+    // Contacts
+    fputcsv($output, ['=== CRM Kontakte ==='], ';');
+    fputcsv($output, ['Name', 'Firma', 'E-Mail', 'Telefon', 'Typ', 'Status', 'Quelle', 'Tags', 'Notizen', 'Erstellt'], ';');
+    foreach (($crm['contacts'] ?? []) as $c) {
+        fputcsv($output, [
+            $c['name']       ?? '',
+            $c['company']    ?? '',
+            $c['email']      ?? '',
+            $c['phone']      ?? '',
+            $c['type']       ?? '',
+            $c['status']     ?? '',
+            $c['source']     ?? '',
+            $c['tags']       ?? '',
+            $c['notes']      ?? '',
+            $c['created_at'] ?? '',
+        ], ';');
+    }
+
+    fputcsv($output, [], ';');
+
+    // Deals
+    fputcsv($output, ['=== CRM Deals ==='], ';');
+    fputcsv($output, ['Titel', 'Wert', 'Waehrung', 'Phase', 'Wahrscheinlichkeit', 'Erwarteter Abschluss', 'Kontakt', 'Firma'], ';');
+    foreach (($crm['deals'] ?? []) as $d) {
+        fputcsv($output, [
+            $d['title']           ?? '',
+            $d['value']           ?? '',
+            $d['currency']        ?? 'EUR',
+            $d['stage']           ?? '',
+            isset($d['probability']) ? $d['probability'] . '%' : '',
+            $d['expected_close']  ?? '',
+            $d['contact_name']    ?? '',
+            $d['contact_company'] ?? '',
+        ], ';');
+    }
+
+    fputcsv($output, [], ';');
+
+    // Tasks
+    fputcsv($output, ['=== CRM Aufgaben ==='], ';');
+    fputcsv($output, ['Titel', 'Typ', 'Prioritaet', 'Status', 'Faellig', 'Kontakt', 'Notizen'], ';');
+    foreach (($crm['tasks'] ?? []) as $t) {
+        fputcsv($output, [
+            $t['title']        ?? '',
+            $t['type']         ?? '',
+            $t['priority']     ?? '',
+            $t['status']       ?? '',
+            $t['due_date']     ?? '',
+            $t['contact_name'] ?? '',
+            $t['notes']        ?? '',
+        ], ';');
+    }
+}
+
+// ============================================================
+//  BANK TRANSACTIONS DATA FETCHER + CSV
+// ============================================================
+
+function fetch_transactions_data(): array
+{
+    $db = get_db();
+    finance_ensure_tables();
+
+    return $db->query("
+        SELECT date, valuta_date, description, amount, currency, iban_sender, iban_receiver,
+               booking_type, reference, category, created_at
+        FROM bank_transactions
+        ORDER BY date DESC
+    ")->fetchAll();
+}
+
+function write_csv_transactions($output, array $transactions): void
+{
+    fputcsv($output, ['=== Kontobewegungen ==='], ';');
+    fputcsv($output, ['Buchungstag', 'Wertstellung', 'Beschreibung', 'Betrag', 'Waehrung', 'IBAN Sender', 'IBAN Empfaenger', 'Buchungsart', 'Referenz', 'Kategorie'], ';');
+
+    $totalIncome  = 0;
+    $totalExpense = 0;
+
+    foreach ($transactions as $t) {
+        $amount = (float) ($t['amount'] ?? 0);
+        if ($amount > 0) {
+            $totalIncome += $amount;
+        } else {
+            $totalExpense += abs($amount);
+        }
+
+        fputcsv($output, [
+            $t['date']           ?? '',
+            $t['valuta_date']    ?? '',
+            $t['description']    ?? '',
+            number_format($amount, 2, ',', '.'),
+            $t['currency']       ?? 'EUR',
+            $t['iban_sender']    ?? '',
+            $t['iban_receiver']  ?? '',
+            $t['booking_type']   ?? '',
+            $t['reference']      ?? '',
+            $t['category']       ?? '',
+        ], ';');
+    }
+
+    fputcsv($output, [], ';');
+    fputcsv($output, ['Zusammenfassung'], ';');
+    fputcsv($output, ['Einnahmen gesamt', number_format($totalIncome, 2, ',', '.')], ';');
+    fputcsv($output, ['Ausgaben gesamt', number_format($totalExpense, 2, ',', '.')], ';');
+    fputcsv($output, ['Saldo', number_format($totalIncome - $totalExpense, 2, ',', '.')], ';');
+    fputcsv($output, ['Anzahl Buchungen', count($transactions)], ';');
 }
