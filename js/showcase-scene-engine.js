@@ -405,82 +405,31 @@ const ShowcaseSceneEngine = (() => {
     // Scene Presets - Starting configurations per slide type
     // =========================================================================
 
+    // Presets are intentionally MINIMAL - the iterative loop builds them up
     const SCENE_PRESETS = {
         hero: {
             layers: [
-                { elements: [{ libId: 'horizon_line', layer: 'environment', opts: { y: 0.35 } }] },
-                { elements: [{ libId: 'cityscape', layer: 'environment', opts: { baseY: 0.32, count: 10 } }] },
-                { elements: [{ libId: 'road', layer: 'environment', opts: { y: 0.38 } }] },
-                { elements: [
-                    { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.25, y: 0.42, scale: 1.2 } },
-                ] },
-                { elements: [
-                    { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.5, spread: 250, alpha: 0.05 } },
-                    { libId: 'bokeh', layer: 'atmosphere', opts: { count: 12, seed: 42 } },
-                ] },
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.35 } }] },
+                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
             ],
         },
         feature: {
             layers: [
-                { elements: [{ libId: 'workshop_floor', layer: 'environment', opts: { y: 0.45 } }] },
-                { elements: [
-                    { libId: 'tool_rack', layer: 'midground', opts: { x: 0.05, y: 0.18, seed: 55 } },
-                    { libId: 'lift_post', layer: 'midground', opts: { x: 0.88, y: 0.15, height: 350 } },
-                ] },
-                { elements: [
-                    { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 30, seed: 88 } },
-                    { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.7, spread: 180, alpha: 0.04 } },
-                ] },
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } }] },
+                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
             ],
         },
         split: {
             layers: [
-                { elements: [{ libId: 'horizon_line', layer: 'environment', opts: { y: 0.30 } }] },
-                { elements: [
-                    { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.7, y: 0.35, scale: 0.9 } },
-                ] },
-                { elements: [
-                    { libId: 'bokeh', layer: 'atmosphere', opts: { count: 8, seed: 33 } },
-                    { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.8, y: 0.12, size: 100 } },
-                ] },
-                { elements: [
-                    { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.50 } },
-                ] },
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } }] },
+                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
             ],
         },
         fullscreen: {
             layers: [
-                { elements: [{ libId: 'workshop_floor', layer: 'environment', opts: { y: 0.50 } }] },
-                { elements: [
-                    { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.5, y: 0.48, scale: 1.8 } },
-                ] },
-                { elements: [
-                    { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.4, spread: 300, alpha: 0.07 } },
-                    { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 50, seed: 200 } },
-                    { libId: 'bokeh', layer: 'atmosphere', opts: { count: 20, seed: 150 } },
-                ] },
-                { elements: [
-                    { libId: 'corner_accent', layer: 'accents', opts: { size: 50, alpha: 0.3 } },
-                ] },
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.45 } }] },
+                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } }] },
             ],
         },
         comparison: {
             layers: [
-                { elements: [{ libId: 'horizon_line', layer: 'environment', opts: { y: 0.28 } }] },
-                { elements: [{ libId: 'cityscape', layer: 'environment', opts: { baseY: 0.26, count: 8 } }] },
-                { elements: [
-                    { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.15, y: 0.34, scale: 0.7 } },
-                    { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.85, y: 0.34, scale: 0.7 } },
-                ] },
-                { elements: [
-                    { libId: 'bokeh', layer: 'atmosphere', opts: { count: 10, seed: 66 } },
-                    { libId: 'diagonal_accent', layer: 'accents', opts: { count: 3, alpha: 0.05 } },
-                ] },
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } }] },
+                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
             ],
         },
     };
@@ -737,43 +686,87 @@ Regeln:
     // Procedural Critique Fallback (no API key)
     // =========================================================================
 
-    function _proceduralCritique(currentIter, totalIters) {
-        const phase = currentIter / totalIters;
-
-        if (phase < 0.3) {
-            // Early: Add environment elements
-            return {
-                summary: 'Landschaft und Umgebung aufbauen',
+    /**
+     * Procedural critique - 5 distinct phases that progressively build atmosphere.
+     * Each iteration adds to ALL 6 slides simultaneously.
+     */
+    function _proceduralCritique(currentIter, _totalIters) {
+        const PHASES = [
+            // Phase 1: Foundation - Horizon, sky gradient, ground plane
+            {
+                summary: 'Grundstruktur: Horizont und Boden aufbauen',
                 changes: [
-                    { slideIndex: 0, action: 'add', element: { libId: 'cityscape', layer: 'environment', opts: { baseY: 0.32, count: 14, seed: currentIter * 10 + 1 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'workshop_floor', layer: 'environment', opts: { y: 0.48, gridSize: 60 } } },
-                    { slideIndex: 2, action: 'add', element: { libId: 'road', layer: 'environment', opts: { y: 0.36, height: 0.10 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'cityscape', layer: 'environment', opts: { baseY: 0.30, count: 10, seed: currentIter * 10 + 5 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'horizon_line', layer: 'environment', opts: { y: 0.35, skyTop: 'rgba(10,25,50,0.85)', skyMid: 'rgba(20,45,75,0.6)', skyBottom: 'rgba(35,65,105,0.3)' } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'cityscape', layer: 'environment', opts: { baseY: 0.33, count: 12, seed: 42 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'workshop_floor', layer: 'environment', opts: { y: 0.45, gridSize: 70 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'horizon_line', layer: 'environment', opts: { y: 0.30, skyTop: 'rgba(12,28,55,0.8)', skyMid: 'rgba(25,50,85,0.5)', skyBottom: 'rgba(40,70,110,0.25)' } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'workshop_floor', layer: 'environment', opts: { y: 0.50, gridSize: 60 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'workshop_floor', layer: 'environment', opts: { y: 0.48, gridSize: 65 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'horizon_line', layer: 'environment', opts: { y: 0.28 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'cityscape', layer: 'environment', opts: { baseY: 0.26, count: 9, seed: 77 } } },
                 ],
-            };
-        } else if (phase < 0.6) {
-            // Mid: Add midground + atmosphere
-            return {
-                summary: 'Fahrzeuge und Lichteffekte hinzufuegen',
+            },
+            // Phase 2: Mid-ground - Vehicles, workshop equipment, roads
+            {
+                summary: 'Fahrzeuge und Werkstatt-Elemente platzieren',
                 changes: [
-                    { slideIndex: 0, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.7, y: 0.40, scale: 1.0 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.3, spread: 200, alpha: 0.06 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 18, seed: currentIter * 7 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.5, y: 0.38, scale: 1.3 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'road', layer: 'environment', opts: { y: 0.38 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.25, y: 0.42, scale: 1.2 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'tool_rack', layer: 'midground', opts: { x: 0.05, y: 0.18, seed: 55 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'lift_post', layer: 'midground', opts: { x: 0.88, y: 0.15 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.72, y: 0.35, scale: 0.9 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.5, y: 0.48, scale: 1.6 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'lift_post', layer: 'midground', opts: { x: 0.92, y: 0.12 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.18, y: 0.35, scale: 0.7 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.82, y: 0.35, scale: 0.7 } } },
                 ],
-            };
-        } else {
-            // Late: Accents and final touches
-            return {
-                summary: 'Akzente und Feinschliff',
+            },
+            // Phase 3: Lighting - Light beams, lens flares, color atmosphere
+            {
+                summary: 'Beleuchtung und Lichtstimmung aufbauen',
+                changes: [
+                    { slideIndex: 0, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.5, spread: 250, alpha: 0.06 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.7, spread: 180, alpha: 0.05 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.8, y: 0.12, size: 100 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.4, spread: 280, alpha: 0.07 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.3, spread: 200, alpha: 0.05 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.5, y: 0.10, size: 80 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'color_overlay', layer: 'atmosphere', opts: { color: '#1a3a5c', alpha: 0.08 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'color_overlay', layer: 'atmosphere', opts: { color: '#0d1b2a', alpha: 0.10 } } },
+                ],
+            },
+            // Phase 4: Particles - Bokeh, dust, atmospheric depth
+            {
+                summary: 'Partikel und atmosphaerische Tiefe',
+                changes: [
+                    { slideIndex: 0, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 15, seed: 42 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 35, seed: 88 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 10, seed: 33 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 50, seed: 200 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 20, seed: 150 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 12, seed: 111 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 25, seed: 95 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 10, seed: 66 } } },
+                ],
+            },
+            // Phase 5: Accents - Gold stripes, corner accents, final polish
+            {
+                summary: 'Gold-Akzente und finaler Feinschliff',
                 changes: [
                     { slideIndex: 0, action: 'add', element: { libId: 'corner_accent', layer: 'accents', opts: { size: 50, alpha: 0.25 } } },
-                    { slideIndex: 2, action: 'add', element: { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.47, alpha: 0.3 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.6, y: 0.10, size: 100 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 35, seed: currentIter * 13 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.46, alpha: 0.3 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.50, alpha: 0.25 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'corner_accent', layer: 'accents', opts: { size: 45, alpha: 0.3 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'diagonal_accent', layer: 'accents', opts: { count: 4, alpha: 0.06 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'diagonal_accent', layer: 'accents', opts: { count: 3, alpha: 0.05 } } },
+                    { slideIndex: 0, action: 'modify', element: { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.35 } } },
+                    { slideIndex: 3, action: 'modify', element: { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.45 } } },
                 ],
-            };
-        }
+            },
+        ];
+
+        const idx = Math.min(currentIter, PHASES.length - 1);
+        return PHASES[idx];
     }
 
     // =========================================================================

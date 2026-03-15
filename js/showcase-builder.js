@@ -1526,6 +1526,11 @@ const ShowcaseBuilder = (() => {
                     }
                 }
 
+                // Apply scene layers from Scene Engine iterations
+                if (result.project && result.project._scenes) {
+                    project._scenes = result.project._scenes;
+                }
+
                 _saveProject();
                 _updateUI();
                 render();
