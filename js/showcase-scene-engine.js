@@ -1,23 +1,16 @@
 /**
- * Showcase Scene Engine - Multi-Layer Iterative Scene Composition
+ * Showcase Scene Engine v2 - Premium Visual Composition
  *
- * Builds atmospheric scenes through multiple visual layers,
- * then uses AI vision to analyze, critique, and improve iteratively.
+ * Creates a unified, high-quality atmospheric background across all 6 slides.
+ * Uses sophisticated gradients, smooth curves, premium bokeh, and abstract
+ * geometric accents — NO crude/blocky shapes.
  *
- * Flow: Auto-Generate → 5 iterations of:
- *   1. Render all layers to canvas
- *   2. Capture canvas as image
- *   3. Send to AI vision for critique
- *   4. Parse critique into layer modifications
- *   5. Apply modifications, add new elements/layers
- *
- * Layer hierarchy (back to front):
- *   0. Sky/Gradient base
- *   1. Environment (landscape, buildings, horizon)
- *   2. Mid-ground (vehicles, workshop elements, props)
- *   3. Atmosphere (light effects, particles, color overlays)
- *   4. Content (text, device mockups - from templates)
- *   5. Accents (borders, highlights, decorative touches)
+ * Design philosophy:
+ * - Unified panoramic feel: all slides share the same visual atmosphere
+ * - Premium gradients with 5+ color stops
+ * - Smooth bezier curves for landscapes
+ * - Large, soft bokeh and light effects
+ * - DGD brand: Dunkelblau #1A365D, Gold #D4A843
  */
 
 const ShowcaseSceneEngine = (() => {
@@ -27,269 +20,405 @@ const ShowcaseSceneEngine = (() => {
     const DH = 1920;
 
     // =========================================================================
-    // Scene Element Library - Automotive / Kfz-Betrieb themed
+    // Premium Element Library
     // =========================================================================
 
     const ELEMENT_LIBRARY = {
-        // --- Layer 1: Environment ---
+        // --- Layer 1: Environment (rich backgrounds, landscapes) ---
         environment: [
             {
-                id: 'horizon_line',
+                id: 'premium_sky',
                 draw: (ctx, w, h, opts) => {
-                    const y = opts.y || h * 0.35;
-                    const grad = ctx.createLinearGradient(0, 0, 0, y + 100);
-                    grad.addColorStop(0, opts.skyTop || 'rgba(15,36,64,0.9)');
-                    grad.addColorStop(0.7, opts.skyMid || 'rgba(26,58,92,0.7)');
-                    grad.addColorStop(1, opts.skyBottom || 'rgba(44,82,130,0.4)');
+                    const grad = ctx.createLinearGradient(0, 0, 0, h * 0.65);
+                    const t = opts.theme || 0; // 0-1 shift across slides
+                    // Rich 5-stop sky gradient
+                    grad.addColorStop(0, opts.top || `rgba(${8 + t * 10},${18 + t * 8},${42 + t * 12},0.95)`);
+                    grad.addColorStop(0.25, opts.mid1 || `rgba(${14 + t * 15},${32 + t * 12},${62 + t * 15},0.85)`);
+                    grad.addColorStop(0.5, opts.mid2 || `rgba(${22 + t * 18},${48 + t * 15},${85 + t * 18},0.65)`);
+                    grad.addColorStop(0.75, opts.mid3 || `rgba(${32 + t * 20},${65 + t * 18},${110 + t * 20},0.45)`);
+                    grad.addColorStop(1, opts.bottom || `rgba(${45 + t * 22},${85 + t * 20},${140 + t * 22},0.2)`);
                     ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, w, y + 100);
+                    ctx.fillRect(0, 0, w, h * 0.65);
                 },
             },
             {
-                id: 'cityscape',
+                id: 'smooth_hills',
                 draw: (ctx, w, h, opts) => {
-                    const baseY = opts.baseY || h * 0.32;
-                    const count = opts.count || 12;
-                    const color = opts.color || 'rgba(10,25,50,0.6)';
-                    ctx.fillStyle = color;
-                    const rand = _seeded(opts.seed || 42);
-                    for (let i = 0; i < count; i++) {
-                        const bw = 40 + rand() * 80;
-                        const bh = 60 + rand() * 200;
-                        const bx = (w / count) * i + rand() * 30;
-                        ctx.fillRect(bx, baseY - bh, bw, bh + 20);
-                        // Windows
-                        ctx.fillStyle = 'rgba(212,168,67,0.15)';
-                        for (let wy = baseY - bh + 15; wy < baseY - 10; wy += 25) {
-                            for (let wx = bx + 8; wx < bx + bw - 8; wx += 18) {
-                                if (rand() > 0.4) {
-                                    ctx.fillRect(wx, wy, 8, 12);
+                    const baseY = (opts.baseY || 0.4) * h;
+                    const amplitude = (opts.amplitude || 0.08) * h;
+                    const layers = opts.layers || 3;
+                    const seed = opts.seed || 42;
+                    const rand = _seeded(seed);
+
+                    for (let layer = 0; layer < layers; layer++) {
+                        const layerAlpha = 0.15 + layer * 0.12;
+                        const layerOffset = layer * amplitude * 0.4;
+                        const r = 10 + layer * 8;
+                        const g = 22 + layer * 12;
+                        const b = 48 + layer * 16;
+
+                        ctx.fillStyle = `rgba(${r},${g},${b},${layerAlpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(0, h);
+
+                        // Smooth bezier curves for organic hills
+                        const points = 8 + layer * 2;
+                        const segW = w / points;
+                        let lastY = baseY + layerOffset + rand() * amplitude;
+                        ctx.lineTo(0, lastY);
+
+                        for (let i = 1; i <= points; i++) {
+                            const nextY = baseY + layerOffset + (rand() - 0.3) * amplitude;
+                            const cpx1 = (i - 0.66) * segW;
+                            const cpx2 = (i - 0.33) * segW;
+                            const cpy1 = lastY + (rand() - 0.5) * amplitude * 0.5;
+                            const cpy2 = nextY + (rand() - 0.5) * amplitude * 0.5;
+                            ctx.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, i * segW, nextY);
+                            lastY = nextY;
+                        }
+
+                        ctx.lineTo(w, h);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                },
+            },
+            {
+                id: 'city_silhouette',
+                draw: (ctx, w, h, opts) => {
+                    const baseY = (opts.baseY || 0.35) * h;
+                    const seed = opts.seed || 55;
+                    const rand = _seeded(seed);
+                    const alpha = opts.alpha || 0.25;
+
+                    // Gradient fill for city
+                    const grad = ctx.createLinearGradient(0, baseY - 200, 0, baseY + 50);
+                    grad.addColorStop(0, `rgba(8,16,35,${alpha * 0.3})`);
+                    grad.addColorStop(0.5, `rgba(12,24,50,${alpha * 0.7})`);
+                    grad.addColorStop(1, `rgba(16,32,65,${alpha})`);
+
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.moveTo(0, baseY + 20);
+
+                    // Organic city skyline with varied heights
+                    let x = 0;
+                    while (x < w) {
+                        const bw = 30 + rand() * 60;
+                        const bh = 40 + rand() * 180;
+                        const gap = rand() * 15;
+
+                        // Smooth tower tops (rounded rects via arcs)
+                        const topRadius = 3 + rand() * 8;
+                        ctx.lineTo(x + gap, baseY);
+                        ctx.lineTo(x + gap, baseY - bh + topRadius);
+                        ctx.quadraticCurveTo(x + gap, baseY - bh, x + gap + topRadius, baseY - bh);
+                        ctx.lineTo(x + gap + bw - topRadius, baseY - bh);
+                        ctx.quadraticCurveTo(x + gap + bw, baseY - bh, x + gap + bw, baseY - bh + topRadius);
+                        ctx.lineTo(x + gap + bw, baseY);
+
+                        x += bw + gap + rand() * 10;
+                    }
+
+                    ctx.lineTo(w, baseY + 20);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Tiny warm windows
+                    ctx.fillStyle = `rgba(212,168,67,${alpha * 0.4})`;
+                    const rand2 = _seeded(seed + 100);
+                    x = 0;
+                    const rand3 = _seeded(seed);
+                    while (x < w) {
+                        const bw = 30 + rand3() * 60;
+                        const bh = 40 + rand3() * 180;
+                        const gap = rand3() * 15;
+                        rand3(); // skip
+
+                        for (let wy = baseY - bh + 20; wy < baseY - 5; wy += 18) {
+                            for (let wx = x + gap + 6; wx < x + gap + bw - 6; wx += 14) {
+                                if (rand2() > 0.55) {
+                                    ctx.fillRect(wx, wy, 5, 7);
                                 }
                             }
                         }
-                        ctx.fillStyle = color;
+                        x += bw + gap + rand3() * 10;
                     }
                 },
             },
             {
-                id: 'road',
+                id: 'ground_plane',
                 draw: (ctx, w, h, opts) => {
-                    const y = opts.y || h * 0.38;
-                    const roadH = opts.height || h * 0.12;
-                    // Road surface
-                    const grad = ctx.createLinearGradient(0, y, 0, y + roadH);
-                    grad.addColorStop(0, opts.colorTop || 'rgba(40,40,50,0.7)');
-                    grad.addColorStop(1, opts.colorBottom || 'rgba(30,30,40,0.5)');
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, y, w, roadH);
-                    // Lane markings
-                    ctx.setLineDash([30, 50]);
-                    ctx.strokeStyle = opts.markingColor || 'rgba(255,255,255,0.2)';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.moveTo(0, y + roadH / 2);
-                    ctx.lineTo(w, y + roadH / 2);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                },
-            },
-            {
-                id: 'workshop_floor',
-                draw: (ctx, w, h, opts) => {
-                    const y = opts.y || h * 0.50;
-                    const floorH = h - y;
-                    // Concrete floor gradient
+                    const y = (opts.y || 0.5) * h;
                     const grad = ctx.createLinearGradient(0, y, 0, h);
-                    grad.addColorStop(0, opts.colorTop || 'rgba(45,50,60,0.5)');
-                    grad.addColorStop(0.5, opts.colorMid || 'rgba(35,40,48,0.4)');
-                    grad.addColorStop(1, opts.colorBottom || 'rgba(25,30,38,0.3)');
+                    grad.addColorStop(0, opts.top || 'rgba(18,28,48,0.6)');
+                    grad.addColorStop(0.3, opts.mid || 'rgba(14,22,40,0.5)');
+                    grad.addColorStop(1, opts.bottom || 'rgba(10,18,35,0.35)');
                     ctx.fillStyle = grad;
-                    ctx.fillRect(0, y, w, floorH);
-                    // Grid lines (workshop floor tiles)
-                    ctx.strokeStyle = opts.gridColor || 'rgba(255,255,255,0.03)';
-                    ctx.lineWidth = 1;
-                    const gridSize = opts.gridSize || 80;
-                    for (let gx = 0; gx < w; gx += gridSize) {
-                        ctx.beginPath();
-                        ctx.moveTo(gx, y);
-                        ctx.lineTo(gx, h);
-                        ctx.stroke();
-                    }
-                    for (let gy = y; gy < h; gy += gridSize) {
-                        ctx.beginPath();
-                        ctx.moveTo(0, gy);
-                        ctx.lineTo(w, gy);
-                        ctx.stroke();
+                    ctx.fillRect(0, y, w, h - y);
+
+                    // Subtle reflection line
+                    if (opts.reflection !== false) {
+                        const reflGrad = ctx.createLinearGradient(0, y, 0, y + 3);
+                        reflGrad.addColorStop(0, 'rgba(212,168,67,0.15)');
+                        reflGrad.addColorStop(1, 'rgba(212,168,67,0)');
+                        ctx.fillStyle = reflGrad;
+                        ctx.fillRect(0, y, w, 3);
                     }
                 },
             },
         ],
 
-        // --- Layer 2: Mid-ground (vehicles, props) ---
+        // --- Layer 2: Mid-ground (abstract vehicle shapes, refined props) ---
         midground: [
             {
                 id: 'car_silhouette',
                 draw: (ctx, w, h, opts) => {
-                    const cx = opts.x || w * 0.5;
-                    const cy = opts.y || h * 0.40;
-                    const s = opts.scale || 1;
-                    const color = opts.color || 'rgba(20,30,50,0.4)';
+                    const cx = (opts.x || 0.5) * w;
+                    const cy = (opts.y || 0.45) * h;
+                    const s = (opts.scale || 1) * (w / DW);
+                    const alpha = opts.alpha || 0.2;
+
                     ctx.save();
                     ctx.translate(cx, cy);
                     ctx.scale(s, s);
-                    ctx.fillStyle = color;
-                    // Simplified car body
+
+                    // Premium car with smooth curves
+                    const carGrad = ctx.createLinearGradient(-150, -70, 150, 20);
+                    carGrad.addColorStop(0, `rgba(15,25,50,${alpha * 0.6})`);
+                    carGrad.addColorStop(0.5, `rgba(20,35,65,${alpha})`);
+                    carGrad.addColorStop(1, `rgba(12,20,42,${alpha * 0.8})`);
+                    ctx.fillStyle = carGrad;
+
                     ctx.beginPath();
-                    ctx.moveTo(-120, 0);
-                    ctx.lineTo(-100, -35);
-                    ctx.lineTo(-60, -55);
-                    ctx.lineTo(40, -55);
-                    ctx.lineTo(80, -35);
-                    ctx.lineTo(120, -25);
-                    ctx.lineTo(130, 0);
-                    ctx.lineTo(110, 10);
-                    // Rear wheel well
-                    ctx.arc(85, 10, 22, 0, Math.PI, false);
-                    ctx.lineTo(50, 10);
-                    ctx.lineTo(-40, 10);
-                    // Front wheel well
-                    ctx.arc(-65, 10, 22, 0, Math.PI, false);
-                    ctx.lineTo(-120, 10);
+                    // Smooth sedan profile with bezier curves
+                    ctx.moveTo(-150, 5);
+                    ctx.bezierCurveTo(-145, -10, -130, -25, -110, -35);
+                    ctx.bezierCurveTo(-90, -50, -70, -60, -40, -65);
+                    ctx.bezierCurveTo(-10, -68, 20, -68, 50, -62);
+                    ctx.bezierCurveTo(75, -55, 95, -42, 110, -30);
+                    ctx.bezierCurveTo(125, -20, 140, -10, 150, 0);
+                    ctx.bezierCurveTo(152, 5, 148, 12, 140, 15);
+                    // Bottom with wheel wells
+                    ctx.bezierCurveTo(120, 15, 110, 8, 100, 15);
+                    ctx.arc(85, 15, 18, 0, Math.PI, false);
+                    ctx.lineTo(50, 15);
+                    ctx.lineTo(-35, 15);
+                    ctx.arc(-60, 15, 18, 0, Math.PI, false);
+                    ctx.bezierCurveTo(-100, 8, -130, 8, -150, 5);
                     ctx.closePath();
                     ctx.fill();
+
                     // Windshield highlight
-                    ctx.fillStyle = 'rgba(100,150,200,0.1)';
+                    const glassGrad = ctx.createLinearGradient(-80, -60, 10, -30);
+                    glassGrad.addColorStop(0, `rgba(80,130,200,${alpha * 0.5})`);
+                    glassGrad.addColorStop(1, `rgba(60,100,160,${alpha * 0.15})`);
+                    ctx.fillStyle = glassGrad;
                     ctx.beginPath();
-                    ctx.moveTo(-55, -52);
-                    ctx.lineTo(-95, -32);
+                    ctx.moveTo(-35, -62);
+                    ctx.bezierCurveTo(-55, -58, -80, -45, -95, -32);
                     ctx.lineTo(-40, -32);
+                    ctx.bezierCurveTo(-35, -45, -33, -55, -35, -62);
                     ctx.closePath();
                     ctx.fill();
+
+                    // Headlight glow
+                    const hlGrad = ctx.createRadialGradient(145, -5, 0, 145, -5, 30);
+                    hlGrad.addColorStop(0, `rgba(212,168,67,${alpha * 0.8})`);
+                    hlGrad.addColorStop(0.5, `rgba(212,168,67,${alpha * 0.2})`);
+                    hlGrad.addColorStop(1, `rgba(212,168,67,0)`);
+                    ctx.fillStyle = hlGrad;
+                    ctx.beginPath();
+                    ctx.arc(145, -5, 30, 0, Math.PI * 2);
+                    ctx.fill();
+
                     ctx.restore();
                 },
             },
             {
-                id: 'tool_rack',
+                id: 'abstract_gauge',
                 draw: (ctx, w, h, opts) => {
-                    const x = opts.x || w * 0.1;
-                    const y = opts.y || h * 0.25;
-                    const color = opts.color || 'rgba(60,70,80,0.3)';
+                    const cx = (opts.x || 0.5) * w;
+                    const cy = (opts.y || 0.3) * h;
+                    const r = (opts.radius || 80) * (w / DW);
+                    const alpha = opts.alpha || 0.12;
+                    const color = opts.color || '#D4A843';
+
                     ctx.save();
-                    ctx.fillStyle = color;
-                    // Vertical rack
-                    ctx.fillRect(x, y, 8, 200);
-                    ctx.fillRect(x + 80, y, 8, 200);
-                    // Shelves
-                    for (let sy = 0; sy < 4; sy++) {
-                        ctx.fillRect(x - 5, y + sy * 55, 98, 5);
+                    ctx.translate(cx, cy);
+
+                    // Gauge ring
+                    ctx.strokeStyle = _rgba(color, alpha);
+                    ctx.lineWidth = 3 * (w / DW);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r, -Math.PI * 0.8, Math.PI * 0.8);
+                    ctx.stroke();
+
+                    // Tick marks
+                    ctx.strokeStyle = _rgba(color, alpha * 0.7);
+                    ctx.lineWidth = 2 * (w / DW);
+                    for (let a = -0.8; a <= 0.8; a += 0.2) {
+                        const angle = Math.PI * a;
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(angle) * r * 0.85, Math.sin(angle) * r * 0.85);
+                        ctx.lineTo(Math.cos(angle) * r * 0.95, Math.sin(angle) * r * 0.95);
+                        ctx.stroke();
                     }
-                    // Tool shapes on shelves
-                    ctx.fillStyle = 'rgba(212,168,67,0.15)';
-                    const rand = _seeded(opts.seed || 77);
-                    for (let sy = 0; sy < 3; sy++) {
-                        for (let tx = 0; tx < 3; tx++) {
-                            if (rand() > 0.3) {
-                                const tw = 12 + rand() * 18;
-                                const th = 15 + rand() * 30;
-                                ctx.fillRect(x + 10 + tx * 25, y + sy * 55 + 8, tw, th);
-                            }
-                        }
-                    }
+
+                    // Needle
+                    const needleAngle = Math.PI * (opts.needlePos || 0.3);
+                    ctx.strokeStyle = _rgba(color, alpha * 1.5);
+                    ctx.lineWidth = 2.5 * (w / DW);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(needleAngle) * r * 0.75, Math.sin(needleAngle) * r * 0.75);
+                    ctx.stroke();
+
+                    // Center dot
+                    ctx.fillStyle = _rgba(color, alpha);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 4 * (w / DW), 0, Math.PI * 2);
+                    ctx.fill();
+
                     ctx.restore();
                 },
             },
             {
-                id: 'lift_post',
+                id: 'shield_icon',
                 draw: (ctx, w, h, opts) => {
-                    const x = opts.x || w * 0.8;
-                    const y = opts.y || h * 0.20;
-                    const postH = opts.height || 300;
-                    const color = opts.color || 'rgba(70,80,90,0.25)';
+                    const cx = (opts.x || 0.5) * w;
+                    const cy = (opts.y || 0.3) * h;
+                    const s = (opts.scale || 1) * (w / DW);
+                    const alpha = opts.alpha || 0.1;
+                    const color = opts.color || '#D4A843';
+
                     ctx.save();
-                    ctx.fillStyle = color;
-                    // Vertical post
-                    ctx.fillRect(x, y, 16, postH);
-                    // Base plate
-                    ctx.fillRect(x - 20, y + postH - 5, 56, 10);
-                    // Arm
-                    ctx.fillRect(x - 60, y + postH * 0.4, 80, 6);
-                    ctx.fillRect(x + 16, y + postH * 0.4, 80, 6);
-                    // Hydraulic cylinder
-                    ctx.fillStyle = 'rgba(212,168,67,0.12)';
-                    ctx.fillRect(x + 3, y + 20, 10, postH * 0.35);
+                    ctx.translate(cx, cy);
+                    ctx.scale(s, s);
+
+                    // Shield shape
+                    ctx.strokeStyle = _rgba(color, alpha);
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -50);
+                    ctx.bezierCurveTo(-35, -45, -45, -30, -45, -10);
+                    ctx.bezierCurveTo(-45, 15, -30, 35, 0, 50);
+                    ctx.bezierCurveTo(30, 35, 45, 15, 45, -10);
+                    ctx.bezierCurveTo(45, -30, 35, -45, 0, -50);
+                    ctx.closePath();
+                    ctx.stroke();
+
+                    // Checkmark inside
+                    ctx.strokeStyle = _rgba(color, alpha * 1.3);
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-15, 5);
+                    ctx.lineTo(-3, 18);
+                    ctx.lineTo(18, -12);
+                    ctx.stroke();
+
                     ctx.restore();
                 },
             },
         ],
 
-        // --- Layer 3: Atmosphere ---
+        // --- Layer 3: Atmosphere (premium light effects) ---
         atmosphere: [
             {
                 id: 'light_beam',
                 draw: (ctx, w, h, opts) => {
-                    const x = opts.x || w * 0.3;
-                    const spread = opts.spread || 200;
-                    const alpha = opts.alpha || 0.06;
+                    const x = (opts.x || 0.3) * w;
+                    const spread = (opts.spread || 0.25) * w;
+                    const alpha = opts.alpha || 0.04;
                     const color = opts.color || '#D4A843';
-                    const grad = ctx.createLinearGradient(x, 0, x, h * 0.7);
-                    grad.addColorStop(0, _rgba(color, alpha * 2));
-                    grad.addColorStop(0.5, _rgba(color, alpha));
+                    const reachY = (opts.reach || 0.75) * h;
+
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+
+                    const grad = ctx.createLinearGradient(x, 0, x, reachY);
+                    grad.addColorStop(0, _rgba(color, alpha * 2.5));
+                    grad.addColorStop(0.3, _rgba(color, alpha * 1.5));
+                    grad.addColorStop(0.7, _rgba(color, alpha * 0.5));
                     grad.addColorStop(1, _rgba(color, 0));
                     ctx.fillStyle = grad;
                     ctx.beginPath();
-                    ctx.moveTo(x - 20, 0);
-                    ctx.lineTo(x - spread, h * 0.7);
-                    ctx.lineTo(x + spread, h * 0.7);
-                    ctx.lineTo(x + 20, 0);
+                    ctx.moveTo(x - 15, 0);
+                    ctx.lineTo(x - spread, reachY);
+                    ctx.lineTo(x + spread, reachY);
+                    ctx.lineTo(x + 15, 0);
                     ctx.closePath();
                     ctx.fill();
+
+                    ctx.restore();
                 },
             },
             {
-                id: 'bokeh',
+                id: 'premium_bokeh',
                 draw: (ctx, w, h, opts) => {
-                    const count = opts.count || 15;
+                    const count = opts.count || 20;
                     const rand = _seeded(opts.seed || 99);
+                    const maxY = (opts.maxY || 0.7) * h;
+
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+
                     for (let i = 0; i < count; i++) {
                         const bx = rand() * w;
-                        const by = rand() * h * 0.6;
-                        const br = 5 + rand() * 30;
-                        const alpha = 0.03 + rand() * 0.08;
-                        const color = rand() > 0.5
-                            ? (opts.primaryColor || '#D4A843')
-                            : (opts.secondaryColor || '#ffffff');
+                        const by = rand() * maxY;
+                        const br = (8 + rand() * 45) * (w / DW);
+                        const alpha = 0.02 + rand() * 0.06;
+                        const isGold = rand() > 0.4;
+                        const color = isGold
+                            ? (opts.goldColor || '#D4A843')
+                            : (opts.blueColor || '#4A90C4');
+
+                        // Soft gaussian-like bokeh
                         const radGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-                        radGrad.addColorStop(0, _rgba(color, alpha * 1.5));
-                        radGrad.addColorStop(0.7, _rgba(color, alpha * 0.5));
+                        radGrad.addColorStop(0, _rgba(color, alpha * 2));
+                        radGrad.addColorStop(0.3, _rgba(color, alpha * 1.2));
+                        radGrad.addColorStop(0.7, _rgba(color, alpha * 0.3));
                         radGrad.addColorStop(1, _rgba(color, 0));
                         ctx.fillStyle = radGrad;
                         ctx.beginPath();
                         ctx.arc(bx, by, br, 0, Math.PI * 2);
                         ctx.fill();
                     }
+
+                    ctx.restore();
                 },
             },
             {
                 id: 'dust_particles',
                 draw: (ctx, w, h, opts) => {
-                    const count = opts.count || 40;
+                    const count = opts.count || 50;
                     const rand = _seeded(opts.seed || 123);
-                    ctx.fillStyle = opts.color || 'rgba(255,255,255,0.08)';
+
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+
                     for (let i = 0; i < count; i++) {
                         const px = rand() * w;
                         const py = rand() * h;
-                        const pr = 1 + rand() * 3;
+                        const pr = (1 + rand() * 2.5) * (w / DW);
+                        const alpha = 0.05 + rand() * 0.15;
+                        const radGrad = ctx.createRadialGradient(px, py, 0, px, py, pr * 3);
+                        radGrad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+                        radGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                        ctx.fillStyle = radGrad;
                         ctx.beginPath();
-                        ctx.arc(px, py, pr, 0, Math.PI * 2);
+                        ctx.arc(px, py, pr * 3, 0, Math.PI * 2);
                         ctx.fill();
                     }
+
+                    ctx.restore();
                 },
             },
             {
                 id: 'color_overlay',
                 draw: (ctx, w, h, opts) => {
-                    const color = opts.color || '#1a3a5c';
-                    const alpha = opts.alpha || 0.15;
+                    const color = opts.color || '#1A365D';
+                    const alpha = opts.alpha || 0.1;
                     ctx.fillStyle = _rgba(color, alpha);
                     ctx.fillRect(0, 0, w, h);
                 },
@@ -297,12 +426,13 @@ const ShowcaseSceneEngine = (() => {
             {
                 id: 'vignette',
                 draw: (ctx, w, h, opts) => {
-                    const strength = opts.strength || 0.4;
+                    const strength = opts.strength || 0.3;
                     const radGrad = ctx.createRadialGradient(
-                        w / 2, h / 2, Math.min(w, h) * 0.3,
-                        w / 2, h / 2, Math.max(w, h) * 0.8
+                        w / 2, h / 2, Math.min(w, h) * 0.35,
+                        w / 2, h / 2, Math.max(w, h) * 0.75
                     );
                     radGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                    radGrad.addColorStop(0.6, `rgba(0,0,0,${strength * 0.3})`);
                     radGrad.addColorStop(1, `rgba(0,0,0,${strength})`);
                     ctx.fillStyle = radGrad;
                     ctx.fillRect(0, 0, w, h);
@@ -311,68 +441,141 @@ const ShowcaseSceneEngine = (() => {
             {
                 id: 'lens_flare',
                 draw: (ctx, w, h, opts) => {
-                    const cx = opts.x || w * 0.7;
-                    const cy = opts.y || h * 0.15;
-                    const size = opts.size || 120;
+                    const cx = (opts.x || 0.7) * w;
+                    const cy = (opts.y || 0.12) * h;
+                    const size = (opts.size || 150) * (w / DW);
                     const color = opts.color || '#D4A843';
-                    // Main flare
+
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+
+                    // Main soft glow
                     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size);
-                    grad.addColorStop(0, _rgba(color, 0.3));
-                    grad.addColorStop(0.3, _rgba(color, 0.08));
+                    grad.addColorStop(0, _rgba(color, 0.25));
+                    grad.addColorStop(0.15, _rgba(color, 0.12));
+                    grad.addColorStop(0.4, _rgba(color, 0.04));
                     grad.addColorStop(1, _rgba(color, 0));
                     ctx.fillStyle = grad;
                     ctx.beginPath();
                     ctx.arc(cx, cy, size, 0, Math.PI * 2);
                     ctx.fill();
-                    // Secondary rings
-                    for (let i = 1; i <= 3; i++) {
-                        const rx = cx + (w / 2 - cx) * i * 0.3;
-                        const ry = cy + (h / 2 - cy) * i * 0.3;
-                        const rs = size * (0.3 - i * 0.06);
+
+                    // Bright center
+                    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.12);
+                    coreGrad.addColorStop(0, _rgba('#ffffff', 0.3));
+                    coreGrad.addColorStop(1, _rgba('#ffffff', 0));
+                    ctx.fillStyle = coreGrad;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, size * 0.12, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Secondary rings along light path
+                    for (let i = 1; i <= 4; i++) {
+                        const rx = cx + (w * 0.5 - cx) * i * 0.22;
+                        const ry = cy + (h * 0.5 - cy) * i * 0.22;
+                        const rs = size * (0.2 - i * 0.03);
+                        if (rs < 5) continue;
                         const rg = ctx.createRadialGradient(rx, ry, 0, rx, ry, rs);
-                        rg.addColorStop(0, _rgba(color, 0.06));
+                        rg.addColorStop(0, _rgba(color, 0.05));
+                        rg.addColorStop(0.5, _rgba(color, 0.02));
                         rg.addColorStop(1, _rgba(color, 0));
                         ctx.fillStyle = rg;
                         ctx.beginPath();
                         ctx.arc(rx, ry, rs, 0, Math.PI * 2);
                         ctx.fill();
                     }
+
+                    ctx.restore();
+                },
+            },
+            {
+                id: 'ambient_glow',
+                draw: (ctx, w, h, opts) => {
+                    const cx = (opts.x || 0.5) * w;
+                    const cy = (opts.y || 0.4) * h;
+                    const size = (opts.size || 400) * (w / DW);
+                    const color = opts.color || '#1A365D';
+                    const alpha = opts.alpha || 0.15;
+
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+
+                    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size);
+                    grad.addColorStop(0, _rgba(color, alpha));
+                    grad.addColorStop(0.5, _rgba(color, alpha * 0.4));
+                    grad.addColorStop(1, _rgba(color, 0));
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
                 },
             },
         ],
 
-        // --- Layer 5: Accents ---
+        // --- Layer 5: Accents (refined decorative touches) ---
         accents: [
             {
                 id: 'gold_stripe',
                 draw: (ctx, w, h, opts) => {
-                    const y = opts.y || h * 0.48;
-                    const thickness = opts.thickness || 3;
+                    const y = (opts.y || 0.48) * h;
+                    const thickness = (opts.thickness || 2) * (w / DW);
                     const color = opts.color || '#D4A843';
-                    const alpha = opts.alpha || 0.4;
-                    ctx.strokeStyle = _rgba(color, alpha);
-                    ctx.lineWidth = thickness;
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(w, y);
-                    ctx.stroke();
+                    const alpha = opts.alpha || 0.3;
+
+                    // Gradient stripe that fades at edges
+                    const grad = ctx.createLinearGradient(0, y, w, y);
+                    grad.addColorStop(0, _rgba(color, 0));
+                    grad.addColorStop(0.15, _rgba(color, alpha));
+                    grad.addColorStop(0.85, _rgba(color, alpha));
+                    grad.addColorStop(1, _rgba(color, 0));
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, y - thickness / 2, w, thickness);
+
+                    // Glow around stripe
+                    const glowGrad = ctx.createLinearGradient(0, y - 15, 0, y + 15);
+                    glowGrad.addColorStop(0, _rgba(color, 0));
+                    glowGrad.addColorStop(0.5, _rgba(color, alpha * 0.15));
+                    glowGrad.addColorStop(1, _rgba(color, 0));
+                    ctx.fillStyle = glowGrad;
+                    ctx.fillRect(w * 0.1, y - 15, w * 0.8, 30);
                 },
             },
             {
                 id: 'corner_accent',
                 draw: (ctx, w, h, opts) => {
-                    const size = opts.size || 60;
+                    const size = (opts.size || 50) * (w / DW);
                     const color = opts.color || '#D4A843';
-                    const alpha = opts.alpha || 0.25;
-                    const margin = opts.margin || 30;
+                    const alpha = opts.alpha || 0.2;
+                    const margin = (opts.margin || 25) * (w / DW);
+                    const lineW = 1.5 * (w / DW);
+
                     ctx.strokeStyle = _rgba(color, alpha);
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = lineW;
+                    ctx.lineCap = 'round';
+
                     // Top-left
                     ctx.beginPath();
                     ctx.moveTo(margin, margin + size);
                     ctx.lineTo(margin, margin);
                     ctx.lineTo(margin + size, margin);
                     ctx.stroke();
+
+                    // Top-right
+                    ctx.beginPath();
+                    ctx.moveTo(w - margin - size, margin);
+                    ctx.lineTo(w - margin, margin);
+                    ctx.lineTo(w - margin, margin + size);
+                    ctx.stroke();
+
+                    // Bottom-left
+                    ctx.beginPath();
+                    ctx.moveTo(margin, h - margin - size);
+                    ctx.lineTo(margin, h - margin);
+                    ctx.lineTo(margin + size, h - margin);
+                    ctx.stroke();
+
                     // Bottom-right
                     ctx.beginPath();
                     ctx.moveTo(w - margin - size, h - margin);
@@ -382,54 +585,126 @@ const ShowcaseSceneEngine = (() => {
                 },
             },
             {
-                id: 'diagonal_accent',
+                id: 'diagonal_lines',
                 draw: (ctx, w, h, opts) => {
                     const color = opts.color || '#D4A843';
-                    const alpha = opts.alpha || 0.08;
-                    const count = opts.count || 5;
+                    const alpha = opts.alpha || 0.04;
+                    const count = opts.count || 6;
+                    const lineW = (opts.lineWidth || 1) * (w / DW);
+
+                    ctx.save();
                     ctx.strokeStyle = _rgba(color, alpha);
-                    ctx.lineWidth = opts.lineWidth || 2;
+                    ctx.lineWidth = lineW;
+
                     for (let i = 0; i < count; i++) {
-                        const offset = (w / count) * i + w * 0.1;
+                        const offset = (w / (count + 1)) * (i + 1);
                         ctx.beginPath();
                         ctx.moveTo(offset, 0);
-                        ctx.lineTo(offset - h * 0.3, h);
+                        ctx.lineTo(offset - h * 0.2, h);
                         ctx.stroke();
                     }
+
+                    ctx.restore();
+                },
+            },
+            {
+                id: 'gradient_border',
+                draw: (ctx, w, h, opts) => {
+                    const thickness = (opts.thickness || 3) * (w / DW);
+                    const color = opts.color || '#D4A843';
+                    const alpha = opts.alpha || 0.15;
+                    const margin = (opts.margin || 15) * (w / DW);
+
+                    ctx.save();
+                    ctx.strokeStyle = _rgba(color, alpha);
+                    ctx.lineWidth = thickness;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+
+                    // Rounded rect border with gradient fade
+                    const r = 12 * (w / DW);
+                    ctx.beginPath();
+                    ctx.moveTo(margin + r, margin);
+                    ctx.lineTo(w - margin - r, margin);
+                    ctx.quadraticCurveTo(w - margin, margin, w - margin, margin + r);
+                    ctx.lineTo(w - margin, h - margin - r);
+                    ctx.quadraticCurveTo(w - margin, h - margin, w - margin - r, h - margin);
+                    ctx.lineTo(margin + r, h - margin);
+                    ctx.quadraticCurveTo(margin, h - margin, margin, h - margin - r);
+                    ctx.lineTo(margin, margin + r);
+                    ctx.quadraticCurveTo(margin, margin, margin + r, margin);
+                    ctx.closePath();
+                    ctx.stroke();
+
+                    ctx.restore();
                 },
             },
         ],
     };
 
     // =========================================================================
-    // Scene Presets - Starting configurations per slide type
+    // Unified Scene Presets - Rich from the start!
     // =========================================================================
 
-    // Presets are intentionally MINIMAL - the iterative loop builds them up
     const SCENE_PRESETS = {
         hero: {
             layers: [
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
+                { elements: [
+                    { libId: 'premium_sky', layer: 'environment', opts: { theme: 0 } },
+                    { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.42, amplitude: 0.06, layers: 3, seed: 42 } },
+                    { libId: 'ground_plane', layer: 'environment', opts: { y: 0.52 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.3, size: 500, color: '#1A365D', alpha: 0.12 } },
+                    { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 12, seed: 42 } },
+                    { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } },
+                ] },
             ],
         },
         feature: {
             layers: [
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
+                { elements: [
+                    { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.2 } },
+                    { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.4, amplitude: 0.07, layers: 3, seed: 55 } },
+                    { libId: 'ground_plane', layer: 'environment', opts: { y: 0.5 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.6, y: 0.35, size: 400, color: '#D4A843', alpha: 0.06 } },
+                    { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 10, seed: 55 } },
+                    { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.28 } },
+                ] },
             ],
         },
         split: {
             layers: [
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
+                { elements: [
+                    { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.4 } },
+                    { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.45, amplitude: 0.05, layers: 2, seed: 70 } },
+                    { libId: 'ground_plane', layer: 'environment', opts: { y: 0.55 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.3, y: 0.4, size: 350, color: '#1A365D', alpha: 0.1 } },
+                    { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 8, seed: 70 } },
+                    { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } },
+                ] },
             ],
         },
         fullscreen: {
             layers: [
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } }] },
+                { elements: [
+                    { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.6 } },
+                    { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.38, amplitude: 0.08, layers: 3, seed: 85 } },
+                    { libId: 'ground_plane', layer: 'environment', opts: { y: 0.48 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.25, size: 450, color: '#D4A843', alpha: 0.08 } },
+                    { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 15, seed: 85 } },
+                    { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } },
+                ] },
             ],
         },
         comparison: {
             layers: [
-                { elements: [{ libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } }] },
+                { elements: [
+                    { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.8 } },
+                    { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.43, amplitude: 0.06, layers: 2, seed: 100 } },
+                    { libId: 'ground_plane', layer: 'environment', opts: { y: 0.53 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.35, size: 380, color: '#1A365D', alpha: 0.1 } },
+                    { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 10, seed: 100 } },
+                    { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.28 } },
+                ] },
             ],
         },
     };
@@ -438,18 +713,10 @@ const ShowcaseSceneEngine = (() => {
     // Core: Render scene layers onto a canvas
     // =========================================================================
 
-    /**
-     * Render scene layers for a single slide.
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {Object} scene - { layers: [...] }
-     * @param {number} w - Canvas width
-     * @param {number} h - Canvas height
-     * @param {Object} colors - { primary, accent }
-     */
     function renderScene(ctx, scene, w, h, colors) {
         if (!scene || !scene.layers) return;
 
-        const primary = colors?.primary || '#1a3a5c';
+        const primary = colors?.primary || '#1A365D';
         const accent = colors?.accent || '#D4A843';
 
         for (const layer of scene.layers) {
@@ -458,7 +725,6 @@ const ShowcaseSceneEngine = (() => {
                 const libEntry = _findLibEntry(elem.libId, elem.layer);
                 if (!libEntry) continue;
 
-                // Resolve relative positions to absolute pixels
                 const resolvedOpts = _resolveOpts(elem.opts, w, h, primary, accent);
                 try {
                     libEntry.draw(ctx, w, h, resolvedOpts);
@@ -469,9 +735,6 @@ const ShowcaseSceneEngine = (() => {
         }
     }
 
-    /**
-     * Get the default scene for a template type.
-     */
     function getPreset(templateId) {
         const preset = SCENE_PRESETS[templateId] || SCENE_PRESETS.hero;
         return JSON.parse(JSON.stringify(preset));
@@ -481,19 +744,13 @@ const ShowcaseSceneEngine = (() => {
     // AI Vision Iteration Loop
     // =========================================================================
 
-    /**
-     * Run the iterative improvement loop.
-     * @param {Object} project - ShowcaseBuilder project
-     * @param {Object} options - { apiKey, iterations, onProgress, targetAudience }
-     * @returns {Promise<Object>} Updated project with scene data
-     */
     async function iterateWithVision(project, options = {}) {
         const iterations = options.iterations || 5;
         const apiKey = options.apiKey || '';
         const targetAudience = options.targetAudience || 'Kfz-Betriebe, Autowerkstaetten, Gutachter';
         const onProgress = options.onProgress || (() => {});
 
-        // Initialize scenes for each slide
+        // Initialize scenes for each slide with rich presets
         if (!project._scenes) {
             project._scenes = {};
             for (let i = 0; i < project.slides.length; i++) {
@@ -529,7 +786,7 @@ const ShowcaseSceneEngine = (() => {
                 percent: Math.round(((iter * 3 + 1) / (iterations * 3)) * 100),
             });
 
-            // 3. Send to AI vision for critique
+            // 3. Get critique (AI or procedural)
             let critique = null;
             if (apiKey) {
                 try {
@@ -539,7 +796,6 @@ const ShowcaseSceneEngine = (() => {
                 }
             }
 
-            // Fallback: procedural improvements if no API key or vision failed
             if (!critique) {
                 critique = _proceduralCritique(iter, iterations);
             }
@@ -552,7 +808,7 @@ const ShowcaseSceneEngine = (() => {
                 percent: Math.round(((iter * 3 + 2) / (iterations * 3)) * 100),
             });
 
-            // 4. Apply critique changes to scenes
+            // 4. Apply changes
             _applyCritique(project, critique, iter);
         }
 
@@ -582,6 +838,12 @@ const ShowcaseSceneEngine = (() => {
             return `Slide ${parseInt(idx) + 1}: ${elems.map(e => e.libId).join(', ')}`;
         }).join('\n');
 
+        const availableElements = `
+- Environment: premium_sky, smooth_hills, city_silhouette, ground_plane
+- Midground: car_silhouette, abstract_gauge, shield_icon
+- Atmosphere: light_beam, premium_bokeh, dust_particles, color_overlay, vignette, lens_flare, ambient_glow
+- Accents: gold_stripe, corner_accent, diagonal_lines, gradient_border`;
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -597,7 +859,7 @@ const ShowcaseSceneEngine = (() => {
 Zielgruppe: ${targetAudience}
 Marke: DGD Direkt (Kfz-Schadenmanagement) - Dunkelblau #1A365D, Gold #D4A843
 
-Dies ist Iteration ${currentIter + 1} von ${totalIters}. Fruehe Iterationen: Grundaufbau. Spaetere: Feinschliff.
+Dies ist Iteration ${currentIter + 1} von ${totalIters}. Fruehe Iterationen: Feinschliff. Spaetere: Akzente und Details.
 
 Aktuelle Szenen-Elemente pro Slide:
 ${layerSummary}
@@ -605,42 +867,26 @@ ${layerSummary}
 Slides:
 ${slidesSummary}
 
-Verfuegbare Elemente zum Hinzufuegen:
-- Environment: horizon_line, cityscape, road, workshop_floor
-- Midground: car_silhouette, tool_rack, lift_post
-- Atmosphere: light_beam, bokeh, dust_particles, color_overlay, vignette, lens_flare
-- Accents: gold_stripe, corner_accent, diagonal_accent
+Verfuegbare Elemente:${availableElements}
 
-Antworte NUR mit JSON:
-{
-  "summary": "Kurze Zusammenfassung der Verbesserungen (1 Satz, deutsch)",
-  "changes": [
-    {
-      "slideIndex": 0,
-      "action": "add|modify|remove",
-      "element": {
-        "libId": "element_id",
-        "layer": "environment|midground|atmosphere|accents",
-        "opts": { ... }
-      }
-    }
-  ]
-}
+WICHTIG: Antworte ausschliesslich mit validem JSON, KEIN Markdown, KEINE Code-Bloecke.
+Format:
+{"summary": "Kurze Zusammenfassung (1 Satz, deutsch)", "changes": [{"slideIndex": 0, "action": "add", "element": {"libId": "element_id", "layer": "environment|midground|atmosphere|accents", "opts": {}}}]}
 
 Regeln:
-- Max 4 Aenderungen pro Iteration
-- Fruehe Iter: Landschaft/Umgebung aufbauen
-- Mittlere Iter: Atmosphaere (Licht, Bokeh, Partikel)
-- Spaete Iter: Akzente und Feintuning
-- Alle Positionen als Faktor (0.0-1.0), NICHT in Pixeln
-- Denke an die Zielgruppe: Werkstatt-Atmosphaere, Autos, Professionalitaet`,
+- Max 6 Aenderungen pro Iteration
+- Alle Positionen als Faktor (0.0-1.0)
+- Slide-uebergreifend einheitliche Atmosphaere bewahren
+- Fruehe Iter: Stadtsilhouetten, Autos, Lichteffekte hinzufuegen
+- Spaete Iter: Akzente, Gauge, Shield, Feintuning
+- Goldfarbe #D4A843 als Akzent nutzen`,
                     },
                     {
                         role: 'user',
                         content: [
                             {
                                 type: 'text',
-                                text: `Analysiere dieses Screenshot-Set (3x2 Grid, Slides 1-6). Was fehlt? Wie kann die Atmosphaere fuer ${targetAudience} verbessert werden? Iteration ${currentIter + 1}/${totalIters}.`,
+                                text: `Analysiere dieses Screenshot-Set (3x2 Grid, Slides 1-6). Verbessere die visuelle Atmosphaere fuer ${targetAudience}. Iteration ${currentIter + 1}/${totalIters}. Antworte NUR mit JSON.`,
                             },
                             {
                                 type: 'image_url',
@@ -653,114 +899,107 @@ Regeln:
                     },
                 ],
                 max_tokens: 1024,
-                temperature: 0.7,
+                temperature: 0.6,
             }),
         });
 
         if (!response.ok) {
-            throw new Error(`OpenAI Vision API error ${response.status}`);
+            const errBody = await response.text().catch(() => '');
+            throw new Error(`OpenAI Vision API error ${response.status}: ${errBody.slice(0, 200)}`);
         }
 
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || '';
+        let content = data.choices?.[0]?.message?.content || '';
 
-        // Parse JSON from response
+        // Clean up response - remove markdown fences if present
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
+        // Parse JSON
         try {
             return JSON.parse(content);
         } catch {
-            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-            if (jsonMatch) {
-                return JSON.parse(jsonMatch[1].trim());
-            }
-            // Try finding raw JSON
+            // Try extracting JSON object
             const braceStart = content.indexOf('{');
             const braceEnd = content.lastIndexOf('}');
             if (braceStart !== -1 && braceEnd > braceStart) {
-                return JSON.parse(content.slice(braceStart, braceEnd + 1));
+                try {
+                    return JSON.parse(content.slice(braceStart, braceEnd + 1));
+                } catch (e2) {
+                    console.warn('[SceneEngine] JSON parse fallback failed:', content.slice(0, 200));
+                }
             }
             throw new Error('Could not parse vision critique response');
         }
     }
 
     // =========================================================================
-    // Procedural Critique Fallback (no API key)
+    // Procedural Critique Fallback
     // =========================================================================
 
-    /**
-     * Procedural critique - 5 distinct phases that progressively build atmosphere.
-     * Each iteration adds to ALL 6 slides simultaneously.
-     */
     function _proceduralCritique(currentIter, _totalIters) {
         const PHASES = [
-            // Phase 1: Foundation - Horizon, sky gradient, ground plane
+            // Phase 1: Add city silhouettes for urban/automotive feel
             {
-                summary: 'Grundstruktur: Horizont und Boden aufbauen',
+                summary: 'Stadtsilhouetten fuer urbane Kfz-Atmosphaere',
                 changes: [
-                    { slideIndex: 0, action: 'add', element: { libId: 'horizon_line', layer: 'environment', opts: { y: 0.35, skyTop: 'rgba(10,25,50,0.85)', skyMid: 'rgba(20,45,75,0.6)', skyBottom: 'rgba(35,65,105,0.3)' } } },
-                    { slideIndex: 0, action: 'add', element: { libId: 'cityscape', layer: 'environment', opts: { baseY: 0.33, count: 12, seed: 42 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'workshop_floor', layer: 'environment', opts: { y: 0.45, gridSize: 70 } } },
-                    { slideIndex: 2, action: 'add', element: { libId: 'horizon_line', layer: 'environment', opts: { y: 0.30, skyTop: 'rgba(12,28,55,0.8)', skyMid: 'rgba(25,50,85,0.5)', skyBottom: 'rgba(40,70,110,0.25)' } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'workshop_floor', layer: 'environment', opts: { y: 0.50, gridSize: 60 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'workshop_floor', layer: 'environment', opts: { y: 0.48, gridSize: 65 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'horizon_line', layer: 'environment', opts: { y: 0.28 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'cityscape', layer: 'environment', opts: { baseY: 0.26, count: 9, seed: 77 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'city_silhouette', layer: 'environment', opts: { baseY: 0.38, seed: 42, alpha: 0.2 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'city_silhouette', layer: 'environment', opts: { baseY: 0.36, seed: 55, alpha: 0.18 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'city_silhouette', layer: 'environment', opts: { baseY: 0.40, seed: 70, alpha: 0.15 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'city_silhouette', layer: 'environment', opts: { baseY: 0.34, seed: 85, alpha: 0.2 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'city_silhouette', layer: 'environment', opts: { baseY: 0.39, seed: 100, alpha: 0.17 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'city_silhouette', layer: 'environment', opts: { baseY: 0.37, seed: 115, alpha: 0.2 } } },
                 ],
             },
-            // Phase 2: Mid-ground - Vehicles, workshop equipment, roads
+            // Phase 2: Vehicles, shields, and light beams
             {
-                summary: 'Fahrzeuge und Werkstatt-Elemente platzieren',
+                summary: 'Fahrzeuge und Lichtstrahlen platzieren',
                 changes: [
-                    { slideIndex: 0, action: 'add', element: { libId: 'road', layer: 'environment', opts: { y: 0.38 } } },
-                    { slideIndex: 0, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.25, y: 0.42, scale: 1.2 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'tool_rack', layer: 'midground', opts: { x: 0.05, y: 0.18, seed: 55 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'lift_post', layer: 'midground', opts: { x: 0.88, y: 0.15 } } },
-                    { slideIndex: 2, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.72, y: 0.35, scale: 0.9 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.5, y: 0.48, scale: 1.6 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'lift_post', layer: 'midground', opts: { x: 0.92, y: 0.12 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.18, y: 0.35, scale: 0.7 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.82, y: 0.35, scale: 0.7 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.5, spread: 0.3, alpha: 0.04 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.3, y: 0.5, scale: 1.1, alpha: 0.15 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.65, spread: 0.22, alpha: 0.035 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'shield_icon', layer: 'midground', opts: { x: 0.15, y: 0.35, scale: 1.2, alpha: 0.08 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'car_silhouette', layer: 'midground', opts: { x: 0.55, y: 0.48, scale: 1.4, alpha: 0.12 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.35, spread: 0.25, alpha: 0.04 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.5, y: 0.08, size: 130 } } },
                 ],
             },
-            // Phase 3: Lighting - Light beams, lens flares, color atmosphere
+            // Phase 3: Lens flares and dust particles for depth
             {
-                summary: 'Beleuchtung und Lichtstimmung aufbauen',
+                summary: 'Lens Flares und Partikel fuer Tiefe',
                 changes: [
-                    { slideIndex: 0, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.5, spread: 250, alpha: 0.06 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.7, spread: 180, alpha: 0.05 } } },
-                    { slideIndex: 2, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.8, y: 0.12, size: 100 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.4, spread: 280, alpha: 0.07 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'light_beam', layer: 'atmosphere', opts: { x: 0.3, spread: 200, alpha: 0.05 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.5, y: 0.10, size: 80 } } },
-                    { slideIndex: 0, action: 'add', element: { libId: 'color_overlay', layer: 'atmosphere', opts: { color: '#1a3a5c', alpha: 0.08 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'color_overlay', layer: 'atmosphere', opts: { color: '#0d1b2a', alpha: 0.10 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.75, y: 0.1, size: 160 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 40, seed: 88 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.8, y: 0.12, size: 120 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 35, seed: 200 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'lens_flare', layer: 'atmosphere', opts: { x: 0.6, y: 0.15, size: 100 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 30, seed: 150 } } },
                 ],
             },
-            // Phase 4: Particles - Bokeh, dust, atmospheric depth
+            // Phase 4: Gold accents and gauges
             {
-                summary: 'Partikel und atmosphaerische Tiefe',
+                summary: 'Gold-Akzente und Brandingelemente',
                 changes: [
-                    { slideIndex: 0, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 15, seed: 42 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 35, seed: 88 } } },
-                    { slideIndex: 2, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 10, seed: 33 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 50, seed: 200 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 20, seed: 150 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 12, seed: 111 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 25, seed: 95 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'bokeh', layer: 'atmosphere', opts: { count: 10, seed: 66 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'corner_accent', layer: 'accents', opts: { size: 45, alpha: 0.2 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.46, alpha: 0.25 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'abstract_gauge', layer: 'midground', opts: { x: 0.85, y: 0.25, radius: 60, alpha: 0.08 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'corner_accent', layer: 'accents', opts: { size: 40, alpha: 0.18 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'shield_icon', layer: 'midground', opts: { x: 0.85, y: 0.2, scale: 0.8, alpha: 0.07 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'corner_accent', layer: 'accents', opts: { size: 50, alpha: 0.22 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.92, alpha: 0.2 } } },
                 ],
             },
-            // Phase 5: Accents - Gold stripes, corner accents, final polish
+            // Phase 5: Final polish - gradient borders, diagonal lines, bokeh boost
             {
-                summary: 'Gold-Akzente und finaler Feinschliff',
+                summary: 'Finaler Feinschliff und Rahmen',
                 changes: [
-                    { slideIndex: 0, action: 'add', element: { libId: 'corner_accent', layer: 'accents', opts: { size: 50, alpha: 0.25 } } },
-                    { slideIndex: 1, action: 'add', element: { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.46, alpha: 0.3 } } },
-                    { slideIndex: 2, action: 'add', element: { libId: 'gold_stripe', layer: 'accents', opts: { y: 0.50, alpha: 0.25 } } },
-                    { slideIndex: 3, action: 'add', element: { libId: 'corner_accent', layer: 'accents', opts: { size: 45, alpha: 0.3 } } },
-                    { slideIndex: 4, action: 'add', element: { libId: 'diagonal_accent', layer: 'accents', opts: { count: 4, alpha: 0.06 } } },
-                    { slideIndex: 5, action: 'add', element: { libId: 'diagonal_accent', layer: 'accents', opts: { count: 3, alpha: 0.05 } } },
+                    { slideIndex: 0, action: 'add', element: { libId: 'gradient_border', layer: 'accents', opts: { alpha: 0.08 } } },
+                    { slideIndex: 1, action: 'add', element: { libId: 'diagonal_lines', layer: 'accents', opts: { count: 5, alpha: 0.03 } } },
+                    { slideIndex: 2, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 25, seed: 333 } } },
+                    { slideIndex: 3, action: 'add', element: { libId: 'gradient_border', layer: 'accents', opts: { alpha: 0.07 } } },
+                    { slideIndex: 4, action: 'add', element: { libId: 'dust_particles', layer: 'atmosphere', opts: { count: 20, seed: 444 } } },
+                    { slideIndex: 5, action: 'add', element: { libId: 'gradient_border', layer: 'accents', opts: { alpha: 0.09 } } },
                     { slideIndex: 0, action: 'modify', element: { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.35 } } },
-                    { slideIndex: 3, action: 'modify', element: { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.45 } } },
+                    { slideIndex: 3, action: 'modify', element: { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.35 } } },
                 ],
             },
         ];
@@ -790,15 +1029,9 @@ Regeln:
             switch (change.action) {
                 case 'add':
                     if (change.element) {
-                        // Add to the appropriate position (before vignette if present)
-                        const lastLayer = scene.layers[scene.layers.length - 1];
-                        const hasVignette = lastLayer?.elements?.some(e => e.libId === 'vignette');
-
-                        if (hasVignette) {
-                            // Insert before vignette layer
-                            scene.layers.splice(scene.layers.length - 1, 0, {
-                                elements: [change.element],
-                            });
+                        // Add element to the first (and usually only) layer group
+                        if (scene.layers.length > 0) {
+                            scene.layers[0].elements.push(change.element);
                         } else {
                             scene.layers.push({ elements: [change.element] });
                         }
@@ -807,7 +1040,6 @@ Regeln:
 
                 case 'modify':
                     if (change.element) {
-                        // Find and update existing element
                         for (const layer of scene.layers) {
                             for (const elem of (layer.elements || [])) {
                                 if (elem.libId === change.element.libId) {
@@ -825,7 +1057,6 @@ Regeln:
                                 e => e.libId !== change.element.libId
                             );
                         }
-                        // Remove empty layers
                         scene.layers = scene.layers.filter(l => l.elements && l.elements.length > 0);
                     }
                     break;
@@ -837,9 +1068,6 @@ Regeln:
     // Render Helpers
     // =========================================================================
 
-    /**
-     * Render a single slide to an offscreen canvas and return data URL.
-     */
     function _renderSlideToImage(project, slideIndex) {
         const canvas = document.createElement('canvas');
         canvas.width = DW;
@@ -853,17 +1081,17 @@ Regeln:
         const bg = slide.background;
         if (bg) {
             if (bg.type === 'solid') {
-                ctx.fillStyle = bg.color || '#1a3a5c';
+                ctx.fillStyle = bg.color || '#1A365D';
                 ctx.fillRect(0, 0, DW, DH);
             } else if (bg.type === 'gradient') {
                 const grad = ctx.createLinearGradient(0, 0, 0, DH);
-                grad.addColorStop(0, bg.from || '#1a3a5c');
+                grad.addColorStop(0, bg.from || '#1A365D');
                 grad.addColorStop(1, bg.to || '#2c5282');
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, 0, DW, DH);
             }
         } else {
-            ctx.fillStyle = '#1a3a5c';
+            ctx.fillStyle = '#1A365D';
             ctx.fillRect(0, 0, DW, DH);
         }
 
@@ -873,7 +1101,7 @@ Regeln:
             renderScene(ctx, scene, DW, DH, project.brandColors);
         }
 
-        // 3. Draw template elements (text, devices, shapes)
+        // 3. Draw template elements
         for (const el of (slide.elements || [])) {
             _drawElementSimple(ctx, el, 1);
         }
@@ -881,9 +1109,6 @@ Regeln:
         return canvas.toDataURL('image/jpeg', 0.6);
     }
 
-    /**
-     * Create a 3x2 composite of all 6 slides for vision analysis.
-     */
     function _createComposite(slideDataUrls) {
         const canvas = document.createElement('canvas');
         const thumbW = 360;
@@ -892,24 +1117,18 @@ Regeln:
         canvas.height = thumbH * 2;
         const ctx = canvas.getContext('2d');
 
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#0a1628';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        let loaded = 0;
-        const images = [];
-
-        // Synchronous draw since we have data URLs
         for (let i = 0; i < Math.min(slideDataUrls.length, 6); i++) {
             const img = new Image();
             img.src = slideDataUrls[i];
             const col = i % 3;
             const row = Math.floor(i / 3);
-            // Draw when available (data URLs load synchronously in most browsers)
             try {
                 ctx.drawImage(img, col * thumbW, row * thumbH, thumbW, thumbH);
             } catch (e) {
-                // Fill with placeholder
-                ctx.fillStyle = '#1a3a5c';
+                ctx.fillStyle = '#1A365D';
                 ctx.fillRect(col * thumbW, row * thumbH, thumbW, thumbH);
             }
         }
@@ -917,9 +1136,6 @@ Regeln:
         return canvas.toDataURL('image/jpeg', 0.7);
     }
 
-    /**
-     * Simple element drawing for offscreen render (no interactivity).
-     */
     function _drawElementSimple(ctx, el, scale) {
         if (el.type === 'text') {
             const x = el.x * scale;
@@ -942,15 +1158,9 @@ Regeln:
             ctx.restore();
         } else if (el.type === 'shape') {
             ctx.save();
-            if (el.fill && el.fill !== 'none') {
-                ctx.fillStyle = el.fill;
-                ctx.fillRect(el.x * scale, el.y * scale, (el.w || 100) * scale, (el.h || 100) * scale);
-            }
+            ctx.fillStyle = el.fill || 'rgba(0,0,0,0.5)';
+            ctx.fillRect(el.x * scale, el.y * scale, (el.w || 100) * scale, (el.h || 100) * scale);
             ctx.restore();
-        } else if (el.type === 'device') {
-            if (typeof ShowcaseDevices !== 'undefined') {
-                ShowcaseDevices.drawDevice(ctx, el.device || 'iphone', el.x * scale, el.y * scale, (el.scale || 1) * scale, null);
-            }
         }
     }
 
@@ -958,66 +1168,27 @@ Regeln:
     // Utility Helpers
     // =========================================================================
 
-    function _findLibEntry(libId, layerName) {
-        const categories = {
-            environment: ELEMENT_LIBRARY.environment,
-            midground: ELEMENT_LIBRARY.midground,
-            atmosphere: ELEMENT_LIBRARY.atmosphere,
-            accents: ELEMENT_LIBRARY.accents,
-        };
+    function _findLibEntry(libId, layerHint) {
+        // Search in hinted layer first, then all layers
+        const layerOrder = layerHint
+            ? [layerHint, ...Object.keys(ELEMENT_LIBRARY).filter(k => k !== layerHint)]
+            : Object.keys(ELEMENT_LIBRARY);
 
-        // Search specified category first
-        const cat = categories[layerName];
-        if (cat) {
-            const entry = cat.find(e => e.id === libId);
+        for (const layerKey of layerOrder) {
+            const layer = ELEMENT_LIBRARY[layerKey];
+            if (!layer) continue;
+            const entry = layer.find(e => e.id === libId);
             if (entry) return entry;
         }
-
-        // Fallback: search all categories
-        for (const entries of Object.values(categories)) {
-            const entry = entries.find(e => e.id === libId);
-            if (entry) return entry;
-        }
-
         return null;
     }
 
-    /**
-     * Resolve relative opts (0-1 factors) to pixel values.
-     */
     function _resolveOpts(opts, w, h, primary, accent) {
         if (!opts) return {};
         const resolved = { ...opts };
-
-        // Position factors → pixels
-        const posKeys = ['x', 'y', 'baseY'];
-        for (const key of posKeys) {
-            if (typeof resolved[key] === 'number' && resolved[key] >= 0 && resolved[key] <= 1.0) {
-                resolved[key] = key.includes('y') || key.includes('Y')
-                    ? resolved[key] * h
-                    : resolved[key] * w;
-            }
-        }
-
-        // Height factor → pixels
-        if (typeof resolved.height === 'number' && resolved.height > 0 && resolved.height <= 1.0) {
-            resolved.height = resolved.height * h;
-        }
-
-        // Spread factor → pixels
-        if (typeof resolved.spread === 'number' && resolved.spread > 0 && resolved.spread <= 1.0) {
-            resolved.spread = resolved.spread * w;
-        }
-
-        // Size factor → pixels
-        if (typeof resolved.size === 'number' && resolved.size > 0 && resolved.size <= 1.0) {
-            resolved.size = resolved.size * Math.min(w, h);
-        }
-
-        // Inject brand colors if not specified
-        if (!resolved.primaryColor) resolved.primaryColor = primary;
-        if (!resolved.secondaryColor) resolved.secondaryColor = accent;
-
+        // Replace color tokens
+        if (resolved.color === 'primary') resolved.color = primary;
+        if (resolved.color === 'accent') resolved.color = accent;
         return resolved;
     }
 
@@ -1025,17 +1196,29 @@ Regeln:
         let s = seed;
         return () => {
             s = (s * 16807 + 0) % 2147483647;
-            return (s - 1) / 2147483646;
+            return s / 2147483647;
         };
     }
 
     function _rgba(hex, alpha) {
-        hex = hex.replace(/^#/, '');
-        if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-        const n = parseInt(hex, 16);
-        const r = (n >> 16) & 255;
-        const g = (n >> 8) & 255;
-        const b = n & 255;
+        if (hex.startsWith('rgba') || hex.startsWith('rgb')) {
+            // Already rgb/rgba - just replace alpha
+            const match = hex.match(/[\d.]+/g);
+            if (match && match.length >= 3) {
+                return `rgba(${match[0]},${match[1]},${match[2]},${alpha})`;
+            }
+        }
+        // Hex to rgba
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 4) {
+            r = parseInt(hex[1] + hex[1], 16);
+            g = parseInt(hex[2] + hex[2], 16);
+            b = parseInt(hex[3] + hex[3], 16);
+        } else if (hex.length === 7) {
+            r = parseInt(hex.slice(1, 3), 16);
+            g = parseInt(hex.slice(3, 5), 16);
+            b = parseInt(hex.slice(5, 7), 16);
+        }
         return `rgba(${r},${g},${b},${alpha})`;
     }
 
@@ -1048,6 +1231,7 @@ Regeln:
         getPreset,
         iterateWithVision,
         ELEMENT_LIBRARY,
-        SCENE_PRESETS,
+        DW,
+        DH,
     };
 })();
