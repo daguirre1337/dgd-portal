@@ -31,10 +31,10 @@
     display: flex;
     gap: 3px;
     align-items: center;
-    min-width: min-content;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    max-width: 100%;
 }
 
 .showcase-canvas__slide {
@@ -101,6 +101,9 @@
     border-top: 1px solid rgba(255,255,255,0.08);
     padding: 10px 16px;
     backdrop-filter: blur(12px);
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .showcase-chat__suggestions {
@@ -109,6 +112,8 @@
     gap: 6px;
     margin-bottom: 10px;
     justify-content: center;
+    overflow: hidden;
+    max-height: 72px; /* 2 rows max */
 }
 
 .showcase-chat__chip {

@@ -793,11 +793,12 @@ const ShowcaseBuilder = (() => {
         const strip = document.getElementById('sc-canvas-strip');
         if (!strip) return;
 
-        // Get actual visible area from the canvas container
+        // First, temporarily hide strips so parent can report true available size
+        strip.style.display = 'none';
         const canvasArea = strip.parentElement;
-        const rect = canvasArea.getBoundingClientRect();
-        const availableWidth = Math.floor(rect.width) - 24; // minus padding
-        const maxH = Math.floor(rect.height) - 24;
+        const availableWidth = canvasArea.clientWidth - 24; // padding
+        const maxH = canvasArea.clientHeight - 24;
+        strip.style.display = '';
 
         // Fit all 6 slides within available width
         const gapTotal = 3 * 5; // 3px gap × 5 gaps
