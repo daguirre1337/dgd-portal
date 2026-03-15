@@ -25,7 +25,7 @@ const ShowcaseTemplates = (() => {
             name: 'Hero',
             icon: '\u2B50', // star
             description: 'Headline oben, Device unten',
-            background: { type: 'gradient', from: '#1a3a5c', to: '#2c5282', angle: 180 },
+            background: { type: 'gradient', from: '#1e4976', to: '#3a6ea5', angle: 180 },
             elements: [
                 {
                     type: 'text',
@@ -64,7 +64,7 @@ const ShowcaseTemplates = (() => {
             name: 'Features',
             icon: '\u2726', // sparkle
             description: '3 Feature-Punkte + Device',
-            background: { type: 'gradient', from: '#0f2440', to: '#1a3a5c', angle: 135 },
+            background: { type: 'gradient', from: '#1a3a5c', to: '#2c5282', angle: 135 },
             elements: [
                 {
                     type: 'text',
@@ -133,7 +133,7 @@ const ShowcaseTemplates = (() => {
                     shapeType: 'rect',
                     x: 0, y: 0,
                     w: 480, h: 1920,
-                    fill: '#1a3a5c',
+                    fill: '#1e4976',
                     stroke: 'none',
                 },
                 {
@@ -173,30 +173,30 @@ const ShowcaseTemplates = (() => {
             name: 'Vollbild',
             icon: '\u26F6', // maximize
             description: 'Screenshot fullscreen + Text-Overlay',
-            background: { type: 'solid', color: '#000000' },
+            background: { type: 'gradient', from: '#0d1b2a', to: '#1b2d45', angle: 180 },
             elements: [
                 {
                     type: 'device',
                     id: 'phone',
                     device: 'iphone',
                     screenshot: null,
-                    x: 120, y: 80,
-                    scale: 2.0,
+                    x: 180, y: 60,
+                    scale: 1.7,
                 },
                 {
                     type: 'shape',
                     id: 'overlay',
                     shapeType: 'rect',
-                    x: 0, y: 1500,
-                    w: 1080, h: 420,
-                    fill: 'rgba(0,0,0,0.7)',
+                    x: 0, y: 1400,
+                    w: 1080, h: 520,
+                    fill: 'rgba(0,0,0,0.75)',
                     stroke: 'none',
                 },
                 {
                     type: 'text',
                     id: 'headline',
                     content: 'Beeindruckend einfach',
-                    x: 80, y: 1580,
+                    x: 80, y: 1500,
                     fontSize: 52, fontWeight: 700,
                     color: '#ffffff',
                     maxWidth: 920,
@@ -207,9 +207,9 @@ const ShowcaseTemplates = (() => {
                     type: 'text',
                     id: 'subline',
                     content: 'Die neue Art der Schadensregulierung',
-                    x: 80, y: 1680,
+                    x: 80, y: 1600,
                     fontSize: 30, fontWeight: 400,
-                    color: 'rgba(255,255,255,0.7)',
+                    color: 'rgba(255,255,255,0.8)',
                     maxWidth: 920,
                     align: 'left',
                     fontFamily: 'Inter',
@@ -221,7 +221,7 @@ const ShowcaseTemplates = (() => {
             name: 'Vergleich',
             icon: '\u21C4', // arrows
             description: 'Vorher/Nachher, 2 Screenshots',
-            background: { type: 'gradient', from: '#1a3a5c', to: '#0f2440', angle: 180 },
+            background: { type: 'gradient', from: '#2c5282', to: '#1e4976', angle: 180 },
             elements: [
                 {
                     type: 'text',

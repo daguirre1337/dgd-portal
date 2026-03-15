@@ -86,24 +86,24 @@ const ShowcasePanorama = (() => {
     // --- Mood renderers ---
 
     function renderProfessional(ctx, primary, accent, rand) {
-        // Dark blue gradient background
-        const base = darken(primary, 70);
-        const mid = darken(primary, 50);
+        // Medium-blue gradient background (not too dark)
+        const base = darken(primary, 40);
+        const mid = darken(primary, 25);
         const grad = ctx.createLinearGradient(0, 0, TOTAL_W, DH);
         grad.addColorStop(0, base);
         grad.addColorStop(0.5, mid);
-        grad.addColorStop(1, darken(primary, 60));
+        grad.addColorStop(1, darken(primary, 35));
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, TOTAL_W, DH);
 
-        // Subtle geometric circles
+        // Geometric circles with more visibility
         for (let i = 0; i < 30; i++) {
             const x = rand() * TOTAL_W;
             const y = rand() * DH;
             const r = 30 + rand() * 150;
             ctx.beginPath();
             ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.strokeStyle = rgba(lighten(primary, 30), 0.05 + rand() * 0.08);
+            ctx.strokeStyle = rgba(lighten(primary, 40), 0.08 + rand() * 0.10);
             ctx.lineWidth = 1 + rand() * 2;
             ctx.stroke();
         }
@@ -114,12 +114,12 @@ const ShowcasePanorama = (() => {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(TOTAL_W, y);
-            ctx.strokeStyle = rgba(lighten(primary, 20), 0.03 + rand() * 0.04);
+            ctx.strokeStyle = rgba(lighten(primary, 30), 0.04 + rand() * 0.05);
             ctx.lineWidth = 1;
             ctx.stroke();
         }
 
-        drawFlowingCurves(ctx, lighten(primary, 40), accent, rand, 5);
+        drawFlowingCurves(ctx, lighten(primary, 50), accent, rand, 5);
     }
 
     function renderPlayful(ctx, primary, accent, rand) {
@@ -222,11 +222,11 @@ const ShowcasePanorama = (() => {
     }
 
     function renderElegant(ctx, primary, accent, rand) {
-        // Smooth dark-to-mid gradient
+        // Smooth mid-tone gradient
         const grad = ctx.createLinearGradient(0, 0, TOTAL_W * 0.3, DH);
-        grad.addColorStop(0, darken(primary, 60));
-        grad.addColorStop(0.5, darken(primary, 40));
-        grad.addColorStop(1, darken(primary, 50));
+        grad.addColorStop(0, darken(primary, 35));
+        grad.addColorStop(0.5, darken(primary, 20));
+        grad.addColorStop(1, darken(primary, 28));
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, TOTAL_W, DH);
 
@@ -268,8 +268,8 @@ const ShowcasePanorama = (() => {
     }
 
     function renderTech(ctx, primary, accent, rand) {
-        // Dark background
-        ctx.fillStyle = darken(primary, 85);
+        // Dark-ish background (not pitch black)
+        ctx.fillStyle = darken(primary, 65);
         ctx.fillRect(0, 0, TOTAL_W, DH);
 
         // Grid lines
