@@ -194,13 +194,21 @@ const ShowcaseBuilder = (() => {
             case 'text':
                 _drawText(ctx, el, scale);
                 break;
-            case 'device':
+            case 'device': {
+                // Determine placeholder mode for comparison slides
+                let phMode = undefined;
+                if (!screenshotImages[el._id]) {
+                    if (el.id === 'phone-left') phMode = 'ohne-dgd';
+                    else if (el.id === 'phone-right') phMode = 'mit-dgd';
+                }
                 ShowcaseDevices.drawDevice(
                     ctx, el.device || 'iphone',
                     sx, sy, (el.scale || 1) * scale,
-                    screenshotImages[el._id] || null
+                    screenshotImages[el._id] || null,
+                    phMode
                 );
                 break;
+            }
             case 'shape':
                 _drawShape(ctx, el, scale);
                 break;
@@ -218,10 +226,10 @@ const ShowcaseBuilder = (() => {
         const y = el.y * scale;
         const fontSize = (el.fontSize || 36) * scale;
         const maxWidth = (el.maxWidth || DW) * scale;
+        const hasPano = !!(panoramaCanvas || panoramaImage);
 
         ctx.save();
         ctx.font = `${el.fontWeight || 400} ${fontSize}px ${el.fontFamily || 'Inter'}, -apple-system, sans-serif`;
-        ctx.fillStyle = el.color || '#000000';
         ctx.textAlign = el.align || 'left';
         ctx.textBaseline = 'top';
 
@@ -229,6 +237,45 @@ const ShowcaseBuilder = (() => {
         const lines = _wrapText(ctx, el.content || '', maxWidth);
         const lineHeight = fontSize * 1.2;
 
+        // Draw text backdrop when panorama is active (improves readability)
+        if (hasPano && lines.length > 0 && el.id !== 'label-left' && el.id !== 'label-right') {
+            const totalH = lines.length * lineHeight + fontSize * 0.4;
+            let maxW = 0;
+            for (const line of lines) {
+                const m = ctx.measureText(line).width;
+                if (m > maxW) maxW = m;
+            }
+            const pad = fontSize * 0.35;
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            const rx = x - pad;
+            const ry = y - pad * 0.5;
+            const rw = maxW + pad * 2;
+            const rh = totalH + pad;
+            // Rounded rect backdrop
+            const r = Math.min(fontSize * 0.3, 12 * scale);
+            ctx.beginPath();
+            ctx.moveTo(rx + r, ry);
+            ctx.lineTo(rx + rw - r, ry);
+            ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + r);
+            ctx.lineTo(rx + rw, ry + rh - r);
+            ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - r, ry + rh);
+            ctx.lineTo(rx + r, ry + rh);
+            ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - r);
+            ctx.lineTo(rx, ry + r);
+            ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Text shadow for extra contrast
+        if (hasPano) {
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = fontSize * 0.15;
+            ctx.shadowOffsetX = 1 * scale;
+            ctx.shadowOffsetY = 1 * scale;
+        }
+
+        ctx.fillStyle = el.color || '#000000';
         for (let i = 0; i < lines.length; i++) {
             let drawX = x;
             if (el.align === 'center') drawX = x + maxWidth / 2;
@@ -269,8 +316,16 @@ const ShowcaseBuilder = (() => {
         const y = el.y * scale;
         const w = (el.w || 100) * scale;
         const h = (el.h || 100) * scale;
+        const hasPano = !!(panoramaCanvas || panoramaImage);
 
         ctx.save();
+
+        // When panorama is active, make opaque shapes semi-transparent
+        // so the DALL-E background shows through
+        if (hasPano && el.fill && !el.fill.includes('rgba')) {
+            ctx.globalAlpha = 0.55;
+        }
+
         if (el.fill && el.fill !== 'none') {
             ctx.fillStyle = el.fill;
             if (el.shapeType === 'circle') {
@@ -282,6 +337,7 @@ const ShowcaseBuilder = (() => {
             }
         }
         if (el.stroke && el.stroke !== 'none') {
+            ctx.globalAlpha = 1;
             ctx.strokeStyle = el.stroke;
             ctx.lineWidth = 2 * scale;
             if (el.shapeType === 'circle') {

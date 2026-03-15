@@ -37,6 +37,7 @@ const ShowcaseOrchestrator = (() => {
 
     let _state = STATES.IDLE;
     let _progressCallbacks = [];
+    let _lastPanoramaPrompt = ''; // Track last DALL-E prompt for iterative refinement
 
     // =========================================================================
     // Progress system
@@ -340,7 +341,9 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
 
         const apiKey = getApiKey();
         const moodDesc = brief.backgroundMood || DGD_BRAND.visual.dallePromptHint;
-        const prompt = `${moodDesc}, no text, no UI elements, no logos, smooth gradients, high quality, ultra-wide seamless panoramic composition, cinematic lighting, continuous scene that can be divided into 6 equal vertical panels`;
+        const prompt = `${moodDesc}. Ultra-wide seamless panoramic composition, no text, no UI elements, no logos, no words, continuous scene that can be divided into 6 equal vertical panels. High quality, detailed.`;
+        _lastPanoramaPrompt = moodDesc;
+        console.log('[Orchestrator] DALL-E prompt mood:', moodDesc);
 
         // Retry up to 3 times (DALL-E sometimes returns 500)
         const MAX_RETRIES = 3;
@@ -783,8 +786,12 @@ IMPORTANT: You can change MULTIPLE things at once. Respond with JSON only:
 Available template IDs: "hero", "feature", "split", "fullscreen", "comparison"
 
 Rules:
-- "regeneratePanorama": set to TRUE if the user wants visual/image/background changes (e.g. "mehr Baeume", "dunklerer Hintergrund", "andere Stimmung", "mehr Autos", "Natur", etc.)
-- "panoramaHint": when regeneratePanorama is true, write a short English keyword phrase describing the desired scene (e.g. "forest landscape with trees", "dark automotive workshop", "modern city skyline at night"). This is used as DALL-E prompt hint.
+- "regeneratePanorama": set to TRUE if the user wants visual/image/background changes (e.g. "mehr Baeume", "dunklerer Hintergrund", "andere Stimmung", "mehr Autos", "Natur", "isometrisch", etc.)
+- "panoramaHint": when regeneratePanorama is true, write a DETAILED English scene description for DALL-E image generation (2-3 sentences). IMPORTANT: Build upon and REFINE the current panorama description — keep what works and add/modify what the user requests. Include art style, perspective, lighting, colors, objects, and mood. Examples:
+  - "Isometric pixel art style automotive workshop with small cars, tools, and mechanics, bright colors, Habbo Hotel aesthetic, clean geometric shapes, top-down 2.5D perspective"
+  - "Dark moody automotive workshop interior with neon blue lighting, reflective floor, luxury cars, cinematic atmosphere, photorealistic"
+  - "Lush green forest landscape with tall trees, sunlight filtering through canopy, peaceful nature scene, soft golden hour lighting"
+  The panoramaHint IS the DALL-E prompt - be specific about the visual style the user wants. Always combine previous elements with new requests.
 - Only include fields that should change. Omit unchanged slides and fields.
 - "message": ALWAYS include a brief human-readable summary of what was changed
 - Language for "message": Match the user's language (German or English).
@@ -792,7 +799,7 @@ Rules:
                 },
                 {
                     role: 'user',
-                    content: `Current project:\n${JSON.stringify(projectSummary, null, 2)}\n\nFeedback: ${feedbackText}`,
+                    content: `Current project:\n${JSON.stringify(projectSummary, null, 2)}\n\nCurrent panorama description: "${_lastPanoramaPrompt || 'default DGD automotive scene'}"\n\nUser feedback: ${feedbackText}`,
                 },
             ];
 
@@ -828,6 +835,7 @@ Rules:
         setEnvApiKey,
         getApiKey,
         hasApiKey,
+        getLastPanoramaPrompt: () => _lastPanoramaPrompt,
     };
 
 })();
