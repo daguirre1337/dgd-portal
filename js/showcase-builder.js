@@ -127,7 +127,8 @@ const ShowcaseBuilder = (() => {
         ctx.save();
 
         // Background: Panorama if available, otherwise template background
-        const pano = panoramaImage || panoramaCanvas;
+        // Prefer canvas (freshly generated/scaled) over raw image
+        const pano = panoramaCanvas || panoramaImage;
         if (pano && typeof slideIndex === 'number') {
             if (typeof ShowcasePanorama !== 'undefined') {
                 ShowcasePanorama.drawSlideBackground(ctx, pano, slideIndex, canvasW, canvasH);

@@ -313,9 +313,16 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
     // 2. Generate Panorama Image (DALL-E 3)
     // =========================================================================
 
+    // Panorama target size: 6 slides × 1080×1920
+    const PANO_W = 6480;
+    const PANO_H = 1920;
+
     /**
-     * Generate a panorama background image via DALL-E 3.
+     * Generate a panorama background via DALL-E 3.
+     * DALL-E max is 1792×1024, so we scale it up to 6480×1920 canvas
+     * and optionally blend with procedural layers for richness.
      * Falls back to procedural ShowcasePanorama.generate() on failure.
+     * @returns {HTMLCanvasElement} 6480×1920 panorama canvas
      */
     async function generatePanoramaImage(brief) {
         if (!hasApiKey()) {
@@ -326,7 +333,9 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
         try {
             const apiKey = getApiKey();
             const moodDesc = brief.backgroundMood || DGD_BRAND.visual.dallePromptHint;
-            const prompt = `${moodDesc}, no text, no UI elements, no logos, smooth gradients, high quality, wide panoramic composition, cinematic lighting`;
+            const prompt = `${moodDesc}, no text, no UI elements, no logos, smooth gradients, high quality, ultra-wide seamless panoramic composition, cinematic lighting, continuous scene that can be divided into 6 equal vertical panels`;
+
+            console.log('[Orchestrator] Requesting DALL-E panorama...');
 
             const response = await fetch(OPENAI_IMAGES_URL, {
                 method: 'POST',
@@ -338,8 +347,8 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
                     model: DALLE_MODEL,
                     prompt,
                     n: 1,
-                    size: DALLE_SIZE,
-                    quality: 'standard',
+                    size: DALLE_SIZE,  // 1792×1024 (max DALL-E 3 landscape)
+                    quality: 'hd',     // hd for best quality since we upscale
                     response_format: 'b64_json',
                 }),
             });
@@ -356,13 +365,88 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
                 throw new Error('No b64_json in DALL-E response');
             }
 
-            // Load base64 image directly (no CORS issues!)
-            const img = await _loadImage('data:image/png;base64,' + b64);
-            return img;
+            // Load DALL-E image (1792×1024)
+            const dalleImg = await _loadImage('data:image/png;base64,' + b64);
+            console.log(`[Orchestrator] DALL-E image loaded: ${dalleImg.naturalWidth}×${dalleImg.naturalHeight}`);
+
+            // Scale DALL-E image to full panorama canvas (6480×1920)
+            const panoCanvas = _scaleToPanorama(dalleImg, brief);
+            console.log(`[Orchestrator] Panorama canvas ready: ${panoCanvas.width}×${panoCanvas.height}`);
+
+            return panoCanvas;
         } catch (err) {
             console.warn('[Orchestrator] DALL-E generation failed, falling back to procedural:', err.message);
             return _proceduralPanoramaFallback(brief);
         }
+    }
+
+    /**
+     * Scale a DALL-E image (1792×1024) to the full 6480×1920 panorama canvas.
+     * Uses cover-fit scaling so the entire canvas is filled, then adds
+     * subtle procedural overlays for depth and brand consistency.
+     * @param {HTMLImageElement} img - The DALL-E source image
+     * @param {Object} brief - Design brief with colors
+     * @returns {HTMLCanvasElement} 6480×1920 panorama
+     */
+    function _scaleToPanorama(img, brief) {
+        const canvas = document.createElement('canvas');
+        canvas.width = PANO_W;
+        canvas.height = PANO_H;
+        const ctx = canvas.getContext('2d');
+
+        // Cover-fit: scale image to fill entire panorama (may crop top/bottom)
+        const imgW = img.naturalWidth || img.width;
+        const imgH = img.naturalHeight || img.height;
+        const scaleX = PANO_W / imgW;
+        const scaleY = PANO_H / imgH;
+        const scale = Math.max(scaleX, scaleY); // cover
+        const drawW = imgW * scale;
+        const drawH = imgH * scale;
+        const offsetX = (PANO_W - drawW) / 2;
+        const offsetY = (PANO_H - drawH) / 2;
+
+        // Draw scaled DALL-E image as base
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+        // Add subtle brand-colored vignette overlay for consistency
+        const primary = brief?.primaryColor || DGD_BRAND.branding.primaryColor;
+        const accent = brief?.accentColor || DGD_BRAND.branding.accentColor;
+
+        // Top gradient (brand blue, subtle)
+        const topGrad = ctx.createLinearGradient(0, 0, 0, PANO_H * 0.25);
+        topGrad.addColorStop(0, _hexToRgba(primary, 0.3));
+        topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = topGrad;
+        ctx.fillRect(0, 0, PANO_W, PANO_H * 0.25);
+
+        // Bottom gradient (darker for text readability)
+        const botGrad = ctx.createLinearGradient(0, PANO_H * 0.7, 0, PANO_H);
+        botGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        botGrad.addColorStop(1, _hexToRgba(primary, 0.4));
+        ctx.fillStyle = botGrad;
+        ctx.fillRect(0, PANO_H * 0.7, PANO_W, PANO_H * 0.3);
+
+        // Subtle edge vignette
+        const vigGrad = ctx.createRadialGradient(
+            PANO_W / 2, PANO_H / 2, PANO_W * 0.3,
+            PANO_W / 2, PANO_H / 2, PANO_W * 0.55
+        );
+        vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        vigGrad.addColorStop(1, 'rgba(0,0,0,0.15)');
+        ctx.fillStyle = vigGrad;
+        ctx.fillRect(0, 0, PANO_W, PANO_H);
+
+        return canvas;
+    }
+
+    /**
+     * Convert hex color to rgba string.
+     */
+    function _hexToRgba(hex, alpha) {
+        hex = hex.replace(/^#/, '');
+        if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        const n = parseInt(hex, 16);
+        return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${alpha})`;
     }
 
     /**
