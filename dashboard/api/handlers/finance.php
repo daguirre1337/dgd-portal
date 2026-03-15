@@ -893,13 +893,10 @@ function handle_list_bank_transactions(): void
     }
 
     // Income / expense stats for filtered set
-    $incomeStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions {$whereClause} AND amount > 0");
-    $expenseStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions {$whereClause} AND amount < 0");
-
-    // If no WHERE clause, adjust the AND to WHERE
+    $amountFilter = empty($whereClause) ? 'WHERE' : $whereClause . ' AND';
+    $incomeStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions {$amountFilter} amount > 0");
+    $expenseStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions {$amountFilter} amount < 0");
     if (empty($whereClause)) {
-        $incomeStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions WHERE amount > 0");
-        $expenseStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions WHERE amount < 0");
         $incomeStmt->execute();
         $expenseStmt->execute();
     } else {
