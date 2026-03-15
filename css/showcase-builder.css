@@ -9,22 +9,23 @@
     flex-direction: column;
     height: 100%;
     background: var(--dgd-gray-50);
-    overflow: hidden;
+    overflow: auto; /* allow scroll when viewport is too small */
 }
 
 .showcase-builder__toolbar {
     display: flex;
     align-items: center;
-    gap: var(--dgd-space-md);
-    padding: var(--dgd-space-sm) var(--dgd-space-lg);
+    flex-wrap: wrap;
+    gap: var(--dgd-space-sm);
+    padding: var(--dgd-space-sm) var(--dgd-space-md);
     background: var(--dgd-white);
     border-bottom: 1px solid var(--dgd-gray-200);
-    min-height: 52px;
+    min-height: 48px;
     flex-shrink: 0;
 }
 
 .showcase-builder__toolbar h2 {
-    font-size: var(--dgd-font-size-lg);
+    font-size: var(--dgd-font-size-md);
     margin: 0;
     white-space: nowrap;
 }
@@ -32,18 +33,20 @@
 .showcase-builder__toolbar-group {
     display: flex;
     align-items: center;
-    gap: var(--dgd-space-sm);
+    flex-wrap: wrap;
+    gap: var(--dgd-space-xs);
 }
 
 .showcase-builder__toolbar-spacer {
     flex: 1;
+    min-width: 8px;
 }
 
 .showcase-builder__body {
     display: flex;
     flex: 1;
-    overflow: hidden;
-    min-height: 0; /* critical: allows flex children to shrink below content size */
+    overflow: auto; /* scroll when content overflows */
+    min-height: 0;
 }
 
 /* ---- Canvas Area: All 6 Slides Side by Side ---- */
@@ -53,17 +56,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: auto; /* scroll when slides don't fit */
     background: var(--dgd-gray-100);
-    position: relative;   /* for progress overlay */
-    min-height: 0;        /* allow flex shrink */
+    position: relative;
+    min-height: 200px;
+    min-width: 0;
 }
 
 .showcase-canvas__strip {
     display: flex;
     gap: 0;
     align-items: center;
-    padding: 12px 0;
+    padding: 12px 8px;
     min-width: min-content;
     box-shadow: 0 4px 24px rgba(0,0,0,0.18);
 }
@@ -129,13 +133,16 @@
 /* ---- Properties Panel (Right) ---- */
 
 .showcase-props {
-    width: 280px;
-    min-width: 280px;
+    width: 260px;
+    min-width: 220px;
+    max-width: 300px;
+    flex-shrink: 0;
     background: var(--dgd-white);
     border-left: 1px solid var(--dgd-gray-200);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .showcase-props__section {
@@ -507,34 +514,96 @@
     color: var(--dgd-gray-500);
 }
 
-/* ---- Responsive ---- */
+/* ---- Responsive: Mobile First ---- */
 
+/* Tablets and smaller desktops */
+@media (max-width: 1100px) {
+    .showcase-props {
+        width: 220px;
+        min-width: 180px;
+    }
+    .showcase-templates {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Tablet portrait / narrow browser */
 @media (max-width: 960px) {
     .showcase-builder__body {
         flex-direction: column;
     }
     .showcase-canvas {
-        min-height: 300px;
+        min-height: 250px;
+        flex: 0 0 auto;
     }
     .showcase-canvas__strip {
-        padding: 8px 0;
-        gap: 0;
+        padding: 8px 4px;
     }
     .showcase-props {
         width: 100%;
         min-width: 0;
-        max-height: 250px;
+        max-width: 100%;
+        max-height: none;
         border-left: none;
         border-top: 1px solid var(--dgd-gray-200);
+        overflow-y: auto;
+        flex: 1;
+    }
+    .showcase-props__section {
+        padding: var(--dgd-space-sm) var(--dgd-space-md);
+    }
+    .showcase-templates {
+        grid-template-columns: repeat(5, 1fr);
+    }
+    .showcase-add-btns {
+        flex-wrap: wrap;
     }
 }
 
+/* Phone landscape / very narrow */
 @media (max-width: 600px) {
     .showcase-builder__toolbar {
-        flex-wrap: wrap;
+        padding: var(--dgd-space-xs) var(--dgd-space-sm);
         gap: var(--dgd-space-xs);
+    }
+    .showcase-builder__toolbar h2 {
+        font-size: var(--dgd-font-size-sm);
+    }
+    .showcase-builder__toolbar-group {
+        gap: 4px;
+    }
+    .showcase-builder__toolbar-spacer {
+        flex-basis: 100%;
+        min-width: 0;
+        height: 0;
+    }
+    .showcase-btn {
+        padding: 5px 8px;
+        font-size: 11px;
     }
     .showcase-builder__export-bar {
         flex-wrap: wrap;
+        gap: var(--dgd-space-xs);
+        padding: var(--dgd-space-xs) var(--dgd-space-sm);
+    }
+    .showcase-templates {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .showcase-canvas__slide-label {
+        font-size: 10px;
+        padding: 1px 5px;
+    }
+}
+
+/* Phone portrait */
+@media (max-width: 400px) {
+    .showcase-builder__toolbar h2 {
+        font-size: 13px;
+    }
+    .showcase-props__section {
+        padding: var(--dgd-space-xs) var(--dgd-space-sm);
+    }
+    .showcase-templates {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
