@@ -88,6 +88,12 @@ DGD.views = DGD.views || {};
             csv:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
             txt:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7f8c8d" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
             json: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+            md:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34495e" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="12" y1="17" x2="8" y2="17"/></svg>',
+            xml:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+            yaml: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+            yml:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+            zip:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#95a5a6" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="10" y="12" width="4" height="6" rx="1"/></svg>',
+            html: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
         };
         var defaultIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--dgd-gray-500)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
         return icons[ext] || defaultIcon;
@@ -186,7 +192,7 @@ DGD.views = DGD.views || {};
         html += '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--dgd-gray-400)" stroke-width="1.5" style="margin-bottom:0.75rem"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
         html += '<p style="margin:0 0 0.25rem;font-weight:600;color:var(--dgd-gray-700);">Dateien hierher ziehen</p>';
         html += '<p style="margin:0;font-size:var(--dgd-font-size-sm);color:var(--dgd-gray-500);">oder klicken, um Dateien auszuw&auml;hlen (PDF, Bilder, Dokumente - max. 20 MB)</p>';
-        html += '<input type="file" id="files-input" multiple style="display:none" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.svg,.doc,.docx,.xls,.xlsx,.pptx,.txt,.csv,.json,.html">';
+        html += '<input type="file" id="files-input" multiple style="display:none" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.svg,.doc,.docx,.xls,.xlsx,.pptx,.txt,.csv,.json,.html,.md,.xml,.zip,.yaml,.yml,.mp3,.mp4,.wav">';
         html += '</div></div>';
 
         // Search & stats
