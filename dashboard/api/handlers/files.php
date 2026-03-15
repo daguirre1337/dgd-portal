@@ -113,6 +113,7 @@ function handle_list_files(): void
 function handle_upload_file(): void
 {
     requireAuth();
+    checkRateLimit('upload', 10, 3600); // max 10 uploads per hour
     files_ensure_tables();
 
     // Validate file presence

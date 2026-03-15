@@ -659,6 +659,7 @@ function parse_german_date(string $raw): string
 function handle_import_bank_csv(): void
 {
     requireAuth();
+    checkRateLimit('csv_import', 5, 3600); // max 5 CSV imports per hour
     finance_ensure_tables();
 
     if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {

@@ -10,6 +10,9 @@
 
 function handle_login(): void
 {
+    // Rate limit: max 5 login attempts per 15 minutes per IP
+    checkRateLimit('login', 5, 900, $_SERVER['REMOTE_ADDR'] ?? 'unknown');
+
     $body = get_json_body();
 
     $login    = trim($body['username'] ?? '');

@@ -167,3 +167,69 @@ function now_iso(): string
 {
     return gmdate('Y-m-d\TH:i:s\Z');
 }
+
+// ---------- Rate Limiting ----------
+/**
+ * Simple file-based rate limiter.
+ * Uses DATA_DIR/rate_limits/ for tracking.
+ *
+ * @param string $pattern  Key name (e.g. 'login', 'upload', 'api')
+ * @param int    $max      Max requests allowed in window
+ * @param int    $window   Time window in seconds
+ * @param string $identity Optional identifier (defaults to session user or IP)
+ */
+function checkRateLimit(string $pattern, int $max, int $window, string $identity = ''): void
+{
+    $rateLimitDir = DATA_DIR . '/rate_limits';
+    if (!is_dir($rateLimitDir)) {
+        mkdir($rateLimitDir, 0755, true);
+    }
+
+    if (empty($identity)) {
+        $identity = $_SESSION['user_id'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+    }
+
+    $key  = $pattern . '_' . md5($identity);
+    $file = $rateLimitDir . '/' . $key . '.json';
+
+    $now     = time();
+    $entries = [];
+
+    if (file_exists($file)) {
+        $data = json_decode(file_get_contents($file), true);
+        if (is_array($data)) {
+            // Keep only entries within the window
+            $entries = array_filter($data, function ($ts) use ($now, $window) {
+                return ($now - $ts) < $window;
+            });
+            $entries = array_values($entries);
+        }
+    }
+
+    if (count($entries) >= $max) {
+        $retryAfter = $window - ($now - $entries[0]);
+        header('Retry-After: ' . max(1, $retryAfter));
+        json_error('Zu viele Anfragen. Bitte warte ' . max(1, $retryAfter) . ' Sekunden.', 429);
+    }
+
+    $entries[] = $now;
+    file_put_contents($file, json_encode($entries), LOCK_EX);
+}
+
+/**
+ * Cleanup old rate limit files (call periodically).
+ */
+function cleanupRateLimits(): void
+{
+    $rateLimitDir = DATA_DIR . '/rate_limits';
+    if (!is_dir($rateLimitDir)) {
+        return;
+    }
+
+    $now = time();
+    foreach (glob($rateLimitDir . '/*.json') as $file) {
+        if (($now - filemtime($file)) > 3600) {
+            @unlink($file);
+        }
+    }
+}
