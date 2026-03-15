@@ -86,40 +86,50 @@ const ShowcasePanorama = (() => {
     // --- Mood renderers ---
 
     function renderProfessional(ctx, primary, accent, rand) {
-        // Medium-blue gradient background (not too dark)
-        const base = darken(primary, 40);
-        const mid = darken(primary, 25);
+        // Rich gradient background - not too dark, shows brand colors clearly
         const grad = ctx.createLinearGradient(0, 0, TOTAL_W, DH);
-        grad.addColorStop(0, base);
-        grad.addColorStop(0.5, mid);
-        grad.addColorStop(1, darken(primary, 35));
+        grad.addColorStop(0, primary);                    // Full brand blue
+        grad.addColorStop(0.3, darken(primary, 10));      // Slightly darker
+        grad.addColorStop(0.6, lighten(primary, 10));     // Slightly lighter
+        grad.addColorStop(1, darken(primary, 15));        // Medium dark
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, TOTAL_W, DH);
 
-        // Geometric circles with more visibility
-        for (let i = 0; i < 30; i++) {
-            const x = rand() * TOTAL_W;
-            const y = rand() * DH;
-            const r = 30 + rand() * 150;
+        // Large ambient glow spots with accent color
+        for (let i = 0; i < 8; i++) {
+            const x = (i * TOTAL_W / 6) + rand() * (TOTAL_W / 6);
+            const y = DH * 0.3 + rand() * DH * 0.4;
+            const r = 200 + rand() * 400;
+            const radGrad = ctx.createRadialGradient(x, y, 0, x, y, r);
+            radGrad.addColorStop(0, rgba(accent, 0.12 + rand() * 0.08));
+            radGrad.addColorStop(1, rgba(accent, 0));
+            ctx.fillStyle = radGrad;
             ctx.beginPath();
             ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.strokeStyle = rgba(lighten(primary, 40), 0.08 + rand() * 0.10);
-            ctx.lineWidth = 1 + rand() * 2;
-            ctx.stroke();
+            ctx.fill();
         }
 
-        // Subtle horizontal lines
-        for (let i = 0; i < 15; i++) {
+        // Geometric circles - more visible
+        for (let i = 0; i < 25; i++) {
+            const x = rand() * TOTAL_W;
             const y = rand() * DH;
+            const r = 40 + rand() * 180;
             ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(TOTAL_W, y);
-            ctx.strokeStyle = rgba(lighten(primary, 30), 0.04 + rand() * 0.05);
-            ctx.lineWidth = 1;
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.strokeStyle = rgba(lighten(primary, 50), 0.10 + rand() * 0.12);
+            ctx.lineWidth = 1.5 + rand() * 2;
             ctx.stroke();
         }
 
-        drawFlowingCurves(ctx, lighten(primary, 50), accent, rand, 5);
+        // Accent stripe at bottom (gold bar)
+        const stripeGrad = ctx.createLinearGradient(0, DH * 0.88, 0, DH);
+        stripeGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        stripeGrad.addColorStop(0.5, rgba(accent, 0.15));
+        stripeGrad.addColorStop(1, rgba(accent, 0.05));
+        ctx.fillStyle = stripeGrad;
+        ctx.fillRect(0, DH * 0.88, TOTAL_W, DH * 0.12);
+
+        drawFlowingCurves(ctx, lighten(primary, 50), accent, rand, 6);
     }
 
     function renderPlayful(ctx, primary, accent, rand) {
@@ -359,7 +369,9 @@ const ShowcasePanorama = (() => {
             backgroundMood,
         } = brief || {};
 
-        const activeMood = backgroundMood || mood || 'professional';
+        // Use mood key (not backgroundMood which is a DALL-E prompt string)
+        const moodKey = (mood || 'professional').toLowerCase().split(/[,\s]/)[0];
+        const activeMood = moodRenderers[moodKey] ? moodKey : 'professional';
         const canvas = document.createElement('canvas');
         canvas.width = TOTAL_W;
         canvas.height = DH;

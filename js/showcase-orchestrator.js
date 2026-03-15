@@ -330,54 +330,71 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
             return _proceduralPanoramaFallback(brief);
         }
 
-        try {
-            const apiKey = getApiKey();
-            const moodDesc = brief.backgroundMood || DGD_BRAND.visual.dallePromptHint;
-            const prompt = `${moodDesc}, no text, no UI elements, no logos, smooth gradients, high quality, ultra-wide seamless panoramic composition, cinematic lighting, continuous scene that can be divided into 6 equal vertical panels`;
+        const apiKey = getApiKey();
+        const moodDesc = brief.backgroundMood || DGD_BRAND.visual.dallePromptHint;
+        const prompt = `${moodDesc}, no text, no UI elements, no logos, smooth gradients, high quality, ultra-wide seamless panoramic composition, cinematic lighting, continuous scene that can be divided into 6 equal vertical panels`;
 
-            console.log('[Orchestrator] Requesting DALL-E panorama...');
+        // Retry up to 3 times (DALL-E sometimes returns 500)
+        const MAX_RETRIES = 3;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                console.log(`[Orchestrator] Requesting DALL-E panorama (attempt ${attempt}/${MAX_RETRIES})...`);
 
-            const response = await fetch(OPENAI_IMAGES_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`,
-                },
-                body: JSON.stringify({
-                    model: DALLE_MODEL,
-                    prompt,
-                    n: 1,
-                    size: DALLE_SIZE,  // 1792×1024 (max DALL-E 3 landscape)
-                    quality: 'hd',     // hd for best quality since we upscale
-                    response_format: 'b64_json',
-                }),
-            });
+                const response = await fetch(OPENAI_IMAGES_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: DALLE_MODEL,
+                        prompt,
+                        n: 1,
+                        size: DALLE_SIZE,
+                        quality: 'hd',
+                        response_format: 'b64_json',
+                    }),
+                });
 
-            if (!response.ok) {
-                const errBody = await response.text().catch(() => '');
-                throw new Error(`DALL-E API error ${response.status}: ${errBody}`);
+                if (!response.ok) {
+                    const errBody = await response.text().catch(() => '');
+                    const status = response.status;
+                    // Retry on 500/502/503/429
+                    if ((status >= 500 || status === 429) && attempt < MAX_RETRIES) {
+                        const wait = attempt * 2000; // 2s, 4s
+                        console.warn(`[Orchestrator] DALL-E ${status}, retrying in ${wait}ms...`);
+                        await new Promise(r => setTimeout(r, wait));
+                        continue;
+                    }
+                    throw new Error(`DALL-E API error ${status}: ${errBody.slice(0, 200)}`);
+                }
+
+                const data = await response.json();
+                const b64 = data.data?.[0]?.b64_json;
+
+                if (!b64) {
+                    throw new Error('No b64_json in DALL-E response');
+                }
+
+                const dalleImg = await _loadImage('data:image/png;base64,' + b64);
+                console.log(`[Orchestrator] DALL-E image loaded: ${dalleImg.naturalWidth}x${dalleImg.naturalHeight}`);
+
+                const panoCanvas = _scaleToPanorama(dalleImg, brief);
+                console.log(`[Orchestrator] Panorama canvas ready: ${panoCanvas.width}x${panoCanvas.height}`);
+
+                return panoCanvas;
+            } catch (err) {
+                if (attempt < MAX_RETRIES) {
+                    console.warn(`[Orchestrator] DALL-E attempt ${attempt} failed: ${err.message}, retrying...`);
+                    await new Promise(r => setTimeout(r, attempt * 2000));
+                    continue;
+                }
+                console.warn('[Orchestrator] DALL-E generation failed after retries, falling back to procedural:', err.message);
+                return _proceduralPanoramaFallback(brief);
             }
-
-            const data = await response.json();
-            const b64 = data.data?.[0]?.b64_json;
-
-            if (!b64) {
-                throw new Error('No b64_json in DALL-E response');
-            }
-
-            // Load DALL-E image (1792×1024)
-            const dalleImg = await _loadImage('data:image/png;base64,' + b64);
-            console.log(`[Orchestrator] DALL-E image loaded: ${dalleImg.naturalWidth}×${dalleImg.naturalHeight}`);
-
-            // Scale DALL-E image to full panorama canvas (6480×1920)
-            const panoCanvas = _scaleToPanorama(dalleImg, brief);
-            console.log(`[Orchestrator] Panorama canvas ready: ${panoCanvas.width}×${panoCanvas.height}`);
-
-            return panoCanvas;
-        } catch (err) {
-            console.warn('[Orchestrator] DALL-E generation failed, falling back to procedural:', err.message);
-            return _proceduralPanoramaFallback(brief);
         }
+
+        return _proceduralPanoramaFallback(brief);
     }
 
     /**
