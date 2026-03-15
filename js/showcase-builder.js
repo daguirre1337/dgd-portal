@@ -684,143 +684,74 @@ const ShowcaseBuilder = (() => {
     }
 
     function _buildHTML() {
-        const templates = ShowcaseTemplates.listTemplates();
-
         return `
         <div class="showcase-builder">
-            <!-- Toolbar -->
-            <div class="showcase-builder__toolbar">
-                <h2>\u2B50 Showcase Builder</h2>
-                <div class="showcase-builder__toolbar-group">
-                    <input type="text" id="sc-app-name" class="showcase-btn" placeholder="App Name" style="width:160px; border:1px solid var(--dgd-gray-300);">
-                    <select id="sc-platform" class="showcase-btn">
-                        <option value="appstore_67">App Store (6.7")</option>
-                        <option value="playstore" selected>Play Store</option>
-                        <option value="appstore_65">App Store (6.5")</option>
-                    </select>
+            <!-- Canvas: All 6 Slides (full width, no sidebar) -->
+            <div class="showcase-canvas">
+                <!-- Progress Overlay -->
+                <div class="showcase-progress" id="sc-progress" style="display:none;">
+                    <div class="showcase-progress__content">
+                        <div class="showcase-progress__spinner"></div>
+                        <div class="showcase-progress__text" id="sc-progress-text">Generiere...</div>
+                        <div class="showcase-progress__bar-wrap">
+                            <div class="showcase-progress__bar" id="sc-progress-bar" style="width:0%"></div>
+                        </div>
+                        <div class="showcase-progress__step" id="sc-progress-step">Step 1/4</div>
+                    </div>
                 </div>
-                <div class="showcase-builder__toolbar-spacer"></div>
-                <div class="showcase-builder__toolbar-group">
-                    <button class="showcase-btn showcase-btn--accent" id="sc-auto-generate" title="Komplettes Showcase automatisch generieren">
-                        \u2728 Auto-Generate
-                    </button>
-                    <button class="showcase-btn showcase-btn--cortex" id="sc-cortex-gen" title="KI-Texte generieren">
-                        \uD83E\uDD16 Cortex Texte
-                    </button>
-                    <button class="showcase-btn" id="sc-api-settings" title="OpenAI API Key">\u2699\uFE0F</button>
-                    <button class="showcase-btn" id="sc-new-project" title="Neues Projekt">\u2795 Neu</button>
+                <div class="showcase-canvas__strip" id="sc-canvas-strip">
+                    ${_buildSlideCanvases()}
                 </div>
             </div>
 
-            <!-- Body: 2-Column Layout (6 Slides + Properties) -->
-            <div class="showcase-builder__body">
-                <!-- Center: All 6 Slides Side by Side -->
-                <div class="showcase-canvas">
-                    <!-- Progress Overlay -->
-                    <div class="showcase-progress" id="sc-progress" style="display:none;">
-                        <div class="showcase-progress__content">
-                            <div class="showcase-progress__spinner"></div>
-                            <div class="showcase-progress__text" id="sc-progress-text">Generiere...</div>
-                            <div class="showcase-progress__bar-wrap">
-                                <div class="showcase-progress__bar" id="sc-progress-bar" style="width:0%"></div>
-                            </div>
-                            <div class="showcase-progress__step" id="sc-progress-step">Step 1/4</div>
-                        </div>
-                    </div>
-                    <div class="showcase-canvas__strip" id="sc-canvas-strip">
-                        ${_buildSlideCanvases()}
-                    </div>
+            <!-- Chat Bar (bottom) -->
+            <div class="showcase-chat" id="sc-chat">
+                <!-- Suggestion Cloud -->
+                <div class="showcase-chat__suggestions" id="sc-suggestions">
+                    <button class="showcase-chat__chip showcase-chat__chip--generate" id="sc-auto-generate" title="Komplettes Showcase automatisch generieren">
+                        \u2728 Generieren
+                    </button>
+                    <button class="showcase-chat__chip" data-feedback="Heller und freundlicher">\u2600\uFE0F Heller</button>
+                    <button class="showcase-chat__chip" data-feedback="Dunkler und serioeser">\uD83C\uDF19 Dunkler</button>
+                    <button class="showcase-chat__chip" data-feedback="Professioneller und business-tauglich">\uD83D\uDCBC Pro</button>
+                    <button class="showcase-chat__chip" data-feedback="Moderner und trendiger">\u26A1 Modern</button>
+                    <button class="showcase-chat__chip" data-feedback="Mehr Kontrast und bessere Lesbarkeit">\uD83D\uDD0D Kontrast</button>
+                    <button class="showcase-chat__chip" data-feedback="Andere Farben, kreativer">\uD83C\uDFA8 Farben</button>
+                    <button class="showcase-chat__chip" id="sc-export-all" title="Alle 6 Slides exportieren">\u2193 Export</button>
+                    <button class="showcase-chat__chip showcase-chat__chip--subtle" id="sc-api-settings" title="API Key">\u2699\uFE0F</button>
                 </div>
 
-                <!-- Right: Properties -->
-                <div class="showcase-props" id="sc-props-panel">
-                    <!-- Templates -->
-                    <div class="showcase-props__section">
-                        <h3>Template</h3>
-                        <div class="showcase-templates" id="sc-templates">
-                            ${templates.map(t => `
-                                <div class="showcase-templates__item" data-template="${t.id}" title="${t.description}">
-                                    <div class="showcase-templates__item-icon">${t.icon}</div>
-                                    ${t.name}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <!-- Background -->
-                    <div class="showcase-props__section">
-                        <h3>Hintergrund</h3>
-                        <div class="showcase-props__row">
-                            <label>Typ</label>
-                            <select id="sc-bg-type">
-                                <option value="gradient">Gradient</option>
-                                <option value="solid">Einfarbig</option>
-                            </select>
-                        </div>
-                        <div class="showcase-props__color-input">
-                            <input type="color" id="sc-bg-color1" value="#184E74">
-                            <input type="text" id="sc-bg-color1-hex" value="#184E74" style="width:80px;">
-                        </div>
-                        <div class="showcase-props__color-input" id="sc-bg-color2-row" style="margin-top:6px;">
-                            <input type="color" id="sc-bg-color2" value="#2c5282">
-                            <input type="text" id="sc-bg-color2-hex" value="#2c5282" style="width:80px;">
-                        </div>
-                    </div>
-
-                    <!-- Elements List -->
-                    <div class="showcase-props__section">
-                        <h3>Elemente</h3>
-                        <div class="showcase-elements" id="sc-elements-list"></div>
-                        <div class="showcase-add-btns" style="margin-top:8px;">
-                            <button class="showcase-btn showcase-btn--sm" data-add="text">\u271A Text</button>
-                            <button class="showcase-btn showcase-btn--sm" data-add="device">\u271A Device</button>
-                            <button class="showcase-btn showcase-btn--sm" data-add="shape">\u271A Form</button>
-                            <button class="showcase-btn showcase-btn--sm" data-add="badge">\u271A Badge</button>
-                        </div>
-                    </div>
-
-                    <!-- Element Properties (dynamic) -->
-                    <div class="showcase-props__section" id="sc-element-props" style="display:none;">
-                        <h3>Eigenschaften</h3>
-                        <div id="sc-element-props-content"></div>
-                    </div>
-
-                    <!-- Screenshot Upload -->
-                    <div class="showcase-props__section" id="sc-upload-section" style="display:none;">
-                        <h3>Screenshot</h3>
-                        <label class="showcase-upload" id="sc-upload-drop">
-                            <span class="showcase-upload__icon">\uD83D\uDCF7</span>
-                            Bild hochladen oder hierher ziehen
-                            <input type="file" accept="image/*" id="sc-upload-input" style="display:none;">
-                        </label>
-                    </div>
-
-                    <!-- AI Feedback -->
-                    <div class="showcase-props__section">
-                        <h3>\uD83D\uDCAC Feedback</h3>
-                        <div class="showcase-feedback">
-                            <div class="showcase-feedback__chips">
-                                <button class="showcase-btn showcase-btn--sm" data-feedback="Heller und freundlicher">Heller</button>
-                                <button class="showcase-btn showcase-btn--sm" data-feedback="Dunkler und serioeser">Dunkler</button>
-                                <button class="showcase-btn showcase-btn--sm" data-feedback="Professioneller und business-tauglich">Pro</button>
-                                <button class="showcase-btn showcase-btn--sm" data-feedback="Moderner und trendiger">Modern</button>
-                            </div>
-                            <textarea id="sc-feedback-text" rows="2" placeholder="z.B. 'Slide 3 braucht mehr Kontrast...'" style="width:100%;margin-top:6px;padding:8px;border:1px solid var(--dgd-gray-300);border-radius:6px;font-family:Inter,sans-serif;font-size:12px;resize:vertical;"></textarea>
-                            <button class="showcase-btn showcase-btn--cortex showcase-btn--sm" id="sc-feedback-send" style="margin-top:4px;width:100%;">
-                                \uD83E\uDD16 Feedback senden
-                            </button>
-                            <div id="sc-feedback-log" style="margin-top:6px;font-size:11px;color:var(--dgd-gray-500);max-height:80px;overflow-y:auto;"></div>
-                        </div>
-                    </div>
+                <!-- Chat Input -->
+                <div class="showcase-chat__input-row">
+                    <input type="text" id="sc-chat-input" class="showcase-chat__input"
+                        placeholder="Beschreibe was du aendern moechtest... z.B. 'Slide 3 braucht mehr Kontrast'"
+                        autocomplete="off">
+                    <button class="showcase-chat__send" id="sc-feedback-send" title="Senden">\u27A4</button>
                 </div>
+
+                <!-- Status Log (hidden until there's content) -->
+                <div class="showcase-chat__log" id="sc-feedback-log"></div>
             </div>
 
-            <!-- Export Bar -->
-            <div class="showcase-builder__export-bar">
-                <span class="showcase-builder__export-info" id="sc-export-info">Slide 1/6</span>
-                <button class="showcase-btn" id="sc-export-current">\u2193 Aktuellen Slide exportieren</button>
-                <button class="showcase-btn showcase-btn--primary" id="sc-export-all">\u2193 Alle 6 Slides exportieren</button>
-                <button class="showcase-btn showcase-btn--accent" id="sc-save">\u2713 Speichern</button>
+            <!-- Hidden elements needed by existing code -->
+            <input type="hidden" id="sc-app-name" value="DGD Portal">
+            <select id="sc-platform" style="display:none;">
+                <option value="appstore_67">App Store (6.7")</option>
+                <option value="playstore" selected>Play Store</option>
+                <option value="appstore_65">App Store (6.5")</option>
+            </select>
+            <div id="sc-props-panel" style="display:none;">
+                <div id="sc-templates"></div>
+                <select id="sc-bg-type"><option value="gradient">Gradient</option><option value="solid">Solid</option></select>
+                <input type="color" id="sc-bg-color1" value="#184E74">
+                <input type="text" id="sc-bg-color1-hex" value="#184E74">
+                <input type="color" id="sc-bg-color2" value="#CAA876">
+                <input type="text" id="sc-bg-color2-hex" value="#CAA876">
+                <div id="sc-elements-list"></div>
+                <div id="sc-element-props" style="display:none;"><div id="sc-element-props-content"></div></div>
+                <div id="sc-upload-section" style="display:none;">
+                    <label id="sc-upload-drop"><input type="file" accept="image/*" id="sc-upload-input" style="display:none;"></label>
+                </div>
             </div>
         </div>`;
     }
@@ -995,17 +926,28 @@ const ShowcaseBuilder = (() => {
             apiBtn.addEventListener('click', _showApiKeyDialog);
         }
 
-        // Feedback send button
+        // Feedback send button (chat mode)
         const feedbackBtn = document.getElementById('sc-feedback-send');
         if (feedbackBtn) {
             feedbackBtn.addEventListener('click', _onFeedbackSend);
         }
 
-        // Feedback quick-chips
+        // Chat input: send on Enter
+        const chatInput = document.getElementById('sc-chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    _onFeedbackSend();
+                }
+            });
+        }
+
+        // Feedback quick-chips (suggestion cloud)
         container.querySelectorAll('[data-feedback]').forEach(chip => {
             chip.addEventListener('click', () => {
-                const textArea = document.getElementById('sc-feedback-text');
-                if (textArea) textArea.value = chip.dataset.feedback;
+                const chatIn = document.getElementById('sc-chat-input');
+                if (chatIn) chatIn.value = chip.dataset.feedback;
                 _onFeedbackSend();
             });
         });
@@ -1556,13 +1498,20 @@ const ShowcaseBuilder = (() => {
     // =========================================================================
 
     async function _onFeedbackSend() {
-        const textArea = document.getElementById('sc-feedback-text');
+        const chatInput = document.getElementById('sc-chat-input');
         const feedbackLog = document.getElementById('sc-feedback-log');
         const btn = document.getElementById('sc-feedback-send');
-        if (!textArea || !textArea.value.trim() || !project) return;
+        if (!chatInput || !chatInput.value.trim() || !project) return;
 
-        const feedbackText = textArea.value.trim();
-        if (btn) { btn.disabled = true; btn.textContent = '\u23F3 Verarbeite...'; }
+        const feedbackText = chatInput.value.trim();
+        if (btn) { btn.disabled = true; btn.textContent = '\u23F3'; }
+
+        // Show user message in log
+        if (feedbackLog) {
+            feedbackLog.style.display = 'block';
+            feedbackLog.innerHTML += `<div class="showcase-chat__msg showcase-chat__msg--user">${_escHTML(feedbackText)}</div>`;
+            feedbackLog.scrollTop = feedbackLog.scrollHeight;
+        }
 
         try {
             if (typeof ShowcaseOrchestrator !== 'undefined') {
@@ -1610,19 +1559,19 @@ const ShowcaseBuilder = (() => {
                 render();
 
                 if (feedbackLog) {
-                    feedbackLog.innerHTML += `<div style="margin-bottom:4px;">\u2713 <strong>${feedbackText}</strong> - angewendet</div>`;
+                    feedbackLog.innerHTML += `<div class="showcase-chat__msg showcase-chat__msg--ai">\u2713 Aenderungen angewendet</div>`;
                     feedbackLog.scrollTop = feedbackLog.scrollHeight;
                 }
             }
         } catch (err) {
             console.error('[ShowcaseBuilder] Feedback error:', err);
             if (feedbackLog) {
-                feedbackLog.innerHTML += `<div style="color:var(--dgd-danger);">\u2717 Fehler: ${err.message}</div>`;
+                feedbackLog.innerHTML += `<div class="showcase-chat__msg showcase-chat__msg--error">\u2717 ${err.message}</div>`;
             }
         }
 
-        textArea.value = '';
-        if (btn) { btn.disabled = false; btn.textContent = '\uD83E\uDD16 Feedback senden'; }
+        chatInput.value = '';
+        if (btn) { btn.disabled = false; btn.textContent = '\u27A4'; }
     }
 
     // =========================================================================
