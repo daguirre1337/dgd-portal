@@ -793,16 +793,18 @@ const ShowcaseBuilder = (() => {
         const strip = document.getElementById('sc-canvas-strip');
         if (!strip) return;
 
-        const parent = strip.parentElement;
-        const availableWidth = parent.clientWidth - 24; // padding
-        const maxH = parent.getBoundingClientRect().height - 24;
+        // Use the showcase-builder root or mount container for true available width
+        const root = container.querySelector('.showcase-builder') || container;
+        const availableWidth = root.clientWidth - 24; // minus padding
+        const canvasArea = strip.parentElement;
+        const maxH = canvasArea.getBoundingClientRect().height - 24;
 
-        // Fit all 6 slides: width-first or height-first, whichever is smaller
+        // Fit all 6 slides within available width
         const gapTotal = 3 * 5; // 3px gap × 5 gaps
         let w = Math.floor((availableWidth - gapTotal) / 6);
-        let h = Math.floor(w * (DH / DW)); // maintain aspect ratio
+        let h = Math.floor(w * (DH / DW)); // maintain 9:16 aspect ratio
 
-        // If too tall, scale from height
+        // If too tall, scale down from height
         if (h > maxH) {
             h = Math.max(maxH, 200);
             w = Math.floor(h * (DW / DH));
@@ -1429,11 +1431,17 @@ const ShowcaseBuilder = (() => {
 
                 // Apply panorama
                 if (result.panorama) {
+                    console.log('[Builder] Panorama received:', result.panorama.constructor.name,
+                        result.panorama.width + 'x' + result.panorama.height);
                     if (result.panorama instanceof HTMLCanvasElement) {
                         panoramaCanvas = result.panorama;
+                        panoramaImage = null;
                     } else if (result.panorama instanceof HTMLImageElement) {
                         panoramaImage = result.panorama;
+                        panoramaCanvas = null;
                     }
+                } else {
+                    console.warn('[Builder] No panorama in result!');
                 }
 
                 // Apply texts + templates to slides
