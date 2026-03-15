@@ -6,7 +6,14 @@
 var CortexChat = (function() {
     'use strict';
 
-    var CORTEX_URL = 'http://localhost:8000';
+    var CORTEX_URL = (function() {
+        var host = window.location.hostname;
+        if (host === 'dgd.digital' || host === 'www.dgd.digital') {
+            return 'https://cortex.dgd.digital';
+        }
+        // Local development
+        return 'http://localhost:8000';
+    })();
     var MAX_HISTORY = 20;
 
     var _el = null;       // widget root element

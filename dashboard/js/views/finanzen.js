@@ -137,10 +137,7 @@ DGD.views = DGD.views || {};
     // Expose openExpenseModal for cross-reference
     DGD.views._openExpenseModal = openExpenseModal;
 
-    DGD.views.finanzen = function(container) {
-        init();
-        var DEMO_FINANCE = DGD.demoData.DEMO_FINANCE;
-        var fin = DGD.demoData.DEMO_FINANCE;
+    function renderFinance(container, fin) {
         var html = '';
 
         html += '<div class="dgd-page-header">';
@@ -239,5 +236,51 @@ DGD.views = DGD.views || {};
                 openExpenseModal();
             });
         }
+    }
+
+    DGD.views.finanzen = function(container) {
+        init();
+        // Show loading
+        container.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--dgd-gray-500);">Finanzdaten werden geladen...</div>';
+
+        // Try real API first
+        Promise.all([
+            fetch('api/finance/summary', { credentials: 'same-origin' }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+            fetch('api/finance/monthly', { credentials: 'same-origin' }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+            fetch('api/finance/expenses', { credentials: 'same-origin' }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+            fetch('api/finance/projects', { credentials: 'same-origin' }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; })
+        ]).then(function(results) {
+            var summary = results[0];
+            var monthly = results[1];
+            var expenses = results[2];
+            var projects = results[3];
+
+            var fin;
+            if (summary && monthly && expenses && projects) {
+                // Build fin object from API data
+                fin = {
+                    summary: {
+                        revenue: summary.total_revenue || 0,
+                        costs: summary.total_expenses || 0,
+                        profit: summary.profit || 0,
+                        burnRate: summary.total_expenses || 0
+                    },
+                    monthly: (monthly.months || []).map(function(m) {
+                        return { month: m.label, revenue: m.revenue, costs: m.expenses };
+                    }),
+                    expenses: (expenses.expenses || []).map(function(e) {
+                        return { date: e.date, project: e.project_title || '', desc: e.description, amount: e.amount, category: e.category };
+                    }),
+                    projects: (projects.projects || []).map(function(p) {
+                        return { name: p.title, budget: p.budget_eur, spent: p.spent_eur, status: p.status };
+                    })
+                };
+            } else {
+                // Fallback to demo data
+                fin = DGD.demoData.DEMO_FINANCE;
+            }
+
+            renderFinance(container, fin);
+        });
     };
 })();

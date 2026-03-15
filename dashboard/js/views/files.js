@@ -10,18 +10,8 @@ DGD.views = DGD.views || {};
 (function() {
     'use strict';
 
-    var STORAGE_KEY = 'dgd_files';
     var MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
-    var ALLOWED_TYPES = [
-        'application/pdf',
-        'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml',
-        'text/plain', 'text/csv', 'text/html',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'application/json',
-    ];
+    var STORAGE_KEY = 'dgd_files'; // fallback for demo mode
 
     var filesState = {
         search: '',
@@ -29,9 +19,9 @@ DGD.views = DGD.views || {};
         sortDir: 'desc',
     };
 
-    // --- Storage helpers (localStorage until backend API is connected) ---
+    // --- localStorage fallback (demo mode when API is unavailable) ---
 
-    function loadFiles() {
+    function loadFilesLocal() {
         try {
             var raw = localStorage.getItem(STORAGE_KEY);
             return raw ? JSON.parse(raw) : [];
@@ -40,20 +30,36 @@ DGD.views = DGD.views || {};
         }
     }
 
-    function saveFiles(files) {
+    function saveFilesLocal(files) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(files));
     }
 
-    function deleteFile(id) {
-        var files = loadFiles().filter(function(f) { return f.id !== id; });
-        saveFiles(files);
+    // --- API helpers ---
+
+    function apiDeleteFile(id) {
+        return fetch('api/files/' + id, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+        }).then(function(res) { return res.json(); });
+    }
+
+    function uploadFile(file) {
+        var formData = new FormData();
+        formData.append('file', file);
+
+        return fetch('api/files', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData,
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.message || 'Upload fehlgeschlagen');
+            return data;
+        });
     }
 
     // --- Helpers ---
-
-    function generateId() {
-        return 'f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    }
 
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 B';
@@ -113,12 +119,25 @@ DGD.views = DGD.views || {};
         return map[ext] || ext.toUpperCase();
     }
 
-    // --- File processing ---
+    // --- Normalize API file to internal format ---
+
+    function normalizeFile(f) {
+        return {
+            id: f.id,
+            name: f.original_name || f.name,
+            size: f.size || 0,
+            ext: f.extension || getExtension(f.original_name || f.name || ''),
+            date: f.created_at || new Date().toISOString(),
+            mime_type: f.mime_type || '',
+            uploaded_by: f.uploaded_by || '',
+        };
+    }
+
+    // --- File processing (upload via API with localStorage fallback) ---
 
     function processFiles(rawFiles, container) {
-        var existingFiles = loadFiles();
         var pending = rawFiles.length;
-        var added = 0;
+        var errors = [];
 
         if (pending === 0) return;
 
@@ -131,42 +150,51 @@ DGD.views = DGD.views || {};
                     return;
                 }
 
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var entry = {
-                        id: generateId(),
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        ext: getExtension(file.name),
-                        date: new Date().toISOString(),
-                        data: e.target.result,
-                    };
-                    existingFiles.push(entry);
-                    added++;
-                    pending--;
-                    if (pending === 0) {
-                        saveFiles(existingFiles);
-                        DGD.views.files(container);
-                    }
-                };
-                reader.onerror = function() {
-                    pending--;
-                    if (pending === 0) {
-                        saveFiles(existingFiles);
-                        DGD.views.files(container);
-                    }
-                };
-                reader.readAsDataURL(file);
+                uploadFile(file)
+                    .then(function() {
+                        pending--;
+                        if (pending === 0) {
+                            DGD.views.files(container);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.warn('[Files] Upload failed for ' + file.name + ':', err);
+                        errors.push(file.name);
+                        // Fallback: save to localStorage
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            var existingFiles = loadFilesLocal();
+                            existingFiles.push({
+                                id: 'f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                                name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                ext: getExtension(file.name),
+                                date: new Date().toISOString(),
+                                data: e.target.result,
+                            });
+                            saveFilesLocal(existingFiles);
+                            pending--;
+                            if (pending === 0) {
+                                DGD.views.files(container);
+                            }
+                        };
+                        reader.onerror = function() {
+                            pending--;
+                            if (pending === 0) {
+                                DGD.views.files(container);
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    });
             })(rawFiles[i]);
         }
     }
 
-    // --- Render ---
+    // --- Render file list (called after data is loaded) ---
 
-    DGD.views.files = function(container) {
+    function renderFileList(container, files, totalSize) {
         var escapeHtml = DGD.helpers.escapeHtml;
-        var files = loadFiles();
         var html = '';
 
         // Page header
@@ -183,7 +211,7 @@ DGD.views = DGD.views || {};
         html += '<div style="display:flex;align-items:center;gap:0.75rem;">';
         html += '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--dgd-primary, #2563eb)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
         html += '<span style="font-size:var(--dgd-font-size-sm);color:var(--dgd-gray-700);">';
-        html += 'Dateien werden lokal gespeichert. Die Anbindung an die Cortex-Wissensdatenbank wird in einer zuk&uuml;nftigen Version aktiviert.';
+        html += 'Dateien werden sicher auf dem Server gespeichert und stehen allen Teammitgliedern zur Verf&uuml;gung. Cortex kann diese Dateien f&uuml;r die Wissensdatenbank nutzen.';
         html += '</span></div></div>';
 
         // Drop zone
@@ -288,10 +316,10 @@ DGD.views = DGD.views || {};
         }
 
         // Total size
-        var totalSize = files.reduce(function(sum, f) { return sum + f.size; }, 0);
+        var computedTotalSize = totalSize || files.reduce(function(sum, f) { return sum + f.size; }, 0);
         if (files.length > 0) {
             html += '<div style="margin-top:0.75rem;font-size:var(--dgd-font-size-sm);color:var(--dgd-gray-500);">';
-            html += 'Gesamt: ' + formatFileSize(totalSize) + ' in ' + files.length + ' Datei' + (files.length !== 1 ? 'en' : '');
+            html += 'Gesamt: ' + formatFileSize(computedTotalSize) + ' in ' + files.length + ' Datei' + (files.length !== 1 ? 'en' : '');
             html += '</div>';
         }
 
@@ -300,7 +328,12 @@ DGD.views = DGD.views || {};
         container.innerHTML = html;
 
         // --- Event bindings ---
+        bindFileEvents(container);
+    }
 
+    // --- Event bindings (extracted for reuse) ---
+
+    function bindFileEvents(container) {
         var dropzone = document.getElementById('files-dropzone');
         var fileInput = document.getElementById('files-input');
         var uploadBtn = document.getElementById('files-upload-btn');
@@ -379,9 +412,19 @@ DGD.views = DGD.views || {};
         for (var d = 0; d < deleteBtns.length; d++) {
             deleteBtns[d].addEventListener('click', function(e) {
                 e.stopPropagation();
+                var fileId = this.getAttribute('data-files-delete');
                 if (confirm('Datei wirklich loeschen?')) {
-                    deleteFile(this.getAttribute('data-files-delete'));
-                    DGD.views.files(container);
+                    apiDeleteFile(fileId)
+                        .then(function() {
+                            DGD.views.files(container);
+                        })
+                        .catch(function(err) {
+                            console.warn('[Files] API delete failed, removing from localStorage:', err);
+                            // Fallback: remove from localStorage
+                            var localFiles = loadFilesLocal().filter(function(f) { return f.id !== fileId; });
+                            saveFilesLocal(localFiles);
+                            DGD.views.files(container);
+                        });
                 }
             });
         }
@@ -392,20 +435,40 @@ DGD.views = DGD.views || {};
             downloadBtns[dl].addEventListener('click', function(e) {
                 e.stopPropagation();
                 var fileId = this.getAttribute('data-files-download');
-                var allFiles = loadFiles();
-                var file = null;
-                for (var fi = 0; fi < allFiles.length; fi++) {
-                    if (allFiles[fi].id === fileId) { file = allFiles[fi]; break; }
-                }
-                if (file && file.data) {
-                    var a = document.createElement('a');
-                    a.href = file.data;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }
+                window.open('api/files/' + fileId + '/download');
             });
         }
+    }
+
+    // --- Main view entry point ---
+
+    DGD.views.files = function(container) {
+        // Show loading state immediately
+        container.innerHTML = '<div style="text-align:center;padding:3rem;"><p>Dateien werden geladen...</p></div>';
+
+        // Build API URL with query params
+        var url = 'api/files';
+        var params = [];
+        if (filesState.search) params.push('q=' + encodeURIComponent(filesState.search));
+        if (filesState.sortBy) params.push('sort=' + filesState.sortBy);
+        params.push('dir=' + filesState.sortDir);
+        if (params.length) url += '?' + params.join('&');
+
+        fetch(url, { credentials: 'same-origin' })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data && data.files) {
+                    var normalized = data.files.map(normalizeFile);
+                    renderFileList(container, normalized, data.total_size || 0);
+                } else {
+                    renderFileList(container, [], 0);
+                }
+            })
+            .catch(function(err) {
+                console.warn('[Files] API error, falling back to localStorage:', err);
+                // Fallback to localStorage for demo mode
+                var files = loadFilesLocal();
+                renderFileList(container, files, 0);
+            });
     };
 })();

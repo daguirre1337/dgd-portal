@@ -37,6 +37,7 @@ require_once __DIR__ . '/handlers/feedback.php';
 require_once __DIR__ . '/handlers/finance.php';
 require_once __DIR__ . '/handlers/export.php';
 require_once __DIR__ . '/handlers/crm.php';
+require_once __DIR__ . '/handlers/files.php';
 
 // ---- Auto-initialize database if tables are missing ----
 require_once __DIR__ . '/init_db.php';
@@ -49,6 +50,7 @@ if ($_table_count === 0) {
 } else {
     // Run migrations for new tables on existing DBs
     crm_ensure_tables();
+    files_ensure_tables();
 }
 unset($_db_check, $_table_count);
 
@@ -155,6 +157,13 @@ $routes = [
     // CRM Reminder Config
     ['GET',    '#/api/crm/reminder-config$#',                      'handle_crm_reminder_config',     'admin'],
     ['PUT',    '#/api/crm/reminder-config/([a-z_]+)$#',            'handle_update_reminder_config',  'admin'],
+
+    // Files
+    ['GET',    '#/api/files$#',                          'handle_list_files',    'auth'],
+    ['POST',   '#/api/files$#',                          'handle_upload_file',   'auth'],
+    ['GET',    "#/api/files/({$UUID})/download$#i",      'handle_download_file', 'auth'],
+    ['GET',    "#/api/files/({$UUID})$#i",               'handle_get_file',      'auth'],
+    ['DELETE', "#/api/files/({$UUID})$#i",               'handle_delete_file',   'auth'],
 
     // Admin
     ['GET',  '#/api/admin/users$#',            'handle_list_users',          'admin'],

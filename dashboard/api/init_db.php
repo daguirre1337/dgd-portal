@@ -31,7 +31,7 @@ function crm_ensure_tables(): void
             updated_at TEXT DEFAULT (datetime('now'))
         )
     ");
-    $allViews = ['dashboard','timeline','kpis','mitarbeiter','finanzen','ziele','feedback','roadmap','showcase','settings','crm'];
+    $allViews = ['dashboard','timeline','kpis','mitarbeiter','finanzen','ziele','feedback','roadmap','showcase','settings','crm','files'];
     foreach ($allViews as $v) {
         $db->exec("INSERT OR IGNORE INTO page_owners (view_name, owner_name) VALUES ('{$v}', 'Daniel')");
     }
@@ -407,7 +407,7 @@ function init_database(): void
     ");
 
     // Seed page_owners with Daniel for all views
-    $allViews = ['dashboard','timeline','kpis','mitarbeiter','finanzen','ziele','feedback','roadmap','showcase','settings','crm'];
+    $allViews = ['dashboard','timeline','kpis','mitarbeiter','finanzen','ziele','feedback','roadmap','showcase','settings','crm','files'];
     foreach ($allViews as $v) {
         $db->exec("INSERT OR IGNORE INTO page_owners (view_name, owner_name) VALUES ('{$v}', 'Daniel')");
     }

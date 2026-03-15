@@ -166,4 +166,36 @@ var dashboardApi = {
     importCrmTrello: function(data) {
         return this._fetch('/crm/import/trello', { method: 'POST', body: JSON.stringify(data) });
     },
+
+    // Finance
+    getFinanceSummary: function(params) {
+        var q = params ? '?' + new URLSearchParams(params) : '';
+        return this._fetch('/finance/summary' + q);
+    },
+    getFinanceMonthly: function(year) {
+        var q = year ? '?year=' + year : '';
+        return this._fetch('/finance/monthly' + q);
+    },
+    getFinanceExpenses: function(params) {
+        var q = params ? '?' + new URLSearchParams(params) : '';
+        return this._fetch('/finance/expenses' + q);
+    },
+    createFinanceExpense: function(data) {
+        return this._fetch('/finance/expenses', { method: 'POST', body: JSON.stringify(data) });
+    },
+    getFinanceProjects: function() {
+        return this._fetch('/finance/projects');
+    },
+
+    // Files
+    getFiles: function(params) {
+        var q = params ? '?' + new URLSearchParams(params) : '';
+        return this._fetch('/files' + q);
+    },
+    deleteFile: function(id) {
+        return this._fetch('/files/' + id, { method: 'DELETE' });
+    },
+    getFileDownloadUrl: function(id) {
+        return this._base + '/files/' + id + '/download';
+    },
 };
