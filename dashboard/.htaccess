@@ -4,6 +4,10 @@ DirectoryIndex index.php
 RewriteEngine On
 RewriteBase /dashboard/
 
+# TellentHR API proxy (standalone, not routed through index.php)
+RewriteRule ^api/tellent\.php$ api/tellent.php [QSA,L]
+RewriteRule ^api/tellent$ api/tellent.php [QSA,L]
+
 # Dashboard API routing
 RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
