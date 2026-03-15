@@ -52,15 +52,15 @@
 /* ---- Canvas Area: All 6 Slides Side by Side ---- */
 
 .showcase-canvas {
-    flex: 1;
+    flex: 1 1 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: auto; /* scroll when slides don't fit */
+    overflow: auto;
     background: var(--dgd-gray-100);
     position: relative;
     min-height: 200px;
-    min-width: 0;
+    min-width: 0; /* allow flex to shrink below content */
 }
 
 .showcase-canvas__strip {
@@ -134,9 +134,9 @@
 
 .showcase-props {
     width: 260px;
-    min-width: 220px;
+    min-width: 0; /* allow shrinking on narrow viewports */
     max-width: 300px;
-    flex-shrink: 0;
+    flex: 0 0 260px; /* don't grow, don't shrink by default, basis 260px */
     background: var(--dgd-white);
     border-left: 1px solid var(--dgd-gray-200);
     display: flex;
@@ -515,20 +515,10 @@
 }
 
 /* ---- Responsive: Mobile First ---- */
+/* Note: Dashboard sidebar is 240px, so viewport 1200px = only 960px for content */
 
-/* Tablets and smaller desktops */
-@media (max-width: 1100px) {
-    .showcase-props {
-        width: 220px;
-        min-width: 180px;
-    }
-    .showcase-templates {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* Tablet portrait / narrow browser */
-@media (max-width: 960px) {
+/* Narrow desktop (sidebar eats space) - stack layout */
+@media (max-width: 1300px) {
     .showcase-builder__body {
         flex-direction: column;
     }
@@ -547,8 +537,9 @@
         border-left: none;
         border-top: 1px solid var(--dgd-gray-200);
         overflow-y: auto;
-        flex: 1;
+        flex: 1 1 auto;
     }
+    /* Horizontal layout for props when stacked below */
     .showcase-props__section {
         padding: var(--dgd-space-sm) var(--dgd-space-md);
     }
