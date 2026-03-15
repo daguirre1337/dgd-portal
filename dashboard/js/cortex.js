@@ -15,6 +15,8 @@ var CortexChat = (function() {
         return 'http://localhost:8000';
     })();
     var MAX_HISTORY = 20;
+    var MAX_RETRIES = 3;
+    var RETRY_DELAYS = [1000, 2000, 4000]; // exponential backoff
 
     var _el = null;       // widget root element
     var _open = false;
@@ -22,6 +24,7 @@ var CortexChat = (function() {
     var _streaming = false;
     var _online = false;
     var _user = null;
+    var _retryCount = 0;
 
     /* ------------------------------------------------------------------
        DOM Creation
@@ -225,6 +228,11 @@ var CortexChat = (function() {
             conversation_history: _history.slice(0, -1) // exclude current message (already in user_message)
         });
 
+        _retryCount = 0;
+        doStreamRequest(body);
+    }
+
+    function doStreamRequest(body) {
         fetch(CORTEX_URL + '/api/chat/stream', {
             method: 'POST',
             headers: {
@@ -235,14 +243,36 @@ var CortexChat = (function() {
         }).then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             setOnline(true);
+            _retryCount = 0;
             return readStream(response);
         }).catch(function(err) {
-            console.warn('[Cortex] Chat error:', err.message);
-            removeTyping();
-            appendMessage('cortex', 'Verbindung zu Cortex fehlgeschlagen. Bitte spaeter erneut versuchen.');
-            setOnline(false);
-            _streaming = false;
-            enableInput();
+            console.warn('[Cortex] Chat error (attempt ' + (_retryCount + 1) + '):', err.message);
+
+            if (_retryCount < MAX_RETRIES) {
+                var delay = RETRY_DELAYS[_retryCount] || 4000;
+                _retryCount++;
+
+                // Show retry message in typing bubble
+                removeTyping();
+                var retryBubble = appendMessage('cortex', 'Erneuter Versuch... (' + _retryCount + '/' + MAX_RETRIES + ')');
+                if (retryBubble) retryBubble.style.opacity = '0.6';
+
+                setTimeout(function() {
+                    // Remove retry message and show typing again
+                    if (retryBubble && retryBubble.parentNode) {
+                        retryBubble.parentNode.parentNode.remove();
+                    }
+                    showTyping();
+                    doStreamRequest(body);
+                }, delay);
+            } else {
+                removeTyping();
+                appendMessage('cortex', 'Verbindung zu Cortex fehlgeschlagen nach ' + MAX_RETRIES + ' Versuchen. Bitte spaeter erneut versuchen.');
+                setOnline(false);
+                _streaming = false;
+                _retryCount = 0;
+                enableInput();
+            }
         });
     }
 
