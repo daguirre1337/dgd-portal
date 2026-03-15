@@ -51,6 +51,7 @@ if ($_table_count === 0) {
     // Run migrations for new tables on existing DBs
     crm_ensure_tables();
     files_ensure_tables();
+    finance_ensure_tables();
 }
 unset($_db_check, $_table_count);
 
@@ -110,6 +111,11 @@ $routes = [
     ['POST', '#/api/feedback/templates$#',                       'handle_create_feedback_template','auth'],
     ['PUT',  "#/api/feedback/templates/({$UUID})$#i",           'handle_update_feedback_template','auth'],
     ['POST', '#/api/feedback/responses$#',                       'handle_submit_feedback_response','auth'],
+
+    // Finance - Bank Transactions
+    ['POST',   '#/api/finance/import$#',                  'handle_import_bank_csv',          'auth'],
+    ['GET',    '#/api/finance/transactions$#',             'handle_list_bank_transactions',   'auth'],
+    ['GET',    '#/api/finance/transaction-stats$#',        'handle_get_transaction_stats',    'auth'],
 
     // Finance
     ['GET',    '#/api/finance/summary$#',                'handle_finance_summary',  'auth'],

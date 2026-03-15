@@ -12,6 +12,9 @@
  *   POST   /api/finance/revenue             - Create revenue entry
  *   GET    /api/finance/revenue             - List revenue entries
  *   GET    /api/finance/projects            - Projects with budget vs spent
+ *   POST   /api/finance/import              - Import bank CSV (Sparkasse format)
+ *   GET    /api/finance/transactions        - List bank transactions (filter, paginate)
+ *   GET    /api/finance/transaction-stats   - Monthly aggregation & category stats
  */
 
 require_once __DIR__ . '/../config.php';
@@ -62,6 +65,44 @@ function finance_ensure_tables(): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_revenue_date      ON revenue_entries(date)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_revenue_source    ON revenue_entries(source)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_revenue_project   ON revenue_entries(project_id)");
+
+    // Bank transactions table
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS bank_transactions (
+            id TEXT PRIMARY KEY,
+            date TEXT,
+            valuta_date TEXT,
+            description TEXT,
+            amount REAL,
+            currency TEXT DEFAULT 'EUR',
+            iban_sender TEXT,
+            iban_receiver TEXT,
+            booking_type TEXT,
+            reference TEXT,
+            category TEXT DEFAULT 'uncategorized',
+            import_batch_id TEXT,
+            hash TEXT UNIQUE,
+            created_at TEXT
+        )
+    ");
+
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_bt_date           ON bank_transactions(date)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_bt_category       ON bank_transactions(category)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_bt_import_batch   ON bank_transactions(import_batch_id)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_bt_amount         ON bank_transactions(amount)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_bt_hash           ON bank_transactions(hash)");
+
+    // Import batches table
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS import_batches (
+            id TEXT PRIMARY KEY,
+            filename TEXT,
+            row_count INTEGER,
+            created_by TEXT,
+            created_at TEXT,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        )
+    ");
 
     // Add budget columns to projects if not present
     finance_ensure_project_columns($db);
@@ -548,6 +589,405 @@ function handle_finance_projects(): void
     json_response([
         'projects' => $projects,
         'total'    => count($projects),
+    ]);
+}
+
+
+// ============================================================
+//  BANK TRANSACTION HANDLERS
+// ============================================================
+
+/**
+ * Auto-categorize a bank transaction based on description keywords.
+ */
+function categorize_transaction(string $description): string
+{
+    $desc = mb_strtolower($description, 'UTF-8');
+
+    $rules = [
+        'personnel'  => ['gehalt', 'lohn', 'vergütung', 'vergut'],
+        'rent'       => ['miete', 'mietvertrag', 'kaltmiete', 'warmmiete'],
+        'insurance'  => ['versicherung', 'allianz', 'huk', 'devk', 'generali'],
+        'fuel'       => ['tankstelle', 'shell', 'aral', 'jet', 'total', 'diesel'],
+        'groceries'  => ['rewe', 'edeka', 'aldi', 'lidl', 'penny', 'netto', 'kaufland'],
+        'utilities'  => ['strom', 'gas', 'stadtwerke', 'energie', 'enbw'],
+        'telecom'    => ['telekom', 'vodafone', 'o2', '1&1', 'internet'],
+        'tax'        => ['finanzamt', 'steuer', 'elster', 'ihk', 'kammer'],
+    ];
+
+    foreach ($rules as $category => $keywords) {
+        foreach ($keywords as $kw) {
+            if (mb_strpos($desc, $kw) !== false) {
+                return $category;
+            }
+        }
+    }
+
+    return 'uncategorized';
+}
+
+/**
+ * Parse a German-format number string to float.
+ * "1.234,56" → 1234.56 | "-1.234,56" → -1234.56
+ */
+function parse_german_amount(string $raw): float
+{
+    $raw = trim($raw);
+    // Remove thousand separators (dots), replace decimal comma with dot
+    $raw = str_replace('.', '', $raw);
+    $raw = str_replace(',', '.', $raw);
+    return (float) $raw;
+}
+
+/**
+ * Convert DD.MM.YYYY to YYYY-MM-DD (ISO).
+ */
+function parse_german_date(string $raw): string
+{
+    $raw = trim($raw);
+    $parts = explode('.', $raw);
+    if (count($parts) === 3) {
+        return sprintf('%s-%s-%s', $parts[2], $parts[1], $parts[0]);
+    }
+    return $raw; // Return as-is if not parseable
+}
+
+/**
+ * POST /api/finance/import
+ * Accepts multipart/form-data with a 'file' field (CSV, Sparkasse format).
+ */
+function handle_import_bank_csv(): void
+{
+    requireAuth();
+    finance_ensure_tables();
+
+    if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        json_error('No file uploaded or upload error', 400);
+    }
+
+    $tmpPath  = $_FILES['file']['tmp_name'];
+    $filename = $_FILES['file']['name'] ?? 'unknown.csv';
+
+    // Read file content and handle encoding
+    $content = file_get_contents($tmpPath);
+    if ($content === false) {
+        json_error('Failed to read uploaded file', 500);
+    }
+
+    $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+    if ($encoding && $encoding !== 'UTF-8') {
+        $content = mb_convert_encoding($content, 'UTF-8', $encoding);
+    }
+
+    // Write converted content to temp file for fgetcsv
+    $tmpConverted = tempnam(sys_get_temp_dir(), 'csv_');
+    file_put_contents($tmpConverted, $content);
+
+    $fh = fopen($tmpConverted, 'r');
+    if (!$fh) {
+        @unlink($tmpConverted);
+        json_error('Failed to open CSV file', 500);
+    }
+
+    $db      = get_db();
+    $batchId = generate_uuid();
+    $now     = now_iso();
+
+    $imported  = 0;
+    $skipped   = 0;
+    $categories = [];
+    $headerSkipped = false;
+
+    $rows = [];
+    while (($line = fgetcsv($fh, 0, ';')) !== false) {
+        // Skip empty lines
+        if (count($line) < 9) {
+            continue;
+        }
+
+        // Auto-detect header: if first column looks like a header label, skip
+        if (!$headerSkipped) {
+            // Check if the amount column (8) is NOT numeric → likely a header
+            $testAmount = trim($line[8] ?? '');
+            $testAmount = str_replace(['.', ',', '-', ' '], '', $testAmount);
+            if (!is_numeric($testAmount) || mb_strtolower($line[0]) === 'auftragskonto') {
+                $headerSkipped = true;
+                continue;
+            }
+            $headerSkipped = true;
+        }
+
+        $rows[] = $line;
+    }
+    fclose($fh);
+    @unlink($tmpConverted);
+
+    // Begin transaction for batch insert
+    $db->beginTransaction();
+
+    try {
+        // Create import batch
+        $db->prepare("
+            INSERT INTO import_batches (id, filename, row_count, created_by, created_at)
+            VALUES (:id, :filename, :row_count, :created_by, :created_at)
+        ")->execute([
+            ':id'         => $batchId,
+            ':filename'   => $filename,
+            ':row_count'  => count($rows),
+            ':created_by' => $_SESSION['user_id'],
+            ':created_at' => $now,
+        ]);
+
+        $insertStmt = $db->prepare("
+            INSERT INTO bank_transactions
+                (id, date, valuta_date, description, amount, currency,
+                 iban_sender, iban_receiver, booking_type, reference,
+                 category, import_batch_id, hash, created_at)
+            VALUES
+                (:id, :date, :valuta_date, :description, :amount, :currency,
+                 :iban_sender, :iban_receiver, :booking_type, :reference,
+                 :category, :import_batch_id, :hash, :created_at)
+        ");
+
+        foreach ($rows as $line) {
+            $dateRaw      = trim($line[1] ?? '');
+            $valutaRaw    = trim($line[2] ?? '');
+            $bookingType  = trim($line[3] ?? '');
+            $reference    = trim($line[4] ?? '');
+            $beneficiary  = trim($line[5] ?? '');
+            $accountNr    = trim($line[6] ?? '');
+            $blz          = trim($line[7] ?? '');
+            $amountRaw    = trim($line[8] ?? '0');
+            $currency     = trim($line[9] ?? 'EUR');
+
+            $date       = parse_german_date($dateRaw);
+            $valutaDate = parse_german_date($valutaRaw);
+            $amount     = parse_german_amount($amountRaw);
+
+            // Build description from beneficiary + reference
+            $description = trim($beneficiary);
+            if (!empty($reference)) {
+                $description .= ' - ' . $reference;
+            }
+            if (empty($description)) {
+                $description = $bookingType;
+            }
+
+            // Duplicate hash: SHA256 of date + amount + reference
+            $hashInput = $date . '|' . $amount . '|' . $reference;
+            $hash = hash('sha256', $hashInput);
+
+            // Auto-categorize
+            $category = categorize_transaction($description);
+
+            try {
+                $insertStmt->execute([
+                    ':id'              => generate_uuid(),
+                    ':date'            => $date,
+                    ':valuta_date'     => $valutaDate,
+                    ':description'     => $description,
+                    ':amount'          => $amount,
+                    ':currency'        => $currency ?: 'EUR',
+                    ':iban_sender'     => trim($line[0] ?? ''),
+                    ':iban_receiver'   => $accountNr,
+                    ':booking_type'    => $bookingType,
+                    ':reference'       => $reference,
+                    ':category'        => $category,
+                    ':import_batch_id' => $batchId,
+                    ':hash'            => $hash,
+                    ':created_at'      => $now,
+                ]);
+                $imported++;
+                $categories[$category] = ($categories[$category] ?? 0) + 1;
+            } catch (PDOException $e) {
+                // UNIQUE constraint on hash → duplicate
+                if (strpos($e->getMessage(), 'UNIQUE') !== false) {
+                    $skipped++;
+                } else {
+                    throw $e;
+                }
+            }
+        }
+
+        $db->commit();
+    } catch (Exception $e) {
+        $db->rollBack();
+        json_error('Import failed: ' . $e->getMessage(), 500);
+    }
+
+    json_response([
+        'imported'   => $imported,
+        'skipped'    => $skipped,
+        'batch_id'   => $batchId,
+        'categories' => $categories,
+    ]);
+}
+
+/**
+ * GET /api/finance/transactions
+ * Query params: ?from=&to=&category=&min_amount=&max_amount=&q=&limit=50&offset=0
+ */
+function handle_list_bank_transactions(): void
+{
+    requireAuth();
+    finance_ensure_tables();
+    $db = get_db();
+
+    $where  = [];
+    $params = [];
+
+    if (!empty($_GET['from'])) {
+        $where[]              = 'date >= :from_date';
+        $params[':from_date'] = $_GET['from'];
+    }
+    if (!empty($_GET['to'])) {
+        $where[]            = 'date <= :to_date';
+        $params[':to_date'] = $_GET['to'];
+    }
+    if (!empty($_GET['category'])) {
+        $where[]              = 'category = :category';
+        $params[':category']  = $_GET['category'];
+    }
+    if (isset($_GET['min_amount']) && $_GET['min_amount'] !== '') {
+        $where[]                = 'amount >= :min_amount';
+        $params[':min_amount']  = (float) $_GET['min_amount'];
+    }
+    if (isset($_GET['max_amount']) && $_GET['max_amount'] !== '') {
+        $where[]                = 'amount <= :max_amount';
+        $params[':max_amount']  = (float) $_GET['max_amount'];
+    }
+    if (!empty($_GET['q'])) {
+        $where[]        = 'description LIKE :q';
+        $params[':q']   = '%' . $_GET['q'] . '%';
+    }
+
+    $whereClause = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $limit  = max(1, min(500, (int) ($_GET['limit']  ?? 50)));
+    $offset = max(0, (int) ($_GET['offset'] ?? 0));
+
+    // Get total count
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM bank_transactions {$whereClause}");
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    // Get transactions
+    $stmt = $db->prepare("
+        SELECT * FROM bank_transactions
+        {$whereClause}
+        ORDER BY date DESC
+        LIMIT :limit OFFSET :offset
+    ");
+    // Bind params (PDO needs special handling for LIMIT/OFFSET)
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val);
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $transactions = $stmt->fetchAll();
+
+    // Cast amounts
+    foreach ($transactions as &$t) {
+        $t['amount'] = (float) $t['amount'];
+    }
+
+    // Income / expense stats for filtered set
+    $incomeStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions {$whereClause} AND amount > 0");
+    $expenseStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions {$whereClause} AND amount < 0");
+
+    // If no WHERE clause, adjust the AND to WHERE
+    if (empty($whereClause)) {
+        $incomeStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions WHERE amount > 0");
+        $expenseStmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM bank_transactions WHERE amount < 0");
+        $incomeStmt->execute();
+        $expenseStmt->execute();
+    } else {
+        $incomeStmt->execute($params);
+        $expenseStmt->execute($params);
+    }
+
+    $income  = (float) $incomeStmt->fetchColumn();
+    $expense = (float) $expenseStmt->fetchColumn();
+
+    json_response([
+        'transactions' => $transactions,
+        'total'        => $total,
+        'stats'        => [
+            'income'  => round($income, 2),
+            'expense' => round(abs($expense), 2),
+        ],
+    ]);
+}
+
+/**
+ * GET /api/finance/transaction-stats
+ * Monthly aggregation, top categories, balance trend (last 12 months).
+ */
+function handle_get_transaction_stats(): void
+{
+    requireAuth();
+    finance_ensure_tables();
+    $db = get_db();
+
+    // Last 12 months boundary
+    $twelveMonthsAgo = date('Y-m-d', strtotime('-12 months'));
+
+    // Monthly income/expense aggregation
+    $stmt = $db->prepare("
+        SELECT
+            strftime('%Y-%m', date) as month,
+            SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
+            SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) as expense
+        FROM bank_transactions
+        WHERE date >= :since
+        GROUP BY month
+        ORDER BY month
+    ");
+    $stmt->execute([':since' => $twelveMonthsAgo]);
+    $monthly = [];
+    while ($row = $stmt->fetch()) {
+        $monthly[] = [
+            'month'   => $row['month'],
+            'income'  => round((float) $row['income'], 2),
+            'expense' => round(abs((float) $row['expense']), 2),
+            'net'     => round((float) $row['income'] + (float) $row['expense'], 2),
+        ];
+    }
+
+    // Top categories by absolute sum
+    $stmt = $db->prepare("
+        SELECT category, SUM(ABS(amount)) as total, COUNT(*) as count
+        FROM bank_transactions
+        WHERE date >= :since
+        GROUP BY category
+        ORDER BY total DESC
+    ");
+    $stmt->execute([':since' => $twelveMonthsAgo]);
+    $categoriesArr = [];
+    while ($row = $stmt->fetch()) {
+        $categoriesArr[] = [
+            'category' => $row['category'],
+            'total'    => round((float) $row['total'], 2),
+            'count'    => (int) $row['count'],
+        ];
+    }
+
+    // Balance trend (cumulative by month)
+    $balanceTrend = [];
+    $cumulative   = 0;
+    foreach ($monthly as $m) {
+        $cumulative += $m['net'];
+        $balanceTrend[] = [
+            'month'   => $m['month'],
+            'balance' => round($cumulative, 2),
+        ];
+    }
+
+    json_response([
+        'monthly'       => $monthly,
+        'categories'    => $categoriesArr,
+        'balance_trend' => $balanceTrend,
     ]);
 }
 
