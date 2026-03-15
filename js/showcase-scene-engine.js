@@ -10,7 +10,7 @@
  * - Premium gradients with 5+ color stops
  * - Smooth bezier curves for landscapes
  * - Large, soft bokeh and light effects
- * - DGD brand: Dunkelblau #1A365D, Gold #D4A843
+ * - DGD brand: Dunkelblau #184E74, Gold #CAA876
  */
 
 const ShowcaseSceneEngine = (() => {
@@ -243,7 +243,7 @@ const ShowcaseSceneEngine = (() => {
                     const cy = (opts.y || 0.3) * h;
                     const r = (opts.radius || 80) * (w / DW);
                     const alpha = opts.alpha || 0.12;
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
 
                     ctx.save();
                     ctx.translate(cx, cy);
@@ -291,7 +291,7 @@ const ShowcaseSceneEngine = (() => {
                     const cy = (opts.y || 0.3) * h;
                     const s = (opts.scale || 1) * (w / DW);
                     const alpha = opts.alpha || 0.1;
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
 
                     ctx.save();
                     ctx.translate(cx, cy);
@@ -331,7 +331,7 @@ const ShowcaseSceneEngine = (() => {
                     const x = (opts.x || 0.3) * w;
                     const spread = (opts.spread || 0.25) * w;
                     const alpha = opts.alpha || 0.04;
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
                     const reachY = (opts.reach || 0.75) * h;
 
                     ctx.save();
@@ -371,7 +371,7 @@ const ShowcaseSceneEngine = (() => {
                         const alpha = 0.04 + rand() * 0.1;
                         const isGold = rand() > 0.4;
                         const color = isGold
-                            ? (opts.goldColor || '#D4A843')
+                            ? (opts.goldColor || '#CAA876')
                             : (opts.blueColor || '#4A90C4');
 
                         // Soft gaussian-like bokeh
@@ -418,7 +418,7 @@ const ShowcaseSceneEngine = (() => {
             {
                 id: 'color_overlay',
                 draw: (ctx, w, h, opts) => {
-                    const color = opts.color || '#1A365D';
+                    const color = opts.color || '#184E74';
                     const alpha = opts.alpha || 0.1;
                     ctx.fillStyle = _rgba(color, alpha);
                     ctx.fillRect(0, 0, w, h);
@@ -445,7 +445,7 @@ const ShowcaseSceneEngine = (() => {
                     const cx = (opts.x || 0.7) * w;
                     const cy = (opts.y || 0.12) * h;
                     const size = (opts.size || 150) * (w / DW);
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
 
                     ctx.save();
                     ctx.globalCompositeOperation = 'screen';
@@ -522,7 +522,7 @@ const ShowcaseSceneEngine = (() => {
                 draw: (ctx, w, h, opts) => {
                     const y = (opts.y || 0.48) * h;
                     const thickness = (opts.thickness || 2) * (w / DW);
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
                     const alpha = opts.alpha || 0.3;
 
                     // Gradient stripe that fades at edges
@@ -547,7 +547,7 @@ const ShowcaseSceneEngine = (() => {
                 id: 'corner_accent',
                 draw: (ctx, w, h, opts) => {
                     const size = (opts.size || 50) * (w / DW);
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
                     const alpha = opts.alpha || 0.2;
                     const margin = (opts.margin || 25) * (w / DW);
                     const lineW = 1.5 * (w / DW);
@@ -588,7 +588,7 @@ const ShowcaseSceneEngine = (() => {
             {
                 id: 'diagonal_lines',
                 draw: (ctx, w, h, opts) => {
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
                     const alpha = opts.alpha || 0.04;
                     const count = opts.count || 6;
                     const lineW = (opts.lineWidth || 1) * (w / DW);
@@ -612,7 +612,7 @@ const ShowcaseSceneEngine = (() => {
                 id: 'gradient_border',
                 draw: (ctx, w, h, opts) => {
                     const thickness = (opts.thickness || 3) * (w / DW);
-                    const color = opts.color || '#D4A843';
+                    const color = opts.color || '#CAA876';
                     const alpha = opts.alpha || 0.15;
                     const margin = (opts.margin || 15) * (w / DW);
 
@@ -654,7 +654,7 @@ const ShowcaseSceneEngine = (() => {
                     { libId: 'premium_sky', layer: 'environment', opts: { theme: 0 } },
                     { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.42, amplitude: 0.06, layers: 3, seed: 42 } },
                     { libId: 'ground_plane', layer: 'environment', opts: { y: 0.52 } },
-                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.3, size: 500, color: '#1A365D', alpha: 0.12 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.3, size: 500, color: '#184E74', alpha: 0.12 } },
                     { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 12, seed: 42 } },
                     { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } },
                 ] },
@@ -666,7 +666,7 @@ const ShowcaseSceneEngine = (() => {
                     { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.2 } },
                     { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.4, amplitude: 0.07, layers: 3, seed: 55 } },
                     { libId: 'ground_plane', layer: 'environment', opts: { y: 0.5 } },
-                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.6, y: 0.35, size: 400, color: '#D4A843', alpha: 0.06 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.6, y: 0.35, size: 400, color: '#CAA876', alpha: 0.06 } },
                     { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 10, seed: 55 } },
                     { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.28 } },
                 ] },
@@ -678,7 +678,7 @@ const ShowcaseSceneEngine = (() => {
                     { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.4 } },
                     { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.45, amplitude: 0.05, layers: 2, seed: 70 } },
                     { libId: 'ground_plane', layer: 'environment', opts: { y: 0.55 } },
-                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.3, y: 0.4, size: 350, color: '#1A365D', alpha: 0.1 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.3, y: 0.4, size: 350, color: '#184E74', alpha: 0.1 } },
                     { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 8, seed: 70 } },
                     { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.25 } },
                 ] },
@@ -690,7 +690,7 @@ const ShowcaseSceneEngine = (() => {
                     { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.6 } },
                     { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.38, amplitude: 0.08, layers: 3, seed: 85 } },
                     { libId: 'ground_plane', layer: 'environment', opts: { y: 0.48 } },
-                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.25, size: 450, color: '#D4A843', alpha: 0.08 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.25, size: 450, color: '#CAA876', alpha: 0.08 } },
                     { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 15, seed: 85 } },
                     { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.3 } },
                 ] },
@@ -702,7 +702,7 @@ const ShowcaseSceneEngine = (() => {
                     { libId: 'premium_sky', layer: 'environment', opts: { theme: 0.8 } },
                     { libId: 'smooth_hills', layer: 'environment', opts: { baseY: 0.43, amplitude: 0.06, layers: 2, seed: 100 } },
                     { libId: 'ground_plane', layer: 'environment', opts: { y: 0.53 } },
-                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.35, size: 380, color: '#1A365D', alpha: 0.1 } },
+                    { libId: 'ambient_glow', layer: 'atmosphere', opts: { x: 0.5, y: 0.35, size: 380, color: '#184E74', alpha: 0.1 } },
                     { libId: 'premium_bokeh', layer: 'atmosphere', opts: { count: 10, seed: 100 } },
                     { libId: 'vignette', layer: 'atmosphere', opts: { strength: 0.28 } },
                 ] },
@@ -717,8 +717,8 @@ const ShowcaseSceneEngine = (() => {
     function renderScene(ctx, scene, w, h, colors) {
         if (!scene || !scene.layers) return;
 
-        const primary = colors?.primary || '#1A365D';
-        const accent = colors?.accent || '#D4A843';
+        const primary = colors?.primary || '#184E74';
+        const accent = colors?.accent || '#CAA876';
 
         for (const layer of scene.layers) {
             if (!layer.elements) continue;
@@ -858,7 +858,7 @@ const ShowcaseSceneEngine = (() => {
                         role: 'system',
                         content: `Du bist ein visueller Design-Kritiker fuer App Store Screenshots.
 Zielgruppe: ${targetAudience}
-Marke: DGD Direkt (Kfz-Schadenmanagement) - Dunkelblau #1A365D, Gold #D4A843
+Marke: DGD Direkt (Kfz-Schadenmanagement) - Dunkelblau #184E74, Gold #CAA876
 
 Dies ist Iteration ${currentIter + 1} von ${totalIters}. Fruehe Iterationen: Feinschliff. Spaetere: Akzente und Details.
 
@@ -1098,17 +1098,17 @@ Regeln:
         const bg = slide.background;
         if (bg) {
             if (bg.type === 'solid') {
-                ctx.fillStyle = bg.color || '#1A365D';
+                ctx.fillStyle = bg.color || '#184E74';
                 ctx.fillRect(0, 0, rw, rh);
             } else if (bg.type === 'gradient') {
                 const grad = ctx.createLinearGradient(0, 0, 0, rh);
-                grad.addColorStop(0, bg.from || '#1A365D');
+                grad.addColorStop(0, bg.from || '#184E74');
                 grad.addColorStop(1, bg.to || '#2c5282');
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, 0, rw, rh);
             }
         } else {
-            ctx.fillStyle = '#1A365D';
+            ctx.fillStyle = '#184E74';
             ctx.fillRect(0, 0, rw, rh);
         }
 
@@ -1146,7 +1146,7 @@ Regeln:
             try {
                 ctx.drawImage(img, col * thumbW, row * thumbH, thumbW, thumbH);
             } catch (e) {
-                ctx.fillStyle = '#1A365D';
+                ctx.fillStyle = '#184E74';
                 ctx.fillRect(col * thumbW, row * thumbH, thumbW, thumbH);
             }
         }

@@ -64,7 +64,7 @@ const ShowcaseTemplates = (() => {
             name: 'Features',
             icon: '\u2726', // sparkle
             description: '3 Feature-Punkte + Device',
-            background: { type: 'gradient', from: '#1a3a5c', to: '#2c5282', angle: 135 },
+            background: { type: 'gradient', from: '#184E74', to: '#2c5282', angle: 135 },
             elements: [
                 {
                     type: 'text',
@@ -83,7 +83,7 @@ const ShowcaseTemplates = (() => {
                     content: '\u2713  Schnell & einfach',
                     x: 60, y: 380,
                     fontSize: 30, fontWeight: 500,
-                    color: '#D4A843',
+                    color: '#CAA876',
                     maxWidth: 460,
                     align: 'left',
                     fontFamily: 'Inter',
@@ -94,7 +94,7 @@ const ShowcaseTemplates = (() => {
                     content: '\u2713  100% transparent',
                     x: 60, y: 440,
                     fontSize: 30, fontWeight: 500,
-                    color: '#D4A843',
+                    color: '#CAA876',
                     maxWidth: 460,
                     align: 'left',
                     fontFamily: 'Inter',
@@ -105,7 +105,7 @@ const ShowcaseTemplates = (() => {
                     content: '\u2713  Deutschlandweit',
                     x: 60, y: 500,
                     fontSize: 30, fontWeight: 500,
-                    color: '#D4A843',
+                    color: '#CAA876',
                     maxWidth: 460,
                     align: 'left',
                     fontFamily: 'Inter',

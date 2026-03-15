@@ -36,7 +36,7 @@ const ShowcaseBuilder = (() => {
             id: _slug(appName) + '-' + Date.now(),
             appName: appName || 'My App',
             platform: platform || 'both',
-            brandColors: { primary: '#1a3a5c', accent: '#D4A843' },
+            brandColors: { primary: '#184E74', accent: '#CAA876' },
             slides: [],
         };
 
@@ -174,7 +174,7 @@ const ShowcaseBuilder = (() => {
             const x2 = cx + Math.sin(angle) * len;
             const y2 = cy + Math.cos(angle) * len;
             const grad = ctx.createLinearGradient(x1, y1, x2, y2);
-            grad.addColorStop(0, bg.from || '#1a3a5c');
+            grad.addColorStop(0, bg.from || '#184E74');
             grad.addColorStop(1, bg.to || '#2c5282');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, h);
@@ -757,8 +757,8 @@ const ShowcaseBuilder = (() => {
                             </select>
                         </div>
                         <div class="showcase-props__color-input">
-                            <input type="color" id="sc-bg-color1" value="#1a3a5c">
-                            <input type="text" id="sc-bg-color1-hex" value="#1a3a5c" style="width:80px;">
+                            <input type="color" id="sc-bg-color1" value="#184E74">
+                            <input type="text" id="sc-bg-color1-hex" value="#184E74" style="width:80px;">
                         </div>
                         <div class="showcase-props__color-input" id="sc-bg-color2-row" style="margin-top:6px;">
                             <input type="color" id="sc-bg-color2" value="#2c5282">
@@ -1331,8 +1331,8 @@ const ShowcaseBuilder = (() => {
             if (bgColor1Hex) bgColor1Hex.value = bg.color || '#ffffff';
             if (bgColor2Row) bgColor2Row.style.display = 'none';
         } else {
-            if (bgColor1) bgColor1.value = bg.from || '#1a3a5c';
-            if (bgColor1Hex) bgColor1Hex.value = bg.from || '#1a3a5c';
+            if (bgColor1) bgColor1.value = bg.from || '#184E74';
+            if (bgColor1Hex) bgColor1Hex.value = bg.from || '#184E74';
             if (bgColor2) bgColor2.value = bg.to || '#2c5282';
             if (bgColor2Hex) bgColor2Hex.value = bg.to || '#2c5282';
             if (bgColor2Row) bgColor2Row.style.display = 'flex';
@@ -1478,8 +1478,8 @@ const ShowcaseBuilder = (() => {
                 // Apply generated brief to project
                 if (result.brief) {
                     project.brandColors = {
-                        primary: result.brief.primaryColor || '#1a3a5c',
-                        accent: result.brief.accentColor || '#D4A843',
+                        primary: result.brief.primaryColor || '#184E74',
+                        accent: result.brief.accentColor || '#CAA876',
                     };
                 }
 
@@ -1505,7 +1505,7 @@ const ShowcaseBuilder = (() => {
                             if (result.brief) {
                                 project.slides[i].background = {
                                     type: 'gradient',
-                                    from: result.brief.primaryColor || '#1a3a5c',
+                                    from: result.brief.primaryColor || '#184E74',
                                     to: result.brief.accentColor || '#2c5282',
                                     angle: 135 + i * 15,
                                 };
@@ -1518,7 +1518,7 @@ const ShowcaseBuilder = (() => {
                                 // Apply brand colors to text
                                 if (result.brief && el.type === 'text') {
                                     if (el.id === 'headline') newEl.color = '#ffffff';
-                                    if (el.color === '#D4A843') newEl.color = result.brief.accentColor || '#D4A843';
+                                    if (el.color === '#CAA876') newEl.color = result.brief.accentColor || '#CAA876';
                                 }
                                 return newEl;
                             });
@@ -1637,7 +1637,7 @@ const ShowcaseBuilder = (() => {
         overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
         overlay.innerHTML = `
             <div style="background:#fff;border-radius:12px;padding:32px;max-width:450px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <h3 style="margin:0 0 8px;color:#1a3a5c;">\u2699\uFE0F OpenAI API Key</h3>
+                <h3 style="margin:0 0 8px;color:#184E74;">\u2699\uFE0F OpenAI API Key</h3>
                 <p style="margin:0 0 4px;color:#6c757d;font-size:13px;">Fuer AI-Bildgenerierung (DALL-E 3) und intelligente Texte (GPT-4o-mini).</p>
                 <p style="margin:0 0 16px;color:#6c757d;font-size:12px;">${masked ? 'Aktuell: ' + masked : 'Noch kein Key gespeichert.'}</p>
                 <input type="password" id="sc-api-key-input" value="${currentKey}"
@@ -1707,7 +1707,7 @@ const ShowcaseBuilder = (() => {
         overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
         overlay.innerHTML = `
             <div style="background:#fff;border-radius:12px;padding:32px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <h3 style="margin:0 0 8px;color:#1a3a5c;">Neues Showcase-Projekt</h3>
+                <h3 style="margin:0 0 8px;color:#184E74;">Neues Showcase-Projekt</h3>
                 <p style="margin:0 0 16px;color:#6c757d;font-size:14px;">Gib den Namen deiner App ein.</p>
                 <input type="text" id="sc-new-name" value="${project ? project.appName : 'DGD Portal'}"
                     style="width:100%;padding:10px 14px;border:2px solid #dee2e6;border-radius:8px;font-size:16px;font-family:Inter,sans-serif;outline:none;"

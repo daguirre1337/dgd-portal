@@ -151,37 +151,95 @@ const ShowcaseOrchestrator = (() => {
     }
 
     // =========================================================================
-    // Default Fallbacks
+    // DGD Brand Profile (Single Source of Truth)
+    // =========================================================================
+
+    const DGD_BRAND = {
+        company: {
+            fullName: 'DGD Deutscher Gutachter Dienst GmbH',
+            shortName: 'DGD Direkt',
+            tagline: 'Freiheit für Alle.',
+            mission: 'Mit DGD Direkt bauen wir das weltweit erste digitale Netzwerk für Gutachten.',
+            description: 'DGD Direkt ist die digitale Plattform der DGD Deutscher Gutachter Dienst GmbH für Kfz-Schadenmanagement und Gutachten.',
+            targetAudience: ['Kfz-Betriebe', 'Kfz-Sachverständige', 'Flotten- & Leasinggesellschaften', 'Geschädigte Privatpersonen', 'Kanzleien / Verkehrsrechtsanwälte'],
+            usps: [
+                'Unabhängige Plattform ohne Versicherer als Anteilseigner.',
+                'Digitale Schadenaufnahme vor Ort mit zentraler Qualitätssicherung.',
+                'API-first und KI-gestützte Prozessplattform.',
+            ],
+        },
+        branding: {
+            primaryColor: '#184E74',
+            secondaryColor: '#1B1B1B',
+            accentColor: '#CAA876',
+            backgroundColor: '#F0F0F0',
+            textColor: '#1B1B1B',
+            gradientFrom: '#184E74',
+            gradientTo: '#CAA876',
+            fonts: ['SF Pro Display', 'Roboto'],
+        },
+        app: {
+            name: 'DGD Direkt',
+            subtitle: 'Für Kfz-Profis',
+            features: [
+                'Digitale Schadenaufnahme für Haftpflichtschäden',
+                'Kundensignatur und Abtretungserklärung direkt auf dem Gerät',
+                'Vollständige Falldatenerfassung mit Pflichtfeldern',
+                'Foto- und Mediendokumentation des Fahrzeugschadens',
+                'Adressdaten speichern und per Karte auswählen',
+                'Fahrzeugbewertungen und Test-/Echtaufträge',
+            ],
+            headlines: [
+                'Haftpflichtschäden digital aufnehmen',
+                'Kundensignatur direkt im Prozess',
+                'Pflichtfelder statt Rückfragen',
+                'Bilder hochladen. DGD prüft weiter.',
+                'Mehr als nur Haftpflicht',
+                'Weniger Büro. Mehr Wirkung.',
+            ],
+            sublines: [
+                'Erfasse den Schaden direkt im Betrieb oder vor Ort mit der DGD Direkt App.',
+                'Die Abtretungserklärung wird direkt auf dem Gerät unterschrieben.',
+                'Besichtigungsort, Fahrzeugdaten und Schadeninfos werden strukturiert dokumentiert.',
+                'Fotos und Falldaten gehen direkt an DGD zur Prüfung weiter.',
+                'Zusätzlich Fahrzeugbewertungen und WertCheck-Leistungen möglich.',
+                'DGD übernimmt Vollständigkeitscheck, Nachforderungen und Statuskommunikation.',
+            ],
+        },
+        visual: {
+            mood: 'professionell, vertrauenswürdig, modern, präzise',
+            dallePromptHint: 'Photorealistischer Hintergrund für eine deutsche Marke im digitalen Kfz-Schadenmanagement: modernes Unfallfahrzeug in sauberer Werkstatt oder am Vor-Ort-Termin, Tablet oder Smartphone zur digitalen Schadenaufnahme sichtbar, dezente UI-Overlays, hochwertige Lichtstimmung, seriös und vertrauenswürdig, Farben aus dem Corporate Design mit Blau #184E74, Schwarz #1B1B1B, Beige #CAA876 und hellen Flächen #F0F0F0, keine Cartoon-Optik, keine überladene Stockfoto-Ästhetik.',
+        },
+    };
+
+    // =========================================================================
+    // Default Fallbacks (using DGD Brand Profile)
     // =========================================================================
 
     function _defaultBrief(appName, features) {
         const featureList = (features || '').split(',').map(f => f.trim()).filter(Boolean);
         const safeFeatures = featureList.length > 0
             ? featureList
-            : ['Schadenmanagement', 'Gutachter-Netzwerk', 'Schnelle Abwicklung'];
+            : DGD_BRAND.app.features.slice(0, 3);
 
         return {
-            mood: 'professional',
-            primaryColor: '#1A365D',
-            accentColor: '#D4A843',
-            backgroundMood: 'professional automotive workshop environment, dark blue tones, subtle car silhouettes, insurance industry aesthetics',
+            mood: DGD_BRAND.visual.mood,
+            primaryColor: DGD_BRAND.branding.primaryColor,
+            accentColor: DGD_BRAND.branding.accentColor,
+            backgroundMood: DGD_BRAND.visual.dallePromptHint,
             features: safeFeatures,
-            slides: [
-                { headline: appName || 'DGD Direkt', subline: 'Ihr Partner im Kfz-Schadenmanagement', template: 'hero' },
-                { headline: safeFeatures[0] || 'Schadenmanagement', subline: 'Professionelle Schadenbegutachtung aus einer Hand', template: 'feature' },
-                { headline: safeFeatures[1] || 'Gutachter-Netzwerk', subline: 'Deutschlandweites Netzwerk zertifizierter Gutachter', template: 'split' },
-                { headline: safeFeatures[2] || 'Schnelle Abwicklung', subline: 'Effiziente Prozesse fuer schnelle Regulierung', template: 'fullscreen' },
-                { headline: 'Vertrauen & Kompetenz', subline: 'Tausende zufriedene Kunden und Partner', template: 'feature' },
-                { headline: 'Jetzt Kontakt aufnehmen', subline: 'Wir sind fuer Sie da', template: 'comparison' },
-            ],
+            slides: DGD_BRAND.app.headlines.map((headline, i) => ({
+                headline,
+                subline: DGD_BRAND.app.sublines[i] || '',
+                template: ['hero', 'feature', 'split', 'fullscreen', 'feature', 'comparison'][i],
+            })),
         };
     }
 
     function _defaultSlideTexts(appName, features, slideCount) {
-        const brief = _defaultBrief(appName, features);
-        return brief.slides.slice(0, slideCount).map(s => ({
-            headline: s.headline,
-            subline: s.subline,
+        return DGD_BRAND.app.headlines.slice(0, slideCount).map((headline, i) => ({
+            headline,
+            subline: DGD_BRAND.app.sublines[i] || '',
         }));
     }
 
@@ -203,24 +261,27 @@ const ShowcaseOrchestrator = (() => {
             const messages = [
                 {
                     role: 'system',
-                    content: `You are a design expert for DGD Direkt, a German Kfz-Schadenmanagement company (car damage management and assessment).
-You create compelling visual strategies for professional showcase presentations.
-DGD brand colors: primary dark blue #1A365D, accent gold #D4A843.
-The visual style should convey professionalism, trust, and automotive industry expertise.
-Always respond with valid JSON only, no markdown, no explanation.
-The JSON must have this structure:
+                    content: `Du bist ein Design-Experte für DGD Direkt (Deutscher Gutachter Dienst GmbH).
+DGD bietet digitales Kfz-Schadenmanagement: Schadenaufnahme, Gutachten, Qualitätssicherung.
+Zielgruppe: ${DGD_BRAND.company.targetAudience.join(', ')}
+Markenfarben: Blau ${DGD_BRAND.branding.primaryColor}, Beige/Gold ${DGD_BRAND.branding.accentColor}, Schwarz ${DGD_BRAND.branding.secondaryColor}
+Claim: "${DGD_BRAND.company.tagline}"
+USPs: ${DGD_BRAND.company.usps.join(' | ')}
+App-Features: ${DGD_BRAND.app.features.join(', ')}
+
+Antworte NUR mit validem JSON:
 {
-  "mood": "string (e.g. professional, bold, trustworthy)",
-  "primaryColor": "#hex",
-  "accentColor": "#hex",
-  "backgroundMood": "string describing the ideal background - should reference automotive, insurance, or professional service imagery",
+  "mood": "string",
+  "primaryColor": "${DGD_BRAND.branding.primaryColor}",
+  "accentColor": "${DGD_BRAND.branding.accentColor}",
+  "backgroundMood": "string - Bildbeschreibung passend zu Kfz-Schadenmanagement",
   "features": ["feature1", "feature2", ...],
   "slides": [
-    {"headline": "short powerful headline (max 5 words)", "subline": "explanatory sentence (max 12 words)", "template": "hero|feature|split|fullscreen|comparison"},
+    {"headline": "max 5 Wörter", "subline": "max 12 Wörter", "template": "hero|feature|split|fullscreen|comparison"},
     ...
   ]
 }
-Generate exactly 6 slides. Language: German. Use DGD brand colors (#1A365D, #D4A843) as a foundation.`,
+Genau 6 Slides. Sprache: Deutsch. Farben: ${DGD_BRAND.branding.primaryColor} und ${DGD_BRAND.branding.accentColor}.`,
                 },
                 {
                     role: 'user',
@@ -264,8 +325,8 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
 
         try {
             const apiKey = getApiKey();
-            const moodDesc = brief.backgroundMood || 'professional automotive workshop environment with dark blue tones';
-            const prompt = `${moodDesc}, professional background for DGD Direkt Kfz-Schadenmanagement company, automotive industry aesthetics, subtle car repair workshop or insurance office environment, dark blue (#1A365D) and gold (#D4A843) color palette, no text, no UI elements, smooth gradients, high quality, wide panoramic composition, professional service industry feel`;
+            const moodDesc = brief.backgroundMood || DGD_BRAND.visual.dallePromptHint;
+            const prompt = `${moodDesc}, no text, no UI elements, no logos, smooth gradients, high quality, wide panoramic composition, cinematic lighting`;
 
             const response = await fetch(OPENAI_IMAGES_URL, {
                 method: 'POST',
@@ -504,8 +565,8 @@ Rules:
         // Apply brand colors from brief
         if (project && brief) {
             project.brandColors = {
-                primary: brief.primaryColor || '#1a3a5c',
-                accent: brief.accentColor || '#D4A843',
+                primary: brief.primaryColor || DGD_BRAND.branding.primaryColor,
+                accent: brief.accentColor || DGD_BRAND.branding.accentColor,
             };
         }
 
