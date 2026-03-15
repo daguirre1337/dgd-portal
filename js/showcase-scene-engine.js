@@ -870,24 +870,21 @@ ${slidesSummary}
 
 Verfuegbare Elemente:${availableElements}
 
-WICHTIG: Antworte ausschliesslich mit validem JSON, KEIN Markdown, KEINE Code-Bloecke.
-Format:
-{"summary": "Kurze Zusammenfassung (1 Satz, deutsch)", "changes": [{"slideIndex": 0, "action": "add", "element": {"libId": "element_id", "layer": "environment|midground|atmosphere|accents", "opts": {}}}]}
+Antworte NUR mit kompaktem JSON. Kurze opts.
+
+Format: {"summary":"text","changes":[{"slideIndex":0,"action":"add","element":{"libId":"id","layer":"atmosphere","opts":{"x":0.5}}}]}
 
 Regeln:
-- Max 6 Aenderungen pro Iteration
-- Alle Positionen als Faktor (0.0-1.0)
-- Slide-uebergreifend einheitliche Atmosphaere bewahren
-- Fruehe Iter: Stadtsilhouetten, Autos, Lichteffekte hinzufuegen
-- Spaete Iter: Akzente, Gauge, Shield, Feintuning
-- Goldfarbe #D4A843 als Akzent nutzen`,
+- Max 4 Aenderungen pro Iteration (KURZ halten!)
+- opts: nur x, y, scale, alpha, seed, count, size als Zahlen (0.0-1.0)
+- Einheitliche Atmosphaere ueber alle Slides`,
                     },
                     {
                         role: 'user',
                         content: [
                             {
                                 type: 'text',
-                                text: `Analysiere dieses Screenshot-Set (3x2 Grid, Slides 1-6). Verbessere die visuelle Atmosphaere fuer ${targetAudience}. Iteration ${currentIter + 1}/${totalIters}. Antworte NUR mit JSON.`,
+                                text: `Slides 1-6 fuer ${targetAudience}. Iter ${currentIter + 1}/${totalIters}. Max 4 kompakte Aenderungen als JSON.`,
                             },
                             {
                                 type: 'image_url',
@@ -899,8 +896,9 @@ Regeln:
                         ],
                     },
                 ],
-                max_tokens: 1024,
-                temperature: 0.6,
+                max_tokens: 600,
+                temperature: 0.4,
+                response_format: { type: 'json_object' },
             }),
         });
 
