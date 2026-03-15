@@ -158,21 +158,21 @@ const ShowcaseOrchestrator = (() => {
         const featureList = (features || '').split(',').map(f => f.trim()).filter(Boolean);
         const safeFeatures = featureList.length > 0
             ? featureList
-            : ['Einfache Bedienung', 'Schnell & Zuverlaessig', 'Sicheres Design'];
+            : ['Schadenmanagement', 'Gutachter-Netzwerk', 'Schnelle Abwicklung'];
 
         return {
             mood: 'professional',
-            primaryColor: '#1a3a5c',
+            primaryColor: '#1A365D',
             accentColor: '#D4A843',
-            backgroundMood: 'abstract gradient with soft geometric shapes, dark blue to teal',
+            backgroundMood: 'professional automotive workshop environment, dark blue tones, subtle car silhouettes, insurance industry aesthetics',
             features: safeFeatures,
             slides: [
-                { headline: appName || 'Deine App', subline: 'Die beste Loesung fuer dich', template: 'hero' },
-                { headline: safeFeatures[0] || 'Feature 1', subline: 'Entdecke was moeglich ist', template: 'feature' },
-                { headline: safeFeatures[1] || 'Feature 2', subline: 'Einfach und effizient', template: 'split' },
-                { headline: safeFeatures[2] || 'Feature 3', subline: 'Durchdacht bis ins Detail', template: 'fullscreen' },
-                { headline: 'Tausende zufriedene Nutzer', subline: 'Ueberzeugen Sie sich selbst', template: 'feature' },
-                { headline: 'Jetzt herunterladen', subline: 'Kostenlos im App Store', template: 'comparison' },
+                { headline: appName || 'DGD Direkt', subline: 'Ihr Partner im Kfz-Schadenmanagement', template: 'hero' },
+                { headline: safeFeatures[0] || 'Schadenmanagement', subline: 'Professionelle Schadenbegutachtung aus einer Hand', template: 'feature' },
+                { headline: safeFeatures[1] || 'Gutachter-Netzwerk', subline: 'Deutschlandweites Netzwerk zertifizierter Gutachter', template: 'split' },
+                { headline: safeFeatures[2] || 'Schnelle Abwicklung', subline: 'Effiziente Prozesse fuer schnelle Regulierung', template: 'fullscreen' },
+                { headline: 'Vertrauen & Kompetenz', subline: 'Tausende zufriedene Kunden und Partner', template: 'feature' },
+                { headline: 'Jetzt Kontakt aufnehmen', subline: 'Wir sind fuer Sie da', template: 'comparison' },
             ],
         };
     }
@@ -203,21 +203,24 @@ const ShowcaseOrchestrator = (() => {
             const messages = [
                 {
                     role: 'system',
-                    content: `You are an App Store design expert. You create compelling visual strategies for app screenshots.
+                    content: `You are a design expert for DGD Direkt, a German Kfz-Schadenmanagement company (car damage management and assessment).
+You create compelling visual strategies for professional showcase presentations.
+DGD brand colors: primary dark blue #1A365D, accent gold #D4A843.
+The visual style should convey professionalism, trust, and automotive industry expertise.
 Always respond with valid JSON only, no markdown, no explanation.
 The JSON must have this structure:
 {
-  "mood": "string (e.g. professional, playful, minimal, bold)",
+  "mood": "string (e.g. professional, bold, trustworthy)",
   "primaryColor": "#hex",
   "accentColor": "#hex",
-  "backgroundMood": "string describing the ideal abstract background",
+  "backgroundMood": "string describing the ideal background - should reference automotive, insurance, or professional service imagery",
   "features": ["feature1", "feature2", ...],
   "slides": [
     {"headline": "short powerful headline (max 5 words)", "subline": "explanatory sentence (max 12 words)", "template": "hero|feature|split|fullscreen|comparison"},
     ...
   ]
 }
-Generate exactly 6 slides. Language: German. Be creative with colors that match the app's purpose.`,
+Generate exactly 6 slides. Language: German. Use DGD brand colors (#1A365D, #D4A843) as a foundation.`,
                 },
                 {
                     role: 'user',
@@ -261,8 +264,8 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
 
         try {
             const apiKey = getApiKey();
-            const moodDesc = brief.backgroundMood || 'abstract gradient with geometric shapes';
-            const prompt = `${moodDesc}, abstract background for app store screenshots, no text, no devices, no UI elements, smooth gradients, high quality, wide panoramic composition`;
+            const moodDesc = brief.backgroundMood || 'professional automotive workshop environment with dark blue tones';
+            const prompt = `${moodDesc}, professional background for DGD Direkt Kfz-Schadenmanagement company, automotive industry aesthetics, subtle car repair workshop or insurance office environment, dark blue (#1A365D) and gold (#D4A843) color palette, no text, no UI elements, smooth gradients, high quality, wide panoramic composition, professional service industry feel`;
 
             const response = await fetch(OPENAI_IMAGES_URL, {
                 method: 'POST',
@@ -459,7 +462,7 @@ Rules:
             }
 
             _emitProgress(STATES.DONE, totalSteps, totalSteps, 'Showcase ready!');
-            return project;
+            return { brief, panorama: panoramaImage, slides: slideTexts, project };
         } catch (err) {
             _emitProgress(STATES.ERROR, 0, totalSteps, 'Pipeline failed: ' + err.message);
             throw err;

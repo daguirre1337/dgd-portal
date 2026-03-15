@@ -13,7 +13,7 @@ DGD.router = (function() {
 
     var VALID_VIEWS = [
         'dashboard', 'timeline', 'kpis', 'mitarbeiter',
-        'finanzen', 'ziele', 'feedback', 'roadmap', 'crm', 'showcase', 'settings', 'admin'
+        'finanzen', 'ziele', 'feedback', 'roadmap', 'crm', 'showcase', 'files', 'settings', 'admin'
     ];
 
     var VIEW_TITLES = {
@@ -27,6 +27,7 @@ DGD.router = (function() {
         roadmap: 'Strategische Roadmap',
         crm: 'CRM',
         showcase: 'Showcase Builder',
+        files: 'Dateien',
         settings: 'Einstellungen',
         admin: 'Admin',
     };
@@ -107,6 +108,7 @@ DGD.router = (function() {
             case 'roadmap':      DGD.views.roadmap(content);      break;
             case 'crm':          DGD.views.crm(content);          break;
             case 'showcase':     DGD.views.showcase(content);     break;
+            case 'files':        DGD.views.files(content);        break;
             case 'admin':        DGD.views.admin(content);        break;
             case 'settings':     DGD.views.settings(content);     break;
         }
