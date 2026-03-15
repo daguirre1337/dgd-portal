@@ -794,21 +794,22 @@ const ShowcaseBuilder = (() => {
         if (!strip) return;
 
         const parent = strip.parentElement;
-        const availableWidth = parent.clientWidth;
+        const availableWidth = parent.clientWidth - 24; // padding
         const maxH = parent.getBoundingClientRect().height - 24;
 
-        // Height-first: maximize slide height, derive width from aspect ratio
-        let h = Math.max(maxH, 200); // at least 200px
-        let w = Math.floor(h * (DW / DH)); // DW/DH = 1080/1920 = 0.5625
+        // Fit all 6 slides: width-first or height-first, whichever is smaller
+        const gapTotal = 3 * 5; // 3px gap × 5 gaps
+        let w = Math.floor((availableWidth - gapTotal) / 6);
+        let h = Math.floor(w * (DH / DW)); // maintain aspect ratio
 
-        // If 6 slides exceed available width, scale down from width
-        if (w * 6 > availableWidth) {
-            w = Math.floor(availableWidth / 6);
-            h = Math.floor(w * (DH / DW));
+        // If too tall, scale from height
+        if (h > maxH) {
+            h = Math.max(maxH, 200);
+            w = Math.floor(h * (DW / DH));
         }
 
-        w = Math.max(80, w);
-        h = Math.max(142, h);
+        w = Math.max(60, w);
+        h = Math.max(107, h);
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
 

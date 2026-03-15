@@ -15,7 +15,9 @@ DGD.views = DGD.views || {};
             ShowcaseBuilder.destroy();
         }
 
-        container.innerHTML = '<div id="showcase-builder-mount" style="margin:-1.5rem;height:calc(100vh - 64px);overflow:hidden;"></div>';
+        // Override .dgd-content padding/max-width for fullscreen showcase
+        container.style.cssText = 'padding:0 !important; max-width:none !important;';
+        container.innerHTML = '<div id="showcase-builder-mount" style="width:100%;height:calc(100vh - 64px);overflow:hidden;"></div>';
 
         setTimeout(function() {
             if (typeof ShowcaseBuilder !== 'undefined') {
