@@ -9,6 +9,12 @@ window.DGD = window.DGD || {};
 DGD.anomalies = (function() {
     'use strict';
 
+    var CORTEX_BASE = (function() {
+        var h = window.location.hostname;
+        if (h === 'dgd.digital' || h === 'www.dgd.digital') return 'https://cortex.dgd.digital';
+        return 'http://localhost:8000';
+    })();
+
     /**
      * Detect anomalies in attendance data.
      * Checks 5 anomaly types:
@@ -148,7 +154,7 @@ DGD.anomalies = (function() {
                 return '- ' + a.employeeName + ': ' + a.description;
             }).join('\n');
 
-            fetch('http://localhost:8000/api/chat/stream', {
+            fetch(CORTEX_BASE + '/api/chat/stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                 body: JSON.stringify({

@@ -234,6 +234,17 @@ DGD.views = DGD.views || {};
     }
 
     /* ------------------------------------------------------------------
+       Cortex URL Auto-Detect (production vs local)
+       ------------------------------------------------------------------ */
+    var CORTEX_BASE = (function() {
+        var h = window.location.hostname;
+        if (h === 'dgd.digital' || h === 'www.dgd.digital') {
+            return 'https://cortex.dgd.digital';
+        }
+        return 'http://localhost:8000';
+    })();
+
+    /* ------------------------------------------------------------------
        Shared Cortex SSE Streaming Helper
        ------------------------------------------------------------------ */
 
@@ -255,7 +266,7 @@ DGD.views = DGD.views || {};
         }
 
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:8000/api/chat/stream', true);
+        xhr.open('POST', CORTEX_BASE + '/api/chat/stream', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
 
         xhr.onreadystatechange = function() {
@@ -1665,9 +1676,8 @@ DGD.views = DGD.views || {};
         var btn = container.previousElementSibling;
         if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
 
-        var CORTEX_URL = 'http://localhost:8000';
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', CORTEX_URL + '/api/chat/stream', true);
+        xhr.open('POST', CORTEX_BASE + '/api/chat/stream', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
 
         var responseText = '';
