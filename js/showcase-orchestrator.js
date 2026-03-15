@@ -279,6 +279,7 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
                     n: 1,
                     size: DALLE_SIZE,
                     quality: 'standard',
+                    response_format: 'b64_json',
                 }),
             });
 
@@ -288,14 +289,14 @@ Generate 6 slide concepts with compelling German headlines and sublines.`,
             }
 
             const data = await response.json();
-            const imageUrl = data.data?.[0]?.url;
+            const b64 = data.data?.[0]?.b64_json;
 
-            if (!imageUrl) {
-                throw new Error('No image URL in DALL-E response');
+            if (!b64) {
+                throw new Error('No b64_json in DALL-E response');
             }
 
-            // Load the image into an HTMLImageElement
-            const img = await _loadImage(imageUrl);
+            // Load base64 image directly (no CORS issues!)
+            const img = await _loadImage('data:image/png;base64,' + b64);
             return img;
         } catch (err) {
             console.warn('[Orchestrator] DALL-E generation failed, falling back to procedural:', err.message);
