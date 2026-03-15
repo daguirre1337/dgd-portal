@@ -21,6 +21,7 @@
         // Sidebar toggle (burger menu)
         $('#sidebar-toggle').addEventListener('click', DGD.sidebar.toggle);
         DGD.sidebar.restoreState();
+        DGD.sidebar.initDarkMode();
 
         // Sidebar nav links (close sidebar on mobile after click)
         var navLinks = $$('.dgd-sidebar__link');

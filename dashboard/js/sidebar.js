@@ -37,9 +37,55 @@ DGD.sidebar = (function() {
         } catch(e) {}
     }
 
+    /* ------------------------------------------------------------------
+       Dark Mode Toggle
+       ------------------------------------------------------------------ */
+
+    function initDarkMode() {
+        // Restore preference
+        var saved = null;
+        try { saved = localStorage.getItem('dgd-theme'); } catch(e) {}
+
+        if (saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+
+        // Insert toggle button at bottom of sidebar
+        var sidebar = $('#sidebar');
+        if (!sidebar) return;
+
+        var nav = sidebar.querySelector('.dgd-sidebar__nav');
+        if (!nav) return;
+
+        var toggleBtn = document.createElement('button');
+        toggleBtn.className = 'dgd-dark-toggle';
+        toggleBtn.id = 'dark-mode-toggle';
+        updateToggleLabel(toggleBtn);
+
+        toggleBtn.addEventListener('click', function() {
+            var current = document.documentElement.getAttribute('data-theme');
+            var next = current === 'dark' ? 'light' : 'dark';
+            if (next === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            try { localStorage.setItem('dgd-theme', next); } catch(e) {}
+            updateToggleLabel(toggleBtn);
+        });
+
+        nav.appendChild(toggleBtn);
+    }
+
+    function updateToggleLabel(btn) {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        btn.innerHTML = (isDark ? '☀️' : '🌙') + ' ' + (isDark ? 'Light Mode' : 'Dark Mode');
+    }
+
     // Public API
     return {
         toggle: toggleSidebar,
         restoreState: restoreSidebarState,
+        initDarkMode: initDarkMode,
     };
 })();
