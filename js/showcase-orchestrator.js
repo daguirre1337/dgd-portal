@@ -16,7 +16,7 @@ const ShowcaseOrchestrator = (() => {
 
     const OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions';
     const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
-    const OPENAI_MODEL = 'gpt-4o-mini';
+    const OPENAI_MODEL = 'gpt-4o';
     const DALLE_MODEL = 'dall-e-3';
     const DALLE_SIZE = '1792x1024';
     const STORAGE_KEY = 'showcase_openai_key';
@@ -167,6 +167,7 @@ const ShowcaseOrchestrator = (() => {
         company: {
             fullName: 'DGD Deutscher Gutachter Dienst GmbH',
             shortName: 'DGD Direkt',
+            industry: 'Kfz-Schadenmanagement & Gutachten',
             tagline: 'Freiheit für Alle.',
             mission: 'Mit DGD Direkt bauen wir das weltweit erste digitale Netzwerk für Gutachten.',
             description: 'DGD Direkt ist die digitale Plattform der DGD Deutscher Gutachter Dienst GmbH für Kfz-Schadenmanagement und Gutachten.',
@@ -765,16 +766,18 @@ Rules:
                 }),
             };
 
+            // Detect if user provided a comprehensive creative brief (long text)
+            const isCreativeBrief = feedbackText.length > 300;
+
             const messages = [
                 {
                     role: 'system',
-                    content: `You are an App Store design expert reviewing a showcase project for "${DGD_BRAND.company.name}" (${DGD_BRAND.company.industry}).
-The user will give you feedback about the current design. Analyze their feedback and decide what needs to change.
+                    content: `You are an App Store design expert for "${DGD_BRAND.company.name}" (${DGD_BRAND.company.industry}).
+The user gives feedback about the current showcase design. Analyze and respond with JSON:
 
-IMPORTANT: You can change MULTIPLE things at once. Respond with JSON only:
 {
   "action": "update",
-  "message": "Short description of what you changed (in user's language)",
+  "message": "Short summary of changes (in user's language)",
   "slides": [
     {"index": 0, "changes": {"headline": "new text", "subline": "new text", "templateId": "hero"}}
   ],
@@ -783,29 +786,40 @@ IMPORTANT: You can change MULTIPLE things at once. Respond with JSON only:
   "panoramaHint": ""
 }
 
-Available template IDs: "hero", "feature", "split", "fullscreen", "comparison"
+Available templates: "hero", "feature", "split", "fullscreen", "comparison"
+There are exactly 6 slides (index 0-5).
 
-Rules:
-- "regeneratePanorama": set to TRUE if the user wants visual/image/background changes (e.g. "mehr Baeume", "dunklerer Hintergrund", "andere Stimmung", "mehr Autos", "Natur", "isometrisch", etc.)
-- "panoramaHint": when regeneratePanorama is true, write a DETAILED English scene description for DALL-E image generation (2-3 sentences). IMPORTANT: Build upon and REFINE the current panorama description — keep what works and add/modify what the user requests. Include art style, perspective, lighting, colors, objects, and mood. Examples:
-  - "Isometric pixel art style automotive workshop with small cars, tools, and mechanics, bright colors, Habbo Hotel aesthetic, clean geometric shapes, top-down 2.5D perspective"
-  - "Dark moody automotive workshop interior with neon blue lighting, reflective floor, luxury cars, cinematic atmosphere, photorealistic"
-  - "Lush green forest landscape with tall trees, sunlight filtering through canopy, peaceful nature scene, soft golden hour lighting"
-  The panoramaHint IS the DALL-E prompt - be specific about the visual style the user wants. Always combine previous elements with new requests.
-- Only include fields that should change. Omit unchanged slides and fields.
-- "message": ALWAYS include a brief human-readable summary of what was changed
-- Language for "message": Match the user's language (German or English).
-- For color/mood changes, also set regeneratePanorama to true.`,
+PANORAMA RULES:
+- "regeneratePanorama": TRUE for ANY visual/image/background/style change request
+- "panoramaHint": A DETAILED English DALL-E prompt (3-6 sentences, up to 800 chars). This IS the image generation prompt.
+  Include: art style, perspective, lighting, color palette, objects, mood, scene composition.
+  IMPORTANT: Build upon the current panorama description — keep what works, add/modify what the user requests.
+  If the user provides a comprehensive creative brief, distill its visual essence into an optimal DALL-E prompt.
+  The panorama is ONE ultra-wide image (6480x1920) that gets sliced into 6 vertical panels.
+  Describe a continuous left-to-right scene that works as 6 connected segments.
+
+SLIDE TEXT RULES:
+- Update ALL 6 slide headlines and sublines when the user provides a story/narrative
+- Headlines: max 5 words, punchy, emotional
+- Sublines: max 15 words, descriptive
+- Language: Match user's language
+- For a 6-slide narrative, each slide should tell one chapter of the story
+
+${isCreativeBrief ? `CREATIVE BRIEF MODE: The user provided a detailed creative brief. You MUST:
+1. Extract the visual style and create an optimal panoramaHint (set regeneratePanorama: true)
+2. Create fitting headlines/sublines for ALL 6 slides based on the story described
+3. Set colors if the brief specifies brand colors
+4. The panoramaHint should capture: art style, scene type, perspective, key objects, color progression, mood progression` : ''}`,
                 },
                 {
                     role: 'user',
-                    content: `Current project:\n${JSON.stringify(projectSummary, null, 2)}\n\nCurrent panorama description: "${_lastPanoramaPrompt || 'default DGD automotive scene'}"\n\nUser feedback: ${feedbackText}`,
+                    content: `Current project:\n${JSON.stringify(projectSummary, null, 2)}\n\nCurrent panorama: "${_lastPanoramaPrompt || 'default DGD automotive scene'}"\n\nUser feedback:\n${feedbackText}`,
                 },
             ];
 
             const result = await _callOpenAI(messages, {
-                temperature: 0.6,
-                max_tokens: 1024,
+                temperature: 0.5,
+                max_tokens: isCreativeBrief ? 2048 : 1024,
                 response_format: { type: 'json_object' },
             });
 
