@@ -1082,44 +1082,51 @@ Regeln:
     // =========================================================================
 
     function _renderSlideToImage(project, slideIndex) {
+        // Use SMALL resolution for vision analysis (keeps data URLs small)
+        const rw = 360;
+        const rh = 640;
+        const scaleX = rw / DW;
+        const scaleY = rh / DH;
+
         const canvas = document.createElement('canvas');
-        canvas.width = DW;
-        canvas.height = DH;
+        canvas.width = rw;
+        canvas.height = rh;
         const ctx = canvas.getContext('2d');
 
         const slide = project.slides[slideIndex];
-        if (!slide) return canvas.toDataURL('image/jpeg', 0.7);
+        if (!slide) return canvas.toDataURL('image/jpeg', 0.5);
 
         // 1. Draw background gradient
         const bg = slide.background;
         if (bg) {
             if (bg.type === 'solid') {
                 ctx.fillStyle = bg.color || '#1A365D';
-                ctx.fillRect(0, 0, DW, DH);
+                ctx.fillRect(0, 0, rw, rh);
             } else if (bg.type === 'gradient') {
-                const grad = ctx.createLinearGradient(0, 0, 0, DH);
+                const grad = ctx.createLinearGradient(0, 0, 0, rh);
                 grad.addColorStop(0, bg.from || '#1A365D');
                 grad.addColorStop(1, bg.to || '#2c5282');
                 ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, DW, DH);
+                ctx.fillRect(0, 0, rw, rh);
             }
         } else {
             ctx.fillStyle = '#1A365D';
-            ctx.fillRect(0, 0, DW, DH);
+            ctx.fillRect(0, 0, rw, rh);
         }
 
-        // 2. Draw scene layers
+        // 2. Draw scene layers (at reduced size)
         const scene = project._scenes?.[slideIndex];
         if (scene) {
-            renderScene(ctx, scene, DW, DH, project.brandColors);
+            renderScene(ctx, scene, rw, rh, project.brandColors);
         }
 
-        // 3. Draw template elements
+        // 3. Draw template elements (scaled down)
+        const scale = Math.min(scaleX, scaleY);
         for (const el of (slide.elements || [])) {
-            _drawElementSimple(ctx, el, 1);
+            _drawElementSimple(ctx, el, scale);
         }
 
-        return canvas.toDataURL('image/jpeg', 0.6);
+        return canvas.toDataURL('image/jpeg', 0.5);
     }
 
     function _createComposite(slideDataUrls) {
