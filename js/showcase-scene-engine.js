@@ -714,15 +714,19 @@ const ShowcaseSceneEngine = (() => {
     // Core: Render scene layers onto a canvas
     // =========================================================================
 
-    function renderScene(ctx, scene, w, h, colors) {
+    function renderScene(ctx, scene, w, h, colors, options) {
         if (!scene || !scene.layers) return;
 
         const primary = colors?.primary || '#184E74';
         const accent = colors?.accent || '#CAA876';
+        const skipEnvironment = options?.skipEnvironment || false;
 
         for (const layer of scene.layers) {
             if (!layer.elements) continue;
             for (const elem of layer.elements) {
+                // Skip environment-layer elements when DALL-E panorama is active
+                if (skipEnvironment && elem.layer === 'environment') continue;
+
                 const libEntry = _findLibEntry(elem.libId, elem.layer);
                 if (!libEntry) continue;
 

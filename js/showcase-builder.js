@@ -140,11 +140,15 @@ const ShowcaseBuilder = (() => {
         }
 
         // Scene layers (environment, midground, atmosphere, accents)
+        // When DALL-E panorama is active, skip environment layer (premium_sky, hills, ground)
+        // to avoid opaque fills covering the panorama image
+        const hasPanorama = !!(panoramaCanvas || panoramaImage);
         if (typeof ShowcaseSceneEngine !== 'undefined' && project?._scenes?.[slideIndex]) {
             ShowcaseSceneEngine.renderScene(
                 ctx, project._scenes[slideIndex],
                 canvasW, canvasH,
-                project.brandColors
+                project.brandColors,
+                { skipEnvironment: hasPanorama }
             );
         }
 
